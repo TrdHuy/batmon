@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.InputDevice;
 import android.widget.LinearLayout;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
     private static final int SONY_VENDOR_ID = 0x054C;
     private static final int[] DUALSHOCK4_PRODUCT_IDS = {
             0x05C4, // CUH-ZCT1
@@ -66,17 +68,17 @@ public class MainActivity extends Activity {
         root.setPadding(padding, padding, padding, padding);
 
         TextView titleView = new TextView(this);
-        titleView.setText("BatMon - PS4 Controller Monitor");
+        titleView.setText(R.string.controller_monitor_title);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
 
         TextView subtitleView = new TextView(this);
-        subtitleView.setText("Theo doi tay cam PS4 (DualShock 4) va muc pin hien tai");
+        subtitleView.setText(R.string.controller_monitor_subtitle);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
 
         deviceInfoView = new TextView(this);
         deviceInfoView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         deviceInfoView.setPadding(0, dpToPx(12), 0, 0);
-        deviceInfoView.setText("Dang tai thong tin tay cam...");
+        deviceInfoView.setText(R.string.loading_controller_info);
 
         root.addView(titleView);
         root.addView(subtitleView);
@@ -91,6 +93,7 @@ public class MainActivity extends Activity {
             inputManager.registerInputDeviceListener(inputDeviceListener, mainHandler);
         }
         refreshControllerInfo();
+        mainHandler.removeCallbacks(periodicRefresh);
         mainHandler.postDelayed(periodicRefresh, REFRESH_INTERVAL_MS);
     }
 
@@ -108,7 +111,7 @@ public class MainActivity extends Activity {
             return;
         }
         if (inputManager == null) {
-            deviceInfoView.setText("InputManager khong san sang tren thiet bi nay.");
+            deviceInfoView.setText(R.string.input_manager_unavailable);
             return;
         }
 
@@ -123,7 +126,7 @@ public class MainActivity extends Activity {
         }
 
         if (ps4Controllers.isEmpty()) {
-            deviceInfoView.setText("Khong phat hien tay cam PS4 (DualShock 4) dang ket noi.");
+            deviceInfoView.setText(R.string.no_ps4_controller_connected);
             return;
         }
         deviceInfoView.setText(TextUtils.join("\n\n", ps4Controllers));
@@ -144,7 +147,7 @@ public class MainActivity extends Activity {
         String lowerName = device.getName() == null
                 ? ""
                 : device.getName().toLowerCase(Locale.US);
-        if (lowerName.contains("dualshock 4") || lowerName.contains("dualshock")) {
+        if (lowerName.contains("dualshock")) {
             return true;
         }
 
@@ -164,56 +167,64 @@ public class MainActivity extends Activity {
 
     private String formatControllerInfo(InputDevice device) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Ten: ").append(device.getName());
-        builder.append("\nTrang thai: Connected");
-        builder.append("\nPin: ").append(readBatteryPercent(device));
-        builder.append("\nVendor/Product: ")
-                .append(hex4(device.getVendorId()))
-                .append("/")
-                .append(hex4(device.getProductId()));
-        builder.append("\nDevice ID: ").append(device.getId());
+        String deviceName = device.getName() == null
+                ? getString(R.string.unknown_device_name)
+                : device.getName();
+        builder.append(getString(R.string.controller_name_line, deviceName));
+        builder.append("\n")
+                .append(getString(R.string.controller_status_line,
+                        getString(R.string.controller_status_connected)));
+        builder.append("\n")
+                .append(getString(R.string.controller_battery_line, readBatteryPercent(device)));
+        builder.append("\n")
+                .append(getString(R.string.controller_vendor_product_line,
+                        hex4(device.getVendorId()), hex4(device.getProductId())));
+        builder.append("\n")
+                .append(getString(R.string.controller_device_id_line, device.getId()));
         return builder.toString();
     }
 
     private String readBatteryPercent(InputDevice device) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return "Khong ho tro tren API < 31";
+            return getString(R.string.battery_api_not_supported);
         }
         try {
             BatteryState batteryState = device.getBatteryState();
             if (batteryState == null || !batteryState.isPresent()) {
-                return "Khong lay duoc pin";
+                return getString(R.string.battery_unavailable);
             }
 
             float capacity = batteryState.getCapacity();
             if (Float.isNaN(capacity) || capacity < 0f) {
-                return "Khong lay duoc pin";
+                return getString(R.string.battery_unavailable);
             }
 
-            int percentage = Math.round(capacity * 100f);
-            if (percentage < 0) {
-                percentage = 0;
-            } else if (percentage > 100) {
-                percentage = 100;
-            }
-            return percentage + "% (" + batteryStatusLabel(batteryState.getStatus()) + ")";
-        } catch (Exception ignored) {
-            return "Khong lay duoc pin";
+            float normalized = capacity > 1.0f ? capacity : capacity * 100f;
+            int percentage = Math.round(normalized);
+            percentage = Math.max(0, Math.min(100, percentage));
+            return getString(
+                    R.string.battery_percentage_format,
+                    percentage,
+                    batteryStatusLabel(batteryState.getStatus())
+            );
+        } catch (Exception exception) {
+            Log.w(TAG, "Failed to read battery state from InputDevice", exception);
+            return getString(R.string.battery_unavailable);
         }
     }
 
     private String batteryStatusLabel(int status) {
         switch (status) {
             case BatteryState.STATUS_CHARGING:
-                return "Charging";
+                return getString(R.string.battery_status_charging);
             case BatteryState.STATUS_DISCHARGING:
-                return "Discharging";
+                return getString(R.string.battery_status_discharging);
             case BatteryState.STATUS_FULL:
-                return "Full";
+                return getString(R.string.battery_status_full);
             case BatteryState.STATUS_NOT_CHARGING:
-                return "Not charging";
+                return getString(R.string.battery_status_not_charging);
             default:
-                return "Unknown";
+                return getString(R.string.battery_status_unknown);
         }
     }
 
