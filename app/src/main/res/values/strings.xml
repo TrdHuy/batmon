@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">BatMon Demo</string>
+    <string name="app_name">batmon</string>
+
     <string name="controller_monitor_title">BatMon - PS4 Controller Monitor</string>
     <string name="controller_monitor_subtitle">Theo doi tay cam PS4 (DualShock 4) va muc pin hien tai</string>
     <string name="loading_controller_info">Dang tai thong tin tay cam...</string>
@@ -22,4 +23,41 @@
     <string name="battery_status_full">Full</string>
     <string name="battery_status_not_charging">Not charging</string>
     <string name="battery_status_unknown">Unknown</string>
+
+    <string name="monitor_service_running">Monitoring: Dang chay</string>
+    <string name="monitor_service_stopped">Monitoring: Dang dung</string>
+    <string name="overlay_state_visible">Overlay: Dang hien</string>
+    <string name="overlay_state_hidden">Overlay: Dang an</string>
+
+    <string name="menu_config">Config</string>
+    <string name="menu_grant_overlay_permission">Cap quyen overlay</string>
+    <string name="menu_start_monitoring">Bat monitoring</string>
+    <string name="menu_show_overlay">Hien floating overlay</string>
+    <string name="menu_hide_overlay">An floating overlay</string>
+    <string name="menu_stop_monitoring">Dung monitoring</string>
+
+    <string name="toast_overlay_permission_requested">Da mo man hinh cap quyen overlay.</string>
+    <string name="toast_overlay_permission_already_granted">Quyen overlay da duoc cap.</string>
+    <string name="toast_overlay_permission_required">Can cap quyen overlay truoc khi bat monitoring.</string>
+    <string name="toast_notification_permission_required">Can cap quyen thong bao de hien thi status bar.</string>
+    <string name="toast_monitoring_started">Da bat monitoring pin gamepad.</string>
+    <string name="toast_monitoring_stopped">Da dung monitoring.</string>
+    <string name="toast_overlay_shown">Da bat floating overlay.</string>
+    <string name="toast_overlay_hidden">Da an floating overlay.</string>
+
+    <string name="notification_channel_name">BatMon Gamepad Monitor</string>
+    <string name="notification_channel_description">Theo doi pin tay cam gamepad va hien thi overlay.</string>
+    <string name="notification_title">BatMon Controller Battery</string>
+    <string name="notification_initial_text">Dang khoi tao monitoring...</string>
+    <string name="notification_no_gamepad">Khong co gamepad dang ket noi</string>
+    <string name="notification_battery_unavailable">%1$s: khong lay duoc pin</string>
+    <string name="notification_battery_percent">%1$s: %2$d%%</string>
+    <string name="notification_action_stop">Dung</string>
+
+    <string name="overlay_default_text">🎮 --</string>
+    <string name="overlay_battery_percent">🎮 %1$d%%</string>
+    <string name="overlay_battery_unavailable" formatted="false">🎮 ?%</string>
+    <string name="overlay_no_gamepad">🎮 --</string>
+
+    <string name="unknown_controller_name">Gamepad</string>
 </resources>
