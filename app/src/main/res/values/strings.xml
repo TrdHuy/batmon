@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">BatMon Demo</string>
+    <string name="controller_monitor_title">BatMon - PS4 Controller Monitor</string>
+    <string name="controller_monitor_subtitle">Theo doi tay cam PS4 (DualShock 4) va muc pin hien tai</string>
+    <string name="loading_controller_info">Dang tai thong tin tay cam...</string>
+    <string name="input_manager_unavailable">InputManager khong san sang tren thiet bi nay.</string>
+    <string name="no_ps4_controller_connected">Khong phat hien tay cam PS4 (DualShock 4) dang ket noi.</string>
+    <string name="unknown_device_name">Unknown device</string>
+
+    <string name="controller_name_line">Ten: %1$s</string>
+    <string name="controller_status_line">Trang thai: %1$s</string>
+    <string name="controller_status_connected">Connected</string>
+    <string name="controller_battery_line">Pin: %1$s</string>
+    <string name="controller_vendor_product_line">Vendor/Product: %1$s/%2$s</string>
+    <string name="controller_device_id_line">Device ID: %1$d</string>
+
+    <string name="battery_api_not_supported">Khong ho tro tren API &lt; 31</string>
+    <string name="battery_unavailable">Khong lay duoc pin</string>
+    <string name="battery_percentage_format">%1$d%% (%2$s)</string>
+    <string name="battery_status_charging">Charging</string>
+    <string name="battery_status_discharging">Discharging</string>
+    <string name="battery_status_full">Full</string>
+    <string name="battery_status_not_charging">Not charging</string>
+    <string name="battery_status_unknown">Unknown</string>
 </resources>
