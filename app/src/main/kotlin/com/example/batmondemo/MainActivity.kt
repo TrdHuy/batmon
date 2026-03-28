@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
@@ -68,6 +69,10 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogCompat.i("onCreate")
+        LogCompat.e(
+            "LIFECYCLE_MARKER onCreate pid=${Process.myPid()} " +
+                    "sdk=${Build.VERSION.SDK_INT} package=$packageName"
+        )
         setContentView(R.layout.activity_main)
 
         inputManager = getSystemService(InputManager::class.java)
@@ -82,6 +87,11 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         LogCompat.d("onResume")
+        LogCompat.e(
+            "LIFECYCLE_MARKER onResume pid=${Process.myPid()} " +
+                    "serviceRunning=${BatteryOverlayService.isRunning} " +
+                    "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+        )
         inputManager?.registerInputDeviceListener(inputDeviceListener, mainHandler)
         refreshControllerInfo()
         mainHandler.removeCallbacks(periodicRefresh)
