@@ -1,0 +1,63 @@
+<resources>
+    <string name="app_name">batmon</string>
+
+    <string name="controller_monitor_title">BatMon - PS4 Controller Monitor</string>
+    <string name="controller_monitor_subtitle">Monitor connected PS4 controllers (DualShock 4) and current battery level</string>
+    <string name="loading_controller_info">Loading controller information...</string>
+    <string name="input_manager_unavailable">InputManager is unavailable on this device.</string>
+    <string name="no_ps4_controller_connected">No connected PS4 controller (DualShock 4) detected.</string>
+    <string name="unknown_device_name">Unknown device</string>
+
+    <string name="controller_name_line">Name: %1$s</string>
+    <string name="controller_status_line">Status: %1$s</string>
+    <string name="controller_status_connected">Connected</string>
+    <string name="controller_battery_line">Battery: %1$s</string>
+    <string name="controller_vendor_product_line">Vendor/Product: %1$s/%2$s</string>
+    <string name="controller_device_id_line">Device ID: %1$d</string>
+
+    <string name="battery_api_not_supported">Not supported on API &lt; 31</string>
+    <string name="battery_unavailable">Battery unavailable</string>
+    <string name="battery_percentage_format">%1$d%% (%2$s)</string>
+    <string name="battery_status_charging">Charging</string>
+    <string name="battery_status_discharging">Discharging</string>
+    <string name="battery_status_full">Full</string>
+    <string name="battery_status_not_charging">Not charging</string>
+    <string name="battery_status_unknown">Unknown</string>
+
+    <string name="monitor_service_running">Monitoring: Running</string>
+    <string name="monitor_service_stopped">Monitoring: Stopped</string>
+    <string name="overlay_state_visible">Overlay: Visible</string>
+    <string name="overlay_state_hidden">Overlay: Hidden</string>
+
+    <string name="menu_config">Config</string>
+    <string name="menu_grant_overlay_permission">Grant overlay permission</string>
+    <string name="menu_start_monitoring">Start monitoring</string>
+    <string name="menu_show_overlay">Show floating overlay</string>
+    <string name="menu_hide_overlay">Hide floating overlay</string>
+    <string name="menu_stop_monitoring">Stop monitoring</string>
+
+    <string name="toast_overlay_permission_requested">Opened overlay permission screen.</string>
+    <string name="toast_overlay_permission_already_granted">Overlay permission is already granted.</string>
+    <string name="toast_overlay_permission_required">Overlay permission is required before starting monitoring.</string>
+    <string name="toast_notification_permission_required">Notification permission is required for status bar display.</string>
+    <string name="toast_monitoring_started">Gamepad battery monitoring started.</string>
+    <string name="toast_monitoring_stopped">Monitoring stopped.</string>
+    <string name="toast_overlay_shown">Floating overlay is now visible.</string>
+    <string name="toast_overlay_hidden">Floating overlay is now hidden.</string>
+
+    <string name="notification_channel_name">BatMon Gamepad Monitor</string>
+    <string name="notification_channel_description">Monitors gamepad battery and displays overlay.</string>
+    <string name="notification_title">BatMon Controller Battery</string>
+    <string name="notification_initial_text">Starting monitoring...</string>
+    <string name="notification_no_gamepad">No connected gamepad</string>
+    <string name="notification_battery_unavailable">%1$s: battery unavailable</string>
+    <string name="notification_battery_percent">%1$s: %2$d%%</string>
+    <string name="notification_action_stop">Stop</string>
+
+    <string name="overlay_default_text">🎮 --</string>
+    <string name="overlay_battery_percent">🎮 %1$d%%</string>
+    <string name="overlay_battery_unavailable" formatted="false">🎮 ?%</string>
+    <string name="overlay_no_gamepad">🎮 --</string>
+
+    <string name="unknown_controller_name">Gamepad</string>
+</resources>
