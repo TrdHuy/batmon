@@ -3,27 +3,29 @@ package com.example.batmondemo.utils
 import android.util.Log
 
 object LogCompat {
-    fun d(tag: String, message: String) {
-        Log.d(tag, message)
+    const val TAG = "ds4batmon"
+
+    fun d(message: String) {
+        Log.d(TAG, message)
     }
 
-    fun i(tag: String, message: String) {
-        Log.i(tag, message)
+    fun i(message: String) {
+        Log.i(TAG, message)
     }
 
-    fun w(tag: String, message: String) {
-        Log.w(tag, message)
+    fun w(message: String) {
+        Log.w(TAG, message)
     }
 
-    fun w(tag: String, message: String, throwable: Throwable) {
-        Log.w(tag, message, throwable)
+    fun w(message: String, throwable: Throwable) {
+        Log.w(TAG, message, throwable)
     }
 
-    fun e(tag: String, message: String) {
-        Log.e(tag, message)
+    fun e(message: String) {
+        Log.e(TAG, message)
     }
 
-    fun e(tag: String, message: String, throwable: Throwable) {
-        Log.e(tag, message, throwable)
+    fun e(message: String, throwable: Throwable) {
+        Log.e(TAG, message, throwable)
     }
 }
