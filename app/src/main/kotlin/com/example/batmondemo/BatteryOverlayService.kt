@@ -15,13 +15,14 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import android.view.Gravity
 import android.view.InputDevice
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import com.example.batmondemo.utils.LogCompat
+import com.example.batmondemo.utils.LogTags
 import kotlin.math.roundToInt
 
 class BatteryOverlayService : Service() {
@@ -31,7 +32,6 @@ class BatteryOverlayService : Service() {
         const val ACTION_SHOW_OVERLAY = "com.example.batmondemo.action.SHOW_OVERLAY"
         const val ACTION_HIDE_OVERLAY = "com.example.batmondemo.action.HIDE_OVERLAY"
 
-        private const val TAG = "BatteryOverlayService"
         private const val NOTIFICATION_ID = 31001
         private const val CHANNEL_ID = "batmon_monitor_channel"
         private const val UPDATE_INTERVAL_MS = 60_000L
@@ -67,6 +67,7 @@ class BatteryOverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        LogCompat.i(LogTags.SERVICE, "onCreate")
         inputManager = getSystemService(InputManager::class.java)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         notificationManager = getSystemService(NotificationManager::class.java)
@@ -75,13 +76,23 @@ class BatteryOverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action ?: ACTION_START_MONITORING
+        LogCompat.i(LogTags.SERVICE, "onStartCommand action=$action startId=$startId")
 
         if (action == ACTION_STOP_MONITORING) {
+            LogCompat.i(LogTags.SERVICE, "Received stop action, stopping service")
             stopSelf()
             return START_NOT_STICKY
         }
 
-        ensureForegroundStarted(getString(R.string.notification_initial_text), R.drawable.ic_battery_unknown)
+        if (!ensureForegroundStarted(
+                getString(R.string.notification_initial_text),
+                R.drawable.ic_battery_unknown
+            )
+        ) {
+            LogCompat.e(LogTags.SERVICE, "Cannot start foreground service due to missing prerequisites")
+            stopSelf()
+            return START_NOT_STICKY
+        }
         isRunning = true
 
         when (action) {
@@ -101,6 +112,7 @@ class BatteryOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        LogCompat.i(LogTags.SERVICE, "onDestroy")
         handler.removeCallbacks(updateRunnable)
         updateLoopStarted = false
 
@@ -122,22 +134,32 @@ class BatteryOverlayService : Service() {
         return null
     }
 
-    private fun ensureForegroundStarted(contentText: String, iconRes: Int) {
+    private fun ensureForegroundStarted(contentText: String, iconRes: Int): Boolean {
         val notification = buildNotification(contentText, iconRes)
 
-        if (!foregroundStarted) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-                )
+        return try {
+            if (!foregroundStarted) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+                    )
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+                foregroundStarted = true
+                LogCompat.i(LogTags.SERVICE, "Foreground started")
             } else {
-                startForeground(NOTIFICATION_ID, notification)
+                notificationManager?.notify(NOTIFICATION_ID, notification)
             }
-            foregroundStarted = true
-        } else {
-            notificationManager?.notify(NOTIFICATION_ID, notification)
+            true
+        } catch (securityException: SecurityException) {
+            LogCompat.e(LogTags.SERVICE, "Security exception while starting foreground", securityException)
+            false
+        } catch (throwable: Throwable) {
+            LogCompat.e(LogTags.SERVICE, "Unexpected exception while starting foreground", throwable)
+            false
         }
     }
 
@@ -166,6 +188,10 @@ class BatteryOverlayService : Service() {
 
         val iconRes = pickNotificationIcon(snapshot.batteryPercent)
         lastStatusText = notificationText
+        LogCompat.d(
+            LogTags.BATTERY,
+            "updateBatteryState controller=${snapshot.controllerName} percent=${snapshot.batteryPercent}"
+        )
 
         ensureForegroundStarted(notificationText, iconRes)
     }
@@ -219,7 +245,7 @@ class BatteryOverlayService : Service() {
             val normalized = if (capacity > 1.0f) capacity else capacity * 100f
             normalized.roundToInt().coerceIn(0, 100)
         } catch (exception: Exception) {
-            Log.w(TAG, "Failed to read gamepad battery state", exception)
+            LogCompat.w(LogTags.BATTERY, "Failed to read gamepad battery state", exception)
             null
         }
     }
@@ -231,11 +257,13 @@ class BatteryOverlayService : Service() {
 
     private fun ensureOverlayView() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            LogCompat.w(LogTags.OVERLAY, "Overlay not supported below Android O")
             isOverlayVisible = false
             return
         }
 
         if (!Settings.canDrawOverlays(this)) {
+            LogCompat.w(LogTags.OVERLAY, "Overlay permission missing, cannot show overlay")
             isOverlayVisible = false
             return
         }
@@ -269,8 +297,9 @@ class BatteryOverlayService : Service() {
             overlayView = view
             overlayTextView = textView
             isOverlayVisible = true
+            LogCompat.i(LogTags.OVERLAY, "Overlay attached")
         } catch (exception: Exception) {
-            Log.w(TAG, "Failed to attach overlay view", exception)
+            LogCompat.w(LogTags.OVERLAY, "Failed to attach overlay view", exception)
             overlayView = null
             overlayTextView = null
             isOverlayVisible = false
@@ -281,8 +310,9 @@ class BatteryOverlayService : Service() {
         val currentView = overlayView ?: return
         try {
             windowManager?.removeView(currentView)
+            LogCompat.i(LogTags.OVERLAY, "Overlay removed")
         } catch (exception: Exception) {
-            Log.w(TAG, "Failed to remove overlay view", exception)
+            LogCompat.w(LogTags.OVERLAY, "Failed to remove overlay view", exception)
         }
 
         overlayView = null
@@ -355,6 +385,7 @@ class BatteryOverlayService : Service() {
             description = getString(R.string.notification_channel_description)
         }
         notificationManager?.createNotificationChannel(channel)
+        LogCompat.d(LogTags.SERVICE, "Notification channel ensured")
     }
 
     private fun pendingIntentFlags(): Int {

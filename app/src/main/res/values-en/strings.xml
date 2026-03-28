@@ -40,10 +40,12 @@
     <string name="toast_overlay_permission_already_granted">Overlay permission is already granted.</string>
     <string name="toast_overlay_permission_required">Overlay permission is required before starting monitoring.</string>
     <string name="toast_notification_permission_required">Notification permission is required for status bar display.</string>
+    <string name="toast_bluetooth_permission_required">Bluetooth permission is required for controller monitoring.</string>
     <string name="toast_monitoring_started">Gamepad battery monitoring started.</string>
     <string name="toast_monitoring_stopped">Monitoring stopped.</string>
     <string name="toast_overlay_shown">Floating overlay is now visible.</string>
     <string name="toast_overlay_hidden">Floating overlay is now hidden.</string>
+    <string name="toast_action_failed">Action failed, check logs for details.</string>
 
     <string name="notification_channel_name">BatMon Gamepad Monitor</string>
     <string name="notification_channel_description">Monitors gamepad battery and displays overlay.</string>

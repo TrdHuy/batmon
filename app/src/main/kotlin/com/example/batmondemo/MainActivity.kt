@@ -13,7 +13,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.text.TextUtils
-import android.util.Log
 import android.view.Gravity
 import android.view.InputDevice
 import android.view.MenuItem
@@ -21,11 +20,12 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toolbar
+import com.example.batmondemo.utils.LogCompat
+import com.example.batmondemo.utils.LogTags
 import java.util.Locale
 
 class MainActivity : Activity() {
     companion object {
-        private const val TAG = "MainActivity"
         private const val SONY_VENDOR_ID = 0x054C
         private val DUALSHOCK4_PRODUCT_IDS = intArrayOf(
             0x05C4, // CUH-ZCT1
@@ -33,6 +33,7 @@ class MainActivity : Activity() {
         )
         private const val REFRESH_INTERVAL_MS = 5_000L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
+        private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -42,6 +43,7 @@ class MainActivity : Activity() {
     private lateinit var deviceInfoView: TextView
 
     private var pendingStartAfterNotificationPermission = false
+    private var pendingStartAfterBluetoothPermission = false
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -66,6 +68,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LogCompat.i(LogTags.ACTIVITY, "onCreate")
         setContentView(R.layout.activity_main)
 
         inputManager = getSystemService(InputManager::class.java)
@@ -79,6 +82,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        LogCompat.d(LogTags.ACTIVITY, "onResume")
         inputManager?.registerInputDeviceListener(inputDeviceListener, mainHandler)
         refreshControllerInfo()
         mainHandler.removeCallbacks(periodicRefresh)
@@ -87,6 +91,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        LogCompat.d(LogTags.ACTIVITY, "onPause")
         inputManager?.unregisterInputDeviceListener(inputDeviceListener)
         mainHandler.removeCallbacks(periodicRefresh)
     }
@@ -98,28 +103,49 @@ class MainActivity : Activity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
+        if (requestCode == REQUEST_CODE_BLUETOOTH_CONNECT) {
+            handleBluetoothPermissionResult(grantResults)
+            return
+        }
+
         if (requestCode != REQUEST_CODE_POST_NOTIFICATIONS) {
             return
         }
 
-        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+        val granted = grantResults.isNotEmpty() &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             pendingStartAfterNotificationPermission = false
+            LogCompat.w(LogTags.PERMISSION, "POST_NOTIFICATIONS denied")
             showToast(R.string.toast_notification_permission_required)
             return
         }
 
         if (pendingStartAfterNotificationPermission) {
             pendingStartAfterNotificationPermission = false
-            dispatchServiceAction(BatteryOverlayService.ACTION_START_MONITORING, true)
-            showToast(R.string.toast_monitoring_started)
+            LogCompat.i(LogTags.PERMISSION, "POST_NOTIFICATIONS granted, continue startMonitoring")
+            if (shouldRequestBluetoothConnectPermission()) {
+                pendingStartAfterBluetoothPermission = true
+                requestPermissions(
+                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                    REQUEST_CODE_BLUETOOTH_CONNECT
+                )
+                showToast(R.string.toast_bluetooth_permission_required)
+                return
+            }
+
+            if (dispatchServiceAction(BatteryOverlayService.ACTION_START_MONITORING, true)) {
+                showToast(R.string.toast_monitoring_started)
+            }
         }
     }
 
     private fun setupToolbarMenu() {
+        LogCompat.d(LogTags.MENU, "setupToolbarMenu")
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.setOnMenuItemClickListener { item ->
             if (item.itemId == R.id.action_config) {
+                LogCompat.d(LogTags.MENU, "Config icon clicked")
                 showConfigMenu()
                 return@setOnMenuItemClickListener true
             }
@@ -128,48 +154,76 @@ class MainActivity : Activity() {
     }
 
     private fun showConfigMenu() {
-        val popupMenu = PopupMenu(this, toolbar, Gravity.END)
-        popupMenu.menuInflater.inflate(R.menu.config_menu, popupMenu.menu)
-        popupMenu.setOnMenuItemClickListener { item -> handleConfigAction(item) }
-        popupMenu.show()
+        runCatching {
+            val popupMenu = PopupMenu(this, toolbar, Gravity.END)
+            popupMenu.menuInflater.inflate(R.menu.config_menu, popupMenu.menu)
+            popupMenu.setOnMenuItemClickListener { item -> handleConfigAction(item) }
+            popupMenu.show()
+            LogCompat.d(LogTags.MENU, "Config menu shown")
+        }.onFailure { throwable ->
+            LogCompat.e(LogTags.MENU, "Failed to show config menu", throwable)
+            showToast(R.string.toast_action_failed)
+        }
     }
 
     private fun handleConfigAction(item: MenuItem): Boolean {
-        when (item.itemId) {
+        LogCompat.i(LogTags.MENU, "Menu action selected: id=${item.itemId}")
+        return when (item.itemId) {
             R.id.action_grant_overlay_permission -> {
                 requestOverlayPermission()
-                return true
+                true
             }
 
             R.id.action_start_monitoring -> {
                 startMonitoring()
-                return true
+                true
             }
 
             R.id.action_show_overlay -> {
-                dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, true)
-                showToast(R.string.toast_overlay_shown)
-                return true
+                if (!Settings.canDrawOverlays(this)) {
+                    LogCompat.w(LogTags.PERMISSION, "Overlay permission missing for action_show_overlay")
+                    requestOverlayPermission()
+                    showToast(R.string.toast_overlay_permission_required)
+                    return true
+                }
+
+                val foreground = !BatteryOverlayService.isRunning
+                if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
+                    return true
+                }
+
+                if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, foreground)) {
+                    showToast(R.string.toast_overlay_shown)
+                }
+                true
             }
 
             R.id.action_hide_overlay -> {
-                dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, true)
-                showToast(R.string.toast_overlay_hidden)
-                return true
+                val foreground = !BatteryOverlayService.isRunning
+                if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
+                    return true
+                }
+
+                if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, foreground)) {
+                    showToast(R.string.toast_overlay_hidden)
+                }
+                true
             }
 
             R.id.action_stop_monitoring -> {
-                dispatchServiceAction(BatteryOverlayService.ACTION_STOP_MONITORING, false)
-                showToast(R.string.toast_monitoring_stopped)
-                return true
+                if (dispatchServiceAction(BatteryOverlayService.ACTION_STOP_MONITORING, false)) {
+                    showToast(R.string.toast_monitoring_stopped)
+                }
+                true
             }
 
-            else -> return false
+            else -> false
         }
     }
 
     private fun requestOverlayPermission() {
         if (Settings.canDrawOverlays(this)) {
+            LogCompat.d(LogTags.PERMISSION, "Overlay permission already granted")
             showToast(R.string.toast_overlay_permission_already_granted)
             return
         }
@@ -178,28 +232,32 @@ class MainActivity : Activity() {
             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
             Uri.parse("package:$packageName")
         )
-        startActivity(intent)
-        showToast(R.string.toast_overlay_permission_requested)
+        runCatching {
+            startActivity(intent)
+            LogCompat.i(LogTags.PERMISSION, "Opened overlay permission screen")
+            showToast(R.string.toast_overlay_permission_requested)
+        }.onFailure { throwable ->
+            LogCompat.e(LogTags.PERMISSION, "Failed to open overlay permission screen", throwable)
+            showToast(R.string.toast_action_failed)
+        }
     }
 
     private fun startMonitoring() {
+        LogCompat.i(LogTags.MENU, "startMonitoring invoked")
         if (!Settings.canDrawOverlays(this)) {
+            LogCompat.w(LogTags.PERMISSION, "Overlay permission missing for startMonitoring")
             requestOverlayPermission()
             showToast(R.string.toast_overlay_permission_required)
             return
         }
 
-        if (shouldRequestNotificationPermission()) {
-            pendingStartAfterNotificationPermission = true
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
-            )
+        if (!ensureForegroundPermissions(autoResumeStartMonitoring = true)) {
             return
         }
 
-        dispatchServiceAction(BatteryOverlayService.ACTION_START_MONITORING, true)
-        showToast(R.string.toast_monitoring_started)
+        if (dispatchServiceAction(BatteryOverlayService.ACTION_START_MONITORING, true)) {
+            showToast(R.string.toast_monitoring_started)
+        }
     }
 
     private fun shouldRequestNotificationPermission(): Boolean {
@@ -210,18 +268,84 @@ class MainActivity : Activity() {
                 PackageManager.PERMISSION_GRANTED
     }
 
-    private fun dispatchServiceAction(action: String, foreground: Boolean) {
+    private fun shouldRequestBluetoothConnectPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return false
+        }
+        return checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) !=
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun ensureForegroundPermissions(autoResumeStartMonitoring: Boolean): Boolean {
+        if (shouldRequestNotificationPermission()) {
+            LogCompat.w(LogTags.PERMISSION, "POST_NOTIFICATIONS not granted")
+            pendingStartAfterNotificationPermission = autoResumeStartMonitoring
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_CODE_POST_NOTIFICATIONS
+            )
+            if (!autoResumeStartMonitoring) {
+                showToast(R.string.toast_notification_permission_required)
+            }
+            return false
+        }
+
+        if (shouldRequestBluetoothConnectPermission()) {
+            LogCompat.w(LogTags.PERMISSION, "BLUETOOTH_CONNECT not granted")
+            pendingStartAfterBluetoothPermission = autoResumeStartMonitoring
+            requestPermissions(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                REQUEST_CODE_BLUETOOTH_CONNECT
+            )
+            showToast(R.string.toast_bluetooth_permission_required)
+            return false
+        }
+
+        return true
+    }
+
+    private fun handleBluetoothPermissionResult(grantResults: IntArray) {
+        val granted = grantResults.isNotEmpty() &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            pendingStartAfterBluetoothPermission = false
+            LogCompat.w(LogTags.PERMISSION, "BLUETOOTH_CONNECT denied")
+            showToast(R.string.toast_bluetooth_permission_required)
+            return
+        }
+
+        if (pendingStartAfterBluetoothPermission) {
+            pendingStartAfterBluetoothPermission = false
+            LogCompat.i(LogTags.PERMISSION, "BLUETOOTH_CONNECT granted, continue startMonitoring")
+            if (dispatchServiceAction(BatteryOverlayService.ACTION_START_MONITORING, true)) {
+                showToast(R.string.toast_monitoring_started)
+            }
+        }
+    }
+
+    private fun dispatchServiceAction(action: String, foreground: Boolean): Boolean {
         val intent = Intent(this, BatteryOverlayService::class.java).apply {
             this.action = action
         }
 
-        if (foreground && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
+        val result = runCatching {
+            if (foreground && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                LogCompat.i(LogTags.SERVICE, "startForegroundService action=$action")
+                startForegroundService(intent)
+            } else {
+                LogCompat.i(LogTags.SERVICE, "startService action=$action")
+                startService(intent)
+            }
+        }
+
+        result.exceptionOrNull()?.let { throwable ->
+            LogCompat.e(LogTags.SERVICE, "Failed to dispatch service action=$action", throwable)
+            showToast(R.string.toast_action_failed)
+            return false
         }
 
         refreshControllerInfo()
+        return true
     }
 
     private fun refreshControllerInfo() {
@@ -243,15 +367,16 @@ class MainActivity : Activity() {
         val sections = mutableListOf<String>()
         sections.add("$monitorState\n$overlayState")
 
-        if (inputManager == null) {
+        val manager = inputManager
+        if (manager == null) {
             sections.add(getString(R.string.input_manager_unavailable))
             deviceInfoView.text = TextUtils.join("\n\n", sections)
             return
         }
 
         val ps4Controllers = mutableListOf<String>()
-        for (deviceId in inputManager!!.inputDeviceIds) {
-            val device = inputManager!!.getInputDevice(deviceId) ?: continue
+        for (deviceId in manager.inputDeviceIds) {
+            val device = manager.getInputDevice(deviceId) ?: continue
             if (!isGamepad(device) || !isPs4Controller(device)) {
                 continue
             }
@@ -264,6 +389,10 @@ class MainActivity : Activity() {
             sections.add(TextUtils.join("\n\n", ps4Controllers))
         }
 
+        LogCompat.d(
+            LogTags.ACTIVITY,
+            "refreshControllerInfo controllers=${ps4Controllers.size} serviceRunning=${BatteryOverlayService.isRunning} overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+        )
         deviceInfoView.text = TextUtils.join("\n\n", sections)
     }
 
@@ -343,7 +472,7 @@ class MainActivity : Activity() {
                 batteryStatusLabel(batteryState.status)
             )
         } catch (exception: Exception) {
-            Log.w(TAG, "Failed to read battery state from InputDevice", exception)
+            LogCompat.w(LogTags.BATTERY, "Failed to read battery state from InputDevice", exception)
             getString(R.string.battery_unavailable)
         }
     }

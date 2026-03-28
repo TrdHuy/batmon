@@ -40,10 +40,12 @@
     <string name="toast_overlay_permission_already_granted">Quyền overlay đã được cấp.</string>
     <string name="toast_overlay_permission_required">Cần cấp quyền overlay trước khi bật monitoring.</string>
     <string name="toast_notification_permission_required">Cần cấp quyền thông báo để hiển thị status bar.</string>
+    <string name="toast_bluetooth_permission_required">Cần cấp quyền Bluetooth để chạy monitoring tay cầm.</string>
     <string name="toast_monitoring_started">Đã bật monitoring pin gamepad.</string>
     <string name="toast_monitoring_stopped">Đã dừng monitoring.</string>
     <string name="toast_overlay_shown">Đã bật floating overlay.</string>
     <string name="toast_overlay_hidden">Đã ẩn floating overlay.</string>
+    <string name="toast_action_failed">Thao tác thất bại, vui lòng kiểm tra log.</string>
 
     <string name="notification_channel_name">BatMon Gamepad Monitor</string>
     <string name="notification_channel_description">Theo dõi pin tay cầm gamepad và hiển thị overlay.</string>
