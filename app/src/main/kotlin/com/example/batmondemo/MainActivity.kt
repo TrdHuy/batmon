@@ -2,6 +2,7 @@ package com.example.batmondemo
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.BatteryState
@@ -14,10 +15,8 @@ import android.os.Looper
 import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
-import android.view.Gravity
 import android.view.InputDevice
-import android.view.MenuItem
-import android.widget.PopupMenu
+import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toolbar
@@ -155,78 +154,115 @@ class MainActivity : Activity() {
         toolbar.setOnMenuItemClickListener { item ->
             if (item.itemId == R.id.action_config) {
                 LogCompat.d("Config icon clicked")
-                showConfigMenu()
+                showConfigDialog()
                 return@setOnMenuItemClickListener true
             }
             false
         }
     }
 
-    private fun showConfigMenu() {
+    private fun showConfigDialog() {
         runCatching {
-            val popupMenu = PopupMenu(this, toolbar, Gravity.END)
-            popupMenu.menuInflater.inflate(R.menu.config_menu, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { item -> handleConfigAction(item) }
-            popupMenu.show()
-            LogCompat.d("Config menu shown")
-        }.onFailure { throwable ->
-            LogCompat.e("Failed to show config menu", throwable)
-            showToast(R.string.toast_action_failed)
-        }
-    }
+            val dialogView = layoutInflater.inflate(R.layout.dialog_config_checkboxes, null)
+            val overlayPermissionCheckBox =
+                dialogView.findViewById<CheckBox>(R.id.checkboxOverlayPermission)
+            val monitoringCheckBox =
+                dialogView.findViewById<CheckBox>(R.id.checkboxMonitoring)
+            val floatingOverlayCheckBox =
+                dialogView.findViewById<CheckBox>(R.id.checkboxFloatingOverlay)
 
-    private fun handleConfigAction(item: MenuItem): Boolean {
-        LogCompat.i("Menu action selected: id=${item.itemId}")
-        return when (item.itemId) {
-            R.id.action_grant_overlay_permission -> {
-                requestOverlayPermission()
-                true
+            var syncing = false
+            fun syncState() {
+                syncing = true
+                val hasOverlayPermission = Settings.canDrawOverlays(this)
+                overlayPermissionCheckBox.isChecked = hasOverlayPermission
+                monitoringCheckBox.isChecked = BatteryOverlayService.isRunning
+                floatingOverlayCheckBox.isEnabled = hasOverlayPermission
+                floatingOverlayCheckBox.isChecked = BatteryOverlayService.isOverlayVisible
+                syncing = false
+                LogCompat.d(
+                    "Config dialog sync: overlayPermission=$hasOverlayPermission " +
+                            "monitoring=${BatteryOverlayService.isRunning} " +
+                            "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+                )
             }
 
-            R.id.action_start_monitoring -> {
-                startMonitoring()
-                true
-            }
-
-            R.id.action_show_overlay -> {
-                if (!Settings.canDrawOverlays(this)) {
-                    LogCompat.w("Overlay permission missing for action_show_overlay")
+            overlayPermissionCheckBox.setOnCheckedChangeListener { _, isChecked ->
+                if (syncing) {
+                    return@setOnCheckedChangeListener
+                }
+                LogCompat.i("Config checkbox changed: overlayPermission=$isChecked")
+                if (isChecked && !Settings.canDrawOverlays(this)) {
                     requestOverlayPermission()
-                    showToast(R.string.toast_overlay_permission_required)
-                    return true
+                } else if (!isChecked && Settings.canDrawOverlays(this)) {
+                    showToast(R.string.toast_overlay_permission_managed_by_system)
                 }
-
-                val foreground = !BatteryOverlayService.isRunning
-                if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
-                    return true
-                }
-
-                if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, foreground)) {
-                    showToast(R.string.toast_overlay_shown)
-                }
-                true
+                mainHandler.postDelayed({ syncState() }, 250L)
             }
 
-            R.id.action_hide_overlay -> {
-                val foreground = !BatteryOverlayService.isRunning
-                if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
-                    return true
+            monitoringCheckBox.setOnCheckedChangeListener { _, isChecked ->
+                if (syncing) {
+                    return@setOnCheckedChangeListener
                 }
-
-                if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, foreground)) {
-                    showToast(R.string.toast_overlay_hidden)
-                }
-                true
-            }
-
-            R.id.action_stop_monitoring -> {
-                if (dispatchServiceAction(BatteryOverlayService.ACTION_STOP_MONITORING, false)) {
+                LogCompat.i("Config checkbox changed: monitoring=$isChecked")
+                if (isChecked) {
+                    startMonitoring()
+                } else if (dispatchServiceAction(BatteryOverlayService.ACTION_STOP_MONITORING, false)) {
                     showToast(R.string.toast_monitoring_stopped)
                 }
-                true
+                mainHandler.postDelayed({ syncState() }, 350L)
             }
 
-            else -> false
+            floatingOverlayCheckBox.setOnCheckedChangeListener { _, isChecked ->
+                if (syncing) {
+                    return@setOnCheckedChangeListener
+                }
+                LogCompat.i("Config checkbox changed: floatingOverlay=$isChecked")
+                if (isChecked) {
+                    if (!Settings.canDrawOverlays(this)) {
+                        requestOverlayPermission()
+                        showToast(R.string.toast_overlay_permission_required)
+                        mainHandler.postDelayed({ syncState() }, 250L)
+                        return@setOnCheckedChangeListener
+                    }
+
+                    val foreground = !BatteryOverlayService.isRunning
+                    if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
+                        mainHandler.postDelayed({ syncState() }, 250L)
+                        return@setOnCheckedChangeListener
+                    }
+
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, foreground)) {
+                        showToast(R.string.toast_overlay_shown)
+                    }
+                } else {
+                    val foreground = !BatteryOverlayService.isRunning
+                    if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
+                        mainHandler.postDelayed({ syncState() }, 250L)
+                        return@setOnCheckedChangeListener
+                    }
+
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, foreground)) {
+                        showToast(R.string.toast_overlay_hidden)
+                    }
+                }
+                mainHandler.postDelayed({ syncState() }, 350L)
+            }
+
+            syncState()
+
+            AlertDialog.Builder(this)
+                .setTitle(R.string.menu_config)
+                .setView(dialogView)
+                .setPositiveButton(R.string.config_dialog_close, null)
+                .setOnDismissListener {
+                    refreshControllerInfo()
+                }
+                .show()
+            LogCompat.d("Config dialog shown")
+        }.onFailure { throwable ->
+            LogCompat.e("Failed to show config dialog", throwable)
+            showToast(R.string.toast_action_failed)
         }
     }
 

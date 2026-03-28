@@ -35,9 +35,14 @@
     <string name="menu_show_overlay">Show floating overlay</string>
     <string name="menu_hide_overlay">Hide floating overlay</string>
     <string name="menu_stop_monitoring">Stop monitoring</string>
+    <string name="config_checkbox_overlay_permission">Overlay permission</string>
+    <string name="config_checkbox_monitoring">Enable monitoring</string>
+    <string name="config_checkbox_floating_overlay">Show floating overlay</string>
+    <string name="config_dialog_close">Close</string>
 
     <string name="toast_overlay_permission_requested">Opened overlay permission screen.</string>
     <string name="toast_overlay_permission_already_granted">Overlay permission is already granted.</string>
+    <string name="toast_overlay_permission_managed_by_system">Overlay permission cannot be disabled here. Use system settings.</string>
     <string name="toast_overlay_permission_required">Overlay permission is required before starting monitoring.</string>
     <string name="toast_notification_permission_required">Notification permission is required for status bar display.</string>
     <string name="toast_bluetooth_permission_required">Bluetooth permission is required for controller monitoring.</string>

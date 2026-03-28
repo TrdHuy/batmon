@@ -35,9 +35,14 @@
     <string name="menu_show_overlay">Hiện floating overlay</string>
     <string name="menu_hide_overlay">Ẩn floating overlay</string>
     <string name="menu_stop_monitoring">Dừng monitoring</string>
+    <string name="config_checkbox_overlay_permission">Quyền overlay</string>
+    <string name="config_checkbox_monitoring">Bật monitoring</string>
+    <string name="config_checkbox_floating_overlay">Hiển thị floating overlay</string>
+    <string name="config_dialog_close">Đóng</string>
 
     <string name="toast_overlay_permission_requested">Đã mở màn hình cấp quyền overlay.</string>
     <string name="toast_overlay_permission_already_granted">Quyền overlay đã được cấp.</string>
+    <string name="toast_overlay_permission_managed_by_system">Không thể tắt quyền overlay tại đây, hãy vào Cài đặt hệ thống.</string>
     <string name="toast_overlay_permission_required">Cần cấp quyền overlay trước khi bật monitoring.</string>
     <string name="toast_notification_permission_required">Cần cấp quyền thông báo để hiển thị status bar.</string>
     <string name="toast_bluetooth_permission_required">Cần cấp quyền Bluetooth để chạy monitoring tay cầm.</string>
