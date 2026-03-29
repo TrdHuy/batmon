@@ -55,6 +55,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@android:color/transparent"
+                    android:layout_marginTop="24dp"
                     android:minHeight="0dp"
                     app:popupTheme="@style/Theme.AppCompat.Light"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -65,7 +66,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    app:layout_constraintGuide_percent="0.14" />
+                    app:layout_constraintGuide_percent="0.18" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/statusPanel"
