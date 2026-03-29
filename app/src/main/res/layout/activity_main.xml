@@ -25,22 +25,22 @@
         android:layout_height="0dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/guideEnd95"
-        app:layout_constraintStart_toEndOf="@id/guideStart5"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+            android:layout_height="match_parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/phoneScreenCard"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:background="@drawable/bg_ui_phone_shell"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:paddingStart="12dp"
                 android:paddingTop="10dp"
                 android:paddingEnd="12dp"
@@ -48,55 +48,93 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.48"
-                app:layout_constraintWidth_percent="0.86">
+                app:layout_constraintTop_toTopOf="parent">
 
-                <android.widget.Toolbar
+                <androidx.appcompat.widget.Toolbar
                     android:id="@+id/topToolbar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@android:color/transparent"
                     android:minHeight="0dp"
-                    android:popupTheme="@android:style/Theme.Material.Light"
+                    app:popupTheme="@style/Theme.AppCompat.Light"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/statusPanelTopGuide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    app:layout_constraintGuide_percent="0.14" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/statusPanel"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:layout_marginTop="16dp"
                     android:background="@drawable/bg_ui_status_panel"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     app:layout_constraintDimensionRatio="H,4:3"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide">
 
                     <ImageView
-                        android:id="@+id/chargingIcon"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_marginTop="8dp"
-                        android:contentDescription="@string/cd_charging_icon"
-                        android:src="@android:drawable/ic_lock_idle_charging"
-                        android:tint="#F5A623"
+                        android:id="@+id/controllerIcon"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:contentDescription="@string/cd_controller_icon"
+                        android:src="@drawable/ic_controller_placeholder"
+                        android:tint="#7E96AA"
+                        app:layout_constraintDimensionRatio="1:1"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.60"
+                        app:layout_constraintWidth_percent="0.23" />
+
+                    <TextView
+                        android:id="@+id/deviceInfoView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginEnd="14dp"
+                        android:layout_marginBottom="12dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:text="PlayStation 4 Controller Connected"
+                        android:textColor="#D8DCE2"
+                        android:textSize="14sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/batteryCluster"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintBottom_toTopOf="@id/statusPanel"
+                    app:layout_constraintEnd_toEndOf="@id/statusPanel"
+                    app:layout_constraintStart_toStartOf="@id/statusPanel"
+                    app:layout_constraintTop_toTopOf="@id/statusPanel"
+                    app:layout_constraintWidth_percent="0.34">
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/batteryCircle"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
-                        android:layout_marginTop="2dp"
                         android:indeterminate="false"
                         app:indicatorColor="#3D8BFF"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintDimensionRatio="1:1"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/chargingIcon"
-                        app:layout_constraintWidth_percent="0.36"
+                        app:layout_constraintTop_toTopOf="parent"
                         app:trackColor="#2A3F58"
                         app:trackThickness="8dp" />
 
@@ -126,35 +164,17 @@
                         app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
 
                     <ImageView
-                        android:id="@+id/controllerIcon"
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="6dp"
-                        android:contentDescription="@string/cd_controller_icon"
-                        android:src="@drawable/ic_controller_placeholder"
-                        android:tint="#7E96AA"
-                        app:layout_constraintDimensionRatio="1:1"
+                        android:id="@+id/chargingIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="@string/cd_charging_icon"
+                        android:elevation="6dp"
+                        android:src="@android:drawable/ic_lock_idle_charging"
+                        android:tint="#F5A623"
+                        android:translationY="-10dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/batteryCircle"
-                        app:layout_constraintWidth_percent="0.23" />
-
-                    <TextView
-                        android:id="@+id/deviceInfoView"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginEnd="14dp"
-                        android:layout_marginBottom="12dp"
-                        android:ellipsize="end"
-                        android:gravity="center"
-                        android:maxLines="2"
-                        android:text="PlayStation 4 Controller Connected"
-                        android:textColor="#D8DCE2"
-                        android:textSize="14sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

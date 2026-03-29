@@ -1,7 +1,6 @@
 package com.android.synclab.glimpse.presentation
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,7 +15,8 @@ import android.provider.Settings
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.Toolbar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
@@ -26,7 +26,7 @@ import com.android.synclab.glimpse.utils.LogCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
     companion object {
         private const val REFRESH_INTERVAL_MS = 5_000L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
