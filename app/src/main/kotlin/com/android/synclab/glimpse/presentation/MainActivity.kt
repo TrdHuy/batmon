@@ -19,9 +19,9 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toolbar
 import com.android.synclab.glimpse.R
-import com.android.synclab.glimpse.data.repository.GamepadRepositoryImpl
-import com.android.synclab.glimpse.domain.model.BatteryChargeStatus
-import com.android.synclab.glimpse.domain.model.ControllerInfo
+import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.utils.LogCompat
@@ -76,9 +76,9 @@ class MainActivity : Activity() {
 
         setContentView(R.layout.activity_main)
 
-        inputDeviceGateway = InputDeviceGateway(applicationContext)
-        val repository = GamepadRepositoryImpl(inputDeviceGateway)
-        getConnectedPs4ControllersUseCase = GetConnectedPs4ControllersUseCase(repository)
+        val appContainer = AppContainer.from(applicationContext)
+        inputDeviceGateway = appContainer.provideInputDeviceGateway()
+        getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase()
 
         toolbar = findViewById(R.id.topToolbar)
         deviceInfoView = findViewById(R.id.deviceInfoView)

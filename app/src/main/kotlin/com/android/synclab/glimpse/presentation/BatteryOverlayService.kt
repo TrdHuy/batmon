@@ -8,10 +8,9 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import com.android.synclab.glimpse.R
-import com.android.synclab.glimpse.data.repository.GamepadRepositoryImpl
 import com.android.synclab.glimpse.data.state.MonitoringStateStore
+import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCase
-import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
 import com.android.synclab.glimpse.utils.LogCompat
@@ -69,12 +68,11 @@ class BatteryOverlayService : Service() {
         super.onCreate()
         LogCompat.i("onCreate")
 
-        val inputDeviceGateway = InputDeviceGateway(applicationContext)
-        val repository = GamepadRepositoryImpl(inputDeviceGateway)
-        getPrimaryGamepadBatteryUseCase = GetPrimaryGamepadBatteryUseCase(repository)
+        val appContainer = AppContainer.from(applicationContext)
+        getPrimaryGamepadBatteryUseCase = appContainer.providePrimaryGamepadBatteryUseCase()
 
-        overlayWindowController = OverlayWindowController(this)
-        notificationController = MonitoringNotificationController(
+        overlayWindowController = appContainer.provideOverlayWindowController(this)
+        notificationController = appContainer.provideMonitoringNotificationController(
             service = this,
             channelId = CHANNEL_ID,
             stopAction = ACTION_STOP_MONITORING

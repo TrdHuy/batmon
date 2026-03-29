@@ -1,12 +1,12 @@
-package com.android.synclab.glimpse.data.repository
+package com.android.synclab.glimpse.infra.repository
 
 import android.hardware.BatteryState
 import android.os.Build
 import android.view.InputDevice
-import com.android.synclab.glimpse.domain.model.BatteryChargeStatus
-import com.android.synclab.glimpse.domain.model.ControllerInfo
-import com.android.synclab.glimpse.domain.model.GamepadBatterySnapshot
-import com.android.synclab.glimpse.domain.repository.GamepadRepository
+import com.android.synclab.glimpse.base.contracts.GamepadRepository
+import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.data.model.GamepadBatterySnapshot
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.utils.LogCompat
 import java.util.Locale

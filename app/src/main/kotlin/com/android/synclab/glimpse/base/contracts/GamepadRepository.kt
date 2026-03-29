@@ -1,7 +1,7 @@
-package com.android.synclab.glimpse.domain.repository
+package com.android.synclab.glimpse.base.contracts
 
-import com.android.synclab.glimpse.domain.model.ControllerInfo
-import com.android.synclab.glimpse.domain.model.GamepadBatterySnapshot
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.data.model.GamepadBatterySnapshot
 
 interface GamepadRepository {
     fun getConnectedPs4Controllers(defaultDeviceName: String): List<ControllerInfo>

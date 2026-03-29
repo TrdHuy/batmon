@@ -1,4 +1,4 @@
-package com.android.synclab.glimpse.domain.model
+package com.android.synclab.glimpse.data.model
 
 enum class BatteryChargeStatus {
     CHARGING,

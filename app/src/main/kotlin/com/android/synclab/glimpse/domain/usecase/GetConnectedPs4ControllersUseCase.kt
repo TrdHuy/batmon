@@ -1,7 +1,7 @@
 package com.android.synclab.glimpse.domain.usecase
 
-import com.android.synclab.glimpse.domain.model.ControllerInfo
-import com.android.synclab.glimpse.domain.repository.GamepadRepository
+import com.android.synclab.glimpse.base.contracts.GamepadRepository
+import com.android.synclab.glimpse.data.model.ControllerInfo
 
 class GetConnectedPs4ControllersUseCase(
     private val repository: GamepadRepository
