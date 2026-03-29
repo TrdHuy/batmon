@@ -2,21 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_view"
-        android:title="Home" />
+        android:icon="@drawable/ic_nav_home"
+        android:title="@string/nav_home" />
 
     <item
-        android:id="@+id/nav_monitor"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
-        android:title="Monitor" />
+        android:id="@+id/nav_activity"
+        android:icon="@drawable/ic_nav_list"
+        android:title="@string/nav_activity" />
 
     <item
-        android:id="@+id/nav_profiles"
-        android:icon="@android:drawable/ic_menu_myplaces"
-        android:title="Profiles" />
-
-    <item
-        android:id="@+id/nav_more"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="More" />
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_nav_profile"
+        android:title="@string/nav_profile" />
 </menu>

@@ -67,4 +67,22 @@
     <string name="overlay_no_gamepad">🎮 --</string>
 
     <string name="unknown_controller_name">Gamepad</string>
+    <string name="settings_background_monitoring">Background Monitoring</string>
+    <string name="settings_live_overlay">Live Battery Overlay</string>
+    <string name="settings_customize_vibe">Customize Vibe (Lightbar)</string>
+    <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
+    <string name="cd_background_monitoring_icon">Background monitoring icon</string>
+    <string name="cd_live_overlay_icon">Live battery overlay icon</string>
+    <string name="cd_customize_vibe_icon">Customize vibe icon</string>
+    <string name="cd_vibe_color_indicator">Vibe color indicator</string>
+    <string name="cd_limit_charging_icon">Limit charging icon</string>
+    <string name="cd_charging_icon">Charging icon</string>
+    <string name="cd_controller_icon">Controller icon</string>
+    <string name="status_card_controller_connected">PlayStation 4 Controller Connected</string>
+    <string name="status_card_controller_disconnected">No PlayStation 4 Controller Connected</string>
+    <string name="status_card_battery_unknown" formatted="false">--%</string>
+    <string name="status_card_battery_percent">%1$d%%</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_activity">Activity</string>
+    <string name="nav_profile">Profile</string>
 </resources>
