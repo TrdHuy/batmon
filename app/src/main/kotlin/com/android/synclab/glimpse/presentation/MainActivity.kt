@@ -1,11 +1,10 @@
-package com.example.batmondemo
+package com.android.synclab.glimpse.presentation
 
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.hardware.BatteryState
 import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.Build
@@ -15,31 +14,33 @@ import android.os.Looper
 import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
-import android.view.InputDevice
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toolbar
-import com.example.batmondemo.utils.LogCompat
+import com.android.synclab.glimpse.R
+import com.android.synclab.glimpse.data.repository.GamepadRepositoryImpl
+import com.android.synclab.glimpse.domain.model.BatteryChargeStatus
+import com.android.synclab.glimpse.domain.model.ControllerInfo
+import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
+import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.utils.LogCompat
 import java.util.Locale
 
 class MainActivity : Activity() {
     companion object {
-        private const val SONY_VENDOR_ID = 0x054C
-        private val DUALSHOCK4_PRODUCT_IDS = intArrayOf(
-            0x05C4, // CUH-ZCT1
-            0x09CC  // CUH-ZCT2
-        )
         private const val REFRESH_INTERVAL_MS = 5_000L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var inputManager: InputManager? = null
 
     private lateinit var toolbar: Toolbar
     private lateinit var deviceInfoView: TextView
+
+    private lateinit var inputDeviceGateway: InputDeviceGateway
+    private lateinit var getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -72,9 +73,12 @@ class MainActivity : Activity() {
             "LIFECYCLE_MARKER onCreate pid=${Process.myPid()} " +
                     "sdk=${Build.VERSION.SDK_INT} package=$packageName"
         )
+
         setContentView(R.layout.activity_main)
 
-        inputManager = getSystemService(InputManager::class.java)
+        inputDeviceGateway = InputDeviceGateway(applicationContext)
+        val repository = GamepadRepositoryImpl(inputDeviceGateway)
+        getConnectedPs4ControllersUseCase = GetConnectedPs4ControllersUseCase(repository)
 
         toolbar = findViewById(R.id.topToolbar)
         deviceInfoView = findViewById(R.id.deviceInfoView)
@@ -91,7 +95,7 @@ class MainActivity : Activity() {
                     "serviceRunning=${BatteryOverlayService.isRunning} " +
                     "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
         )
-        inputManager?.registerInputDeviceListener(inputDeviceListener, mainHandler)
+        inputDeviceGateway.registerInputDeviceListener(inputDeviceListener, mainHandler)
         refreshControllerInfo()
         mainHandler.removeCallbacks(periodicRefresh)
         mainHandler.postDelayed(periodicRefresh, REFRESH_INTERVAL_MS)
@@ -100,7 +104,7 @@ class MainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         LogCompat.d("onPause")
-        inputManager?.unregisterInputDeviceListener(inputDeviceListener)
+        inputDeviceGateway.unregisterInputDeviceListener(inputDeviceListener)
         mainHandler.removeCallbacks(periodicRefresh)
     }
 
@@ -399,26 +403,21 @@ class MainActivity : Activity() {
         val sections = mutableListOf<String>()
         sections.add("$monitorState\n$overlayState")
 
-        val manager = inputManager
-        if (manager == null) {
+        if (!inputDeviceGateway.isInputManagerAvailable()) {
             sections.add(getString(R.string.input_manager_unavailable))
             deviceInfoView.text = TextUtils.join("\n\n", sections)
             return
         }
 
-        val ps4Controllers = mutableListOf<String>()
-        for (deviceId in manager.inputDeviceIds) {
-            val device = manager.getInputDevice(deviceId) ?: continue
-            if (!isGamepad(device) || !isPs4Controller(device)) {
-                continue
-            }
-            ps4Controllers.add(formatControllerInfo(device))
-        }
+        val ps4Controllers = getConnectedPs4ControllersUseCase(
+            getString(R.string.unknown_device_name)
+        )
 
         if (ps4Controllers.isEmpty()) {
             sections.add(getString(R.string.no_ps4_controller_connected))
         } else {
-            sections.add(TextUtils.join("\n\n", ps4Controllers))
+            val formattedControllers = ps4Controllers.map(::formatControllerInfo)
+            sections.add(TextUtils.join("\n\n", formattedControllers))
         }
 
         LogCompat.d(
@@ -430,36 +429,9 @@ class MainActivity : Activity() {
         deviceInfoView.text = TextUtils.join("\n\n", sections)
     }
 
-    private fun isGamepad(device: InputDevice): Boolean {
-        return device.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
-                device.supportsSource(InputDevice.SOURCE_JOYSTICK)
-    }
-
-    private fun isPs4Controller(device: InputDevice): Boolean {
-        val vendorId = device.vendorId
-        val productId = device.productId
-        if (vendorId == SONY_VENDOR_ID && isDualShock4ProductId(productId)) {
-            return true
-        }
-
-        val lowerName = (device.name ?: "").lowercase(Locale.US)
-        if (lowerName.contains("dualshock")) {
-            return true
-        }
-
-        // Some DS4 connections expose vendor but miss product id.
-        return vendorId == SONY_VENDOR_ID && productId == 0 &&
-                lowerName.contains("wireless controller")
-    }
-
-    private fun isDualShock4ProductId(productId: Int): Boolean {
-        return DUALSHOCK4_PRODUCT_IDS.contains(productId)
-    }
-
-    private fun formatControllerInfo(device: InputDevice): String {
-        val deviceName = device.name ?: getString(R.string.unknown_device_name)
+    private fun formatControllerInfo(controller: ControllerInfo): String {
         return buildString {
-            append(getString(R.string.controller_name_line, deviceName))
+            append(getString(R.string.controller_name_line, controller.name))
             append("\n")
             append(
                 getString(
@@ -468,56 +440,41 @@ class MainActivity : Activity() {
                 )
             )
             append("\n")
-            append(getString(R.string.controller_battery_line, readBatteryPercent(device)))
+            append(getString(R.string.controller_battery_line, formatBatteryLine(controller)))
             append("\n")
             append(
                 getString(
                     R.string.controller_vendor_product_line,
-                    hex4(device.vendorId),
-                    hex4(device.productId)
+                    hex4(controller.vendorId),
+                    hex4(controller.productId)
                 )
             )
             append("\n")
-            append(getString(R.string.controller_device_id_line, device.id))
+            append(getString(R.string.controller_device_id_line, controller.deviceId))
         }
     }
 
-    private fun readBatteryPercent(device: InputDevice): String {
+    private fun formatBatteryLine(controller: ControllerInfo): String {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             return getString(R.string.battery_api_not_supported)
         }
 
-        return try {
-            val batteryState: BatteryState = device.batteryState ?: return getString(R.string.battery_unavailable)
-            if (!batteryState.isPresent) {
-                return getString(R.string.battery_unavailable)
-            }
-
-            val capacity = batteryState.capacity
-            if (capacity.isNaN() || capacity < 0f) {
-                return getString(R.string.battery_unavailable)
-            }
-
-            val normalized = if (capacity > 1.0f) capacity else capacity * 100f
-            val percentage = normalized.toInt().coerceIn(0, 100)
-            getString(
-                R.string.battery_percentage_format,
-                percentage,
-                batteryStatusLabel(batteryState.status)
-            )
-        } catch (exception: Exception) {
-            LogCompat.w("Failed to read battery state from InputDevice", exception)
-            getString(R.string.battery_unavailable)
-        }
+        val percent = controller.batteryPercent ?: return getString(R.string.battery_unavailable)
+        val status = controller.batteryStatus ?: BatteryChargeStatus.UNKNOWN
+        return getString(
+            R.string.battery_percentage_format,
+            percent,
+            batteryStatusLabel(status)
+        )
     }
 
-    private fun batteryStatusLabel(status: Int): String {
+    private fun batteryStatusLabel(status: BatteryChargeStatus): String {
         return when (status) {
-            BatteryState.STATUS_CHARGING -> getString(R.string.battery_status_charging)
-            BatteryState.STATUS_DISCHARGING -> getString(R.string.battery_status_discharging)
-            BatteryState.STATUS_FULL -> getString(R.string.battery_status_full)
-            BatteryState.STATUS_NOT_CHARGING -> getString(R.string.battery_status_not_charging)
-            else -> getString(R.string.battery_status_unknown)
+            BatteryChargeStatus.CHARGING -> getString(R.string.battery_status_charging)
+            BatteryChargeStatus.DISCHARGING -> getString(R.string.battery_status_discharging)
+            BatteryChargeStatus.FULL -> getString(R.string.battery_status_full)
+            BatteryChargeStatus.NOT_CHARGING -> getString(R.string.battery_status_not_charging)
+            BatteryChargeStatus.UNKNOWN -> getString(R.string.battery_status_unknown)
         }
     }
 

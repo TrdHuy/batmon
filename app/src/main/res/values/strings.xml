@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">batmon</string>
+    <string name="app_name">glimpse</string>
 
-    <string name="controller_monitor_title">BatMon - Theo dõi tay cầm PS4</string>
+    <string name="controller_monitor_title">Glimpse - Theo dõi tay cầm PS4</string>
     <string name="controller_monitor_subtitle">Theo dõi tay cầm PS4 (DualShock 4) và mức pin hiện tại</string>
     <string name="loading_controller_info">Đang tải thông tin tay cầm...</string>
     <string name="input_manager_unavailable">InputManager không sẵn sàng trên thiết bị này.</string>
@@ -52,9 +52,9 @@
     <string name="toast_overlay_hidden">Đã ẩn floating overlay.</string>
     <string name="toast_action_failed">Thao tác thất bại, vui lòng kiểm tra log.</string>
 
-    <string name="notification_channel_name">BatMon Gamepad Monitor</string>
+    <string name="notification_channel_name">Glimpse Gamepad Monitor</string>
     <string name="notification_channel_description">Theo dõi pin tay cầm gamepad và hiển thị overlay.</string>
-    <string name="notification_title">BatMon Controller Battery</string>
+    <string name="notification_title">Glimpse Controller Battery</string>
     <string name="notification_initial_text">Đang khởi tạo monitoring...</string>
     <string name="notification_no_gamepad">Không có gamepad đang kết nối</string>
     <string name="notification_battery_unavailable">%1$s: không lấy được pin</string>
