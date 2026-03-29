@@ -63,6 +63,11 @@ class BatteryOverlayService : Service() {
     private val updateRunnable = object : Runnable {
         override fun run() {
             updateBatteryState()
+            if (!isMonitoringEnabled && !isOverlayVisible) {
+                LogCompat.i("Service idle (no monitoring, no overlay), stopping self")
+                stopSelf()
+                return
+            }
             handler.postDelayed(this, UPDATE_INTERVAL_MS)
         }
     }
@@ -81,20 +86,23 @@ class BatteryOverlayService : Service() {
         LogCompat.i("onStartCommand action=$action startId=$startId")
 
         if (action == ACTION_STOP_MONITORING) {
-            LogCompat.i("Received stop action, stopping service")
             isMonitoringEnabled = false
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        if (!ensureForegroundStarted(
-                getString(R.string.notification_initial_text),
-                R.drawable.ic_battery_unknown
-            )
-        ) {
-            LogCompat.e("Cannot start foreground service due to missing prerequisites")
-            stopSelf()
-            return START_NOT_STICKY
+            LogCompat.i("Received stop monitoring action")
+            if (foregroundStarted) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                foregroundStarted = false
+            }
+            if (!isOverlayVisible) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            if (!updateLoopStarted) {
+                updateLoopStarted = true
+                handler.post(updateRunnable)
+            } else {
+                updateBatteryState()
+            }
+            return START_STICKY
         }
         isRunning = true
 
@@ -104,7 +112,22 @@ class BatteryOverlayService : Service() {
             ACTION_START_MONITORING -> {
                 isMonitoringEnabled = true
                 LogCompat.i("Monitoring enabled")
+                if (!ensureForegroundStarted(
+                        getString(R.string.notification_initial_text),
+                        R.drawable.ic_battery_unknown
+                    )
+                ) {
+                    LogCompat.e("Cannot start foreground service due to missing prerequisites")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
             }
+        }
+
+        if (!isMonitoringEnabled && !isOverlayVisible) {
+            LogCompat.i("No monitoring and no overlay after action=$action, stopping service")
+            stopSelf()
+            return START_NOT_STICKY
         }
 
         if (!updateLoopStarted) {
@@ -197,7 +220,13 @@ class BatteryOverlayService : Service() {
         lastStatusText = notificationText
         LogCompat.d("updateBatteryState controller=${snapshot.controllerName} percent=${snapshot.batteryPercent}")
 
-        ensureForegroundStarted(notificationText, iconRes)
+        if (isMonitoringEnabled) {
+            ensureForegroundStarted(notificationText, iconRes)
+        } else if (foregroundStarted) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            foregroundStarted = false
+            LogCompat.i("Foreground removed because monitoring is disabled")
+        }
     }
 
     private fun readConnectedGamepadBattery(): GamepadBatterySnapshot {

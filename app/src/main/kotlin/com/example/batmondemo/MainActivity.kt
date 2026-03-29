@@ -226,13 +226,7 @@ class MainActivity : Activity() {
                         return@setOnCheckedChangeListener
                     }
 
-                    val foreground = !BatteryOverlayService.isRunning
-                    if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
-                        mainHandler.postDelayed({ syncState() }, 250L)
-                        return@setOnCheckedChangeListener
-                    }
-
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, foreground)) {
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, false)) {
                         showToast(R.string.toast_overlay_shown)
                     }
                 } else {
@@ -241,13 +235,8 @@ class MainActivity : Activity() {
                         mainHandler.postDelayed({ syncState() }, 250L)
                         return@setOnCheckedChangeListener
                     }
-                    val foreground = !BatteryOverlayService.isRunning
-                    if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
-                        mainHandler.postDelayed({ syncState() }, 250L)
-                        return@setOnCheckedChangeListener
-                    }
 
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, foreground)) {
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, false)) {
                         showToast(R.string.toast_overlay_hidden)
                     }
                 }
