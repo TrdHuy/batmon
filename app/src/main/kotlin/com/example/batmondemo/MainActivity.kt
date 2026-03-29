@@ -236,6 +236,11 @@ class MainActivity : Activity() {
                         showToast(R.string.toast_overlay_shown)
                     }
                 } else {
+                    if (!BatteryOverlayService.isRunning) {
+                        LogCompat.d("Ignore hide overlay because service is not running")
+                        mainHandler.postDelayed({ syncState() }, 250L)
+                        return@setOnCheckedChangeListener
+                    }
                     val foreground = !BatteryOverlayService.isRunning
                     if (foreground && !ensureForegroundPermissions(autoResumeStartMonitoring = false)) {
                         mainHandler.postDelayed({ syncState() }, 250L)
@@ -289,13 +294,6 @@ class MainActivity : Activity() {
 
     private fun startMonitoring() {
         LogCompat.i("startMonitoring invoked")
-        if (!Settings.canDrawOverlays(this)) {
-            LogCompat.w("Overlay permission missing for startMonitoring")
-            requestOverlayPermission()
-            showToast(R.string.toast_overlay_permission_required)
-            return
-        }
-
         if (!ensureForegroundPermissions(autoResumeStartMonitoring = true)) {
             return
         }

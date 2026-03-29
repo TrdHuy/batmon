@@ -32,7 +32,7 @@ class BatteryOverlayService : Service() {
         const val ACTION_HIDE_OVERLAY = "com.example.batmondemo.action.HIDE_OVERLAY"
 
         private const val NOTIFICATION_ID = 31001
-        private const val CHANNEL_ID = "batmon_monitor_channel"
+        private const val CHANNEL_ID = "batmon_monitor_channel_v2"
         private const val UPDATE_INTERVAL_MS = 60_000L
 
         @Volatile
@@ -96,8 +96,8 @@ class BatteryOverlayService : Service() {
 
         when (action) {
             ACTION_HIDE_OVERLAY -> removeOverlayView()
-            ACTION_SHOW_OVERLAY,
-            ACTION_START_MONITORING -> ensureOverlayView()
+            ACTION_SHOW_OVERLAY -> ensureOverlayView()
+            ACTION_START_MONITORING -> Unit
         }
 
         if (!updateLoopStarted) {
@@ -353,19 +353,29 @@ class BatteryOverlayService : Service() {
             Notification.Builder(this)
         }
 
-        return builder
+        val configuredBuilder = builder
             .setSmallIcon(iconRes)
             .setContentTitle(getString(R.string.notification_title))
             .setContentText(contentText)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
+            .setCategory(Notification.CATEGORY_SERVICE)
             .setContentIntent(openAppIntent)
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
                 getString(R.string.notification_action_stop),
                 stopIntent
             )
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            configuredBuilder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            configuredBuilder.setPriority(Notification.PRIORITY_DEFAULT)
+        }
+
+        return configuredBuilder.build()
     }
 
     private fun createNotificationChannelIfNeeded() {
@@ -376,7 +386,7 @@ class BatteryOverlayService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel_name),
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             description = getString(R.string.notification_channel_description)
         }
