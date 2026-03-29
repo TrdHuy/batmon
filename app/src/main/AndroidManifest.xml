@@ -15,12 +15,12 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <service
-            android:name=".BatteryOverlayService"
+            android:name=".presentation.BatteryOverlayService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">batmon</string>
+    <string name="app_name">glimpse</string>
 
-    <string name="controller_monitor_title">BatMon - PS4 Controller Monitor</string>
+    <string name="controller_monitor_title">Glimpse - PS4 Controller Monitor</string>
     <string name="controller_monitor_subtitle">Monitor connected PS4 controllers (DualShock 4) and current battery level</string>
     <string name="loading_controller_info">Loading controller information...</string>
     <string name="input_manager_unavailable">InputManager is unavailable on this device.</string>
@@ -52,9 +52,9 @@
     <string name="toast_overlay_hidden">Floating overlay is now hidden.</string>
     <string name="toast_action_failed">Action failed, check logs for details.</string>
 
-    <string name="notification_channel_name">BatMon Gamepad Monitor</string>
+    <string name="notification_channel_name">Glimpse Gamepad Monitor</string>
     <string name="notification_channel_description">Monitors gamepad battery and displays overlay.</string>
-    <string name="notification_title">BatMon Controller Battery</string>
+    <string name="notification_title">Glimpse Controller Battery</string>
     <string name="notification_initial_text">Starting monitoring...</string>
     <string name="notification_no_gamepad">No connected gamepad</string>
     <string name="notification_battery_unavailable">%1$s: battery unavailable</string>

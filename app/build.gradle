@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.batmondemo'
+    namespace 'com.android.synclab.glimpse'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.example.batmondemo"
+        applicationId "com.android.synclab.glimpse"
         minSdk 24
         targetSdk 36
         versionCode 1

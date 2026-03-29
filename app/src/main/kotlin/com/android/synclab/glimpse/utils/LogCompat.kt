@@ -1,4 +1,4 @@
-package com.example.batmondemo.utils
+package com.android.synclab.glimpse.utils
 
 import android.util.Log
 
