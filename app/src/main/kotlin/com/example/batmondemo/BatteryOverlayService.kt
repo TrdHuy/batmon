@@ -39,6 +39,9 @@ class BatteryOverlayService : Service() {
         var isRunning: Boolean = false
 
         @Volatile
+        var isMonitoringEnabled: Boolean = false
+
+        @Volatile
         var isOverlayVisible: Boolean = false
 
         @Volatile
@@ -79,6 +82,7 @@ class BatteryOverlayService : Service() {
 
         if (action == ACTION_STOP_MONITORING) {
             LogCompat.i("Received stop action, stopping service")
+            isMonitoringEnabled = false
             stopSelf()
             return START_NOT_STICKY
         }
@@ -97,7 +101,10 @@ class BatteryOverlayService : Service() {
         when (action) {
             ACTION_HIDE_OVERLAY -> removeOverlayView()
             ACTION_SHOW_OVERLAY -> ensureOverlayView()
-            ACTION_START_MONITORING -> Unit
+            ACTION_START_MONITORING -> {
+                isMonitoringEnabled = true
+                LogCompat.i("Monitoring enabled")
+            }
         }
 
         if (!updateLoopStarted) {
@@ -123,6 +130,7 @@ class BatteryOverlayService : Service() {
         }
 
         isRunning = false
+        isMonitoringEnabled = false
         isOverlayVisible = false
         lastStatusText = ""
 

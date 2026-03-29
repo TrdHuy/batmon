@@ -176,13 +176,13 @@ class MainActivity : Activity() {
                 syncing = true
                 val hasOverlayPermission = Settings.canDrawOverlays(this)
                 overlayPermissionCheckBox.isChecked = hasOverlayPermission
-                monitoringCheckBox.isChecked = BatteryOverlayService.isRunning
+                monitoringCheckBox.isChecked = BatteryOverlayService.isMonitoringEnabled
                 floatingOverlayCheckBox.isEnabled = hasOverlayPermission
                 floatingOverlayCheckBox.isChecked = BatteryOverlayService.isOverlayVisible
                 syncing = false
                 LogCompat.d(
                     "Config dialog sync: overlayPermission=$hasOverlayPermission " +
-                            "monitoring=${BatteryOverlayService.isRunning} " +
+                            "monitoring=${BatteryOverlayService.isMonitoringEnabled} " +
                             "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
                 )
             }
@@ -396,7 +396,7 @@ class MainActivity : Activity() {
             return
         }
 
-        val monitorState = if (BatteryOverlayService.isRunning) {
+        val monitorState = if (BatteryOverlayService.isMonitoringEnabled) {
             getString(R.string.monitor_service_running)
         } else {
             getString(R.string.monitor_service_stopped)
@@ -432,7 +432,12 @@ class MainActivity : Activity() {
             sections.add(TextUtils.join("\n\n", ps4Controllers))
         }
 
-        LogCompat.d("refreshControllerInfo controllers=${ps4Controllers.size} serviceRunning=${BatteryOverlayService.isRunning} overlayVisible=${BatteryOverlayService.isOverlayVisible}")
+        LogCompat.d(
+            "refreshControllerInfo controllers=${ps4Controllers.size} " +
+                    "serviceRunning=${BatteryOverlayService.isRunning} " +
+                    "monitoring=${BatteryOverlayService.isMonitoringEnabled} " +
+                    "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+        )
         deviceInfoView.text = TextUtils.join("\n\n", sections)
     }
 
