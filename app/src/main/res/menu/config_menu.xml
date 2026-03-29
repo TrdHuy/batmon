@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_grant_overlay_permission"
+        android:title="@string/menu_grant_overlay_permission" />
+    <item
+        android:id="@+id/action_start_monitoring"
+        android:title="@string/menu_start_monitoring" />
+    <item
+        android:id="@+id/action_show_overlay"
+        android:title="@string/menu_show_overlay" />
+    <item
+        android:id="@+id/action_hide_overlay"
+        android:title="@string/menu_hide_overlay" />
+    <item
+        android:id="@+id/action_stop_monitoring"
+        android:title="@string/menu_stop_monitoring" />
+</menu>

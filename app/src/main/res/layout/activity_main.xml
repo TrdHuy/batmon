@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <android.widget.Toolbar
+        android:id="@+id/topToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?android:attr/actionBarSize"
+        android:popupTheme="@android:style/Theme.Material.Light"
+        android:title="@string/controller_monitor_title"
+        android:titleTextColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/subtitleView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/controller_monitor_subtitle"
+        android:textColor="#333333"
+        android:textSize="14sp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/deviceInfoView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/loading_controller_info"
+            android:textColor="#111111"
+            android:textSize="16sp" />
+    </ScrollView>
+
+</LinearLayout>

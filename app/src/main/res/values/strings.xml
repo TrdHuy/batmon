@@ -1,25 +1,70 @@
 <resources>
-    <string name="app_name">BatMon Demo</string>
-    <string name="controller_monitor_title">BatMon - PS4 Controller Monitor</string>
-    <string name="controller_monitor_subtitle">Theo doi tay cam PS4 (DualShock 4) va muc pin hien tai</string>
-    <string name="loading_controller_info">Dang tai thong tin tay cam...</string>
-    <string name="input_manager_unavailable">InputManager khong san sang tren thiet bi nay.</string>
-    <string name="no_ps4_controller_connected">Khong phat hien tay cam PS4 (DualShock 4) dang ket noi.</string>
-    <string name="unknown_device_name">Unknown device</string>
+    <string name="app_name">batmon</string>
 
-    <string name="controller_name_line">Ten: %1$s</string>
-    <string name="controller_status_line">Trang thai: %1$s</string>
-    <string name="controller_status_connected">Connected</string>
+    <string name="controller_monitor_title">BatMon - Theo dõi tay cầm PS4</string>
+    <string name="controller_monitor_subtitle">Theo dõi tay cầm PS4 (DualShock 4) và mức pin hiện tại</string>
+    <string name="loading_controller_info">Đang tải thông tin tay cầm...</string>
+    <string name="input_manager_unavailable">InputManager không sẵn sàng trên thiết bị này.</string>
+    <string name="no_ps4_controller_connected">Không phát hiện tay cầm PS4 (DualShock 4) đang kết nối.</string>
+    <string name="unknown_device_name">Thiết bị không rõ</string>
+
+    <string name="controller_name_line">Tên: %1$s</string>
+    <string name="controller_status_line">Trạng thái: %1$s</string>
+    <string name="controller_status_connected">Đã kết nối</string>
     <string name="controller_battery_line">Pin: %1$s</string>
     <string name="controller_vendor_product_line">Vendor/Product: %1$s/%2$s</string>
-    <string name="controller_device_id_line">Device ID: %1$d</string>
+    <string name="controller_device_id_line">Mã thiết bị: %1$d</string>
 
-    <string name="battery_api_not_supported">Khong ho tro tren API &lt; 31</string>
-    <string name="battery_unavailable">Khong lay duoc pin</string>
+    <string name="battery_api_not_supported">Không hỗ trợ trên API &lt; 31</string>
+    <string name="battery_unavailable">Không lấy được pin</string>
     <string name="battery_percentage_format">%1$d%% (%2$s)</string>
-    <string name="battery_status_charging">Charging</string>
-    <string name="battery_status_discharging">Discharging</string>
-    <string name="battery_status_full">Full</string>
-    <string name="battery_status_not_charging">Not charging</string>
-    <string name="battery_status_unknown">Unknown</string>
+    <string name="battery_status_charging">Đang sạc</string>
+    <string name="battery_status_discharging">Đang xả</string>
+    <string name="battery_status_full">Đầy pin</string>
+    <string name="battery_status_not_charging">Không sạc</string>
+    <string name="battery_status_unknown">Không rõ</string>
+
+    <string name="monitor_service_running">Monitoring: Đang chạy</string>
+    <string name="monitor_service_stopped">Monitoring: Đã dừng</string>
+    <string name="overlay_state_visible">Overlay: Đang hiển thị</string>
+    <string name="overlay_state_hidden">Overlay: Đang ẩn</string>
+
+    <string name="menu_config">Cấu hình</string>
+    <string name="menu_grant_overlay_permission">Cấp quyền overlay</string>
+    <string name="menu_start_monitoring">Bật monitoring</string>
+    <string name="menu_show_overlay">Hiện floating overlay</string>
+    <string name="menu_hide_overlay">Ẩn floating overlay</string>
+    <string name="menu_stop_monitoring">Dừng monitoring</string>
+    <string name="config_checkbox_overlay_permission">Quyền overlay</string>
+    <string name="config_checkbox_monitoring">Bật monitoring</string>
+    <string name="config_checkbox_floating_overlay">Hiển thị floating overlay</string>
+    <string name="config_dialog_close">Đóng</string>
+
+    <string name="toast_overlay_permission_requested">Đã mở màn hình cấp quyền overlay.</string>
+    <string name="toast_overlay_permission_already_granted">Quyền overlay đã được cấp.</string>
+    <string name="toast_overlay_permission_managed_by_system">Không thể tắt quyền overlay tại đây, hãy vào Cài đặt hệ thống.</string>
+    <string name="toast_overlay_permission_required">Cần cấp quyền overlay trước khi hiển thị floating overlay.</string>
+    <string name="toast_notification_permission_required">Cần cấp quyền thông báo để hiển thị status bar.</string>
+    <string name="toast_bluetooth_permission_required">Cần cấp quyền Bluetooth để chạy monitoring tay cầm.</string>
+    <string name="toast_monitoring_started">Đã bật monitoring pin gamepad.</string>
+    <string name="toast_monitoring_stopped">Đã dừng monitoring.</string>
+    <string name="toast_overlay_shown">Đã bật floating overlay.</string>
+    <string name="toast_overlay_hidden">Đã ẩn floating overlay.</string>
+    <string name="toast_action_failed">Thao tác thất bại, vui lòng kiểm tra log.</string>
+
+    <string name="notification_channel_name">BatMon Gamepad Monitor</string>
+    <string name="notification_channel_description">Theo dõi pin tay cầm gamepad và hiển thị overlay.</string>
+    <string name="notification_title">BatMon Controller Battery</string>
+    <string name="notification_initial_text">Đang khởi tạo monitoring...</string>
+    <string name="notification_no_gamepad">Không có gamepad đang kết nối</string>
+    <string name="notification_battery_unavailable">%1$s: không lấy được pin</string>
+    <string name="notification_battery_percent">%1$s: %2$d%%</string>
+    <string name="notification_action_stop">Dừng</string>
+
+    <string name="overlay_default_text">🎮 --</string>
+    <string name="overlay_battery_percent">🎮 %1$d%%</string>
+    <string name="overlay_battery_unavailable" formatted="false">🎮 ?%</string>
+    <string name="overlay_no_gamepad">🎮 --</string>
+
+    <string name="unknown_controller_name">Tay cầm</string>
 </resources>
