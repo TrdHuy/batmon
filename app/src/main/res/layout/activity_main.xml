@@ -85,15 +85,16 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:contentDescription="@string/cd_controller_icon"
-                        android:src="@drawable/ic_controller_placeholder"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_gamepad"
                         android:tint="#7E96AA"
-                        app:layout_constraintDimensionRatio="1:1"
+                        
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="0.60"
-                        app:layout_constraintWidth_percent="0.23" />
+                        app:layout_constraintWidth_percent="0.40" />
 
                     <TextView
                         android:id="@+id/deviceInfoView"
