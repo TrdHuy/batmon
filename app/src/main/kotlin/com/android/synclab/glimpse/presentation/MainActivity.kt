@@ -1,7 +1,6 @@
 package com.android.synclab.glimpse.presentation
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,21 +12,25 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.Settings
-import android.text.TextUtils
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.Toolbar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
-import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.di.AppContainer
-import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.model.MainUiAction
+import com.android.synclab.glimpse.presentation.model.MainUiState
+import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
+import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
-import java.util.Locale
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.progressindicator.CircularProgressIndicator
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
     companion object {
         private const val REFRESH_INTERVAL_MS = 5_000L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
@@ -38,31 +41,35 @@ class MainActivity : Activity() {
 
     private lateinit var toolbar: Toolbar
     private lateinit var deviceInfoView: TextView
+    private lateinit var batteryPercentText: TextView
+    private lateinit var batteryStateText: TextView
+    private lateinit var batteryCircle: CircularProgressIndicator
+    private lateinit var bottomNav: BottomNavigationView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
-    private lateinit var getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase
+    private lateinit var viewModel: MainViewModel
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
-            refreshControllerInfo()
+            requestControllerRefresh()
             mainHandler.postDelayed(this, REFRESH_INTERVAL_MS)
         }
     }
 
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) {
-            refreshControllerInfo()
+            requestControllerRefresh()
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
-            refreshControllerInfo()
+            requestControllerRefresh()
         }
 
         override fun onInputDeviceChanged(deviceId: Int) {
-            refreshControllerInfo()
+            requestControllerRefresh()
         }
     }
 
@@ -78,25 +85,41 @@ class MainActivity : Activity() {
 
         val appContainer = AppContainer.from(applicationContext)
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
-        getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase()
+        viewModel = ViewModelProvider(
+            this,
+            MainViewModelFactory(
+                inputDeviceGateway = inputDeviceGateway,
+                getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase()
+            )
+        ).get(MainViewModel::class.java)
 
         toolbar = findViewById(R.id.topToolbar)
         deviceInfoView = findViewById(R.id.deviceInfoView)
+        batteryPercentText = findViewById(R.id.batteryPercentText)
+        batteryStateText = findViewById(R.id.batteryStateText)
+        batteryCircle = findViewById(R.id.batteryCircle)
+        bottomNav = findViewById(R.id.bottomNav)
 
         setupToolbarMenu()
-        deviceInfoView.setText(R.string.loading_controller_info)
+        setupBottomNav()
+        observeUiState()
+
+        renderUiState(viewModel.uiState.value ?: MainUiState())
+        requestControllerRefresh()
     }
 
     override fun onResume() {
         super.onResume()
         LogCompat.d("onResume")
+        val state = viewModel.uiState.value
         LogCompat.e(
             "LIFECYCLE_MARKER onResume pid=${Process.myPid()} " +
-                    "serviceRunning=${BatteryOverlayService.isRunning} " +
-                    "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+                    "serviceRunning=${state?.isServiceRunning ?: BatteryOverlayService.isRunning} " +
+                    "overlayVisible=${state?.isOverlayVisible ?: BatteryOverlayService.isOverlayVisible}"
         )
         inputDeviceGateway.registerInputDeviceListener(inputDeviceListener, mainHandler)
-        refreshControllerInfo()
+        viewModel.onAction(MainUiAction.SyncServiceState)
+        requestControllerRefresh()
         mainHandler.removeCallbacks(periodicRefresh)
         mainHandler.postDelayed(periodicRefresh, REFRESH_INTERVAL_MS)
     }
@@ -165,6 +188,14 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun setupBottomNav() {
+        bottomNav.selectedItemId = R.id.nav_home
+        bottomNav.setOnItemSelectedListener { item ->
+            LogCompat.d("BottomNav selected item=${item.itemId}")
+            true
+        }
+    }
+
     private fun showConfigDialog() {
         runCatching {
             val dialogView = layoutInflater.inflate(R.layout.dialog_config_checkboxes, null)
@@ -178,16 +209,18 @@ class MainActivity : Activity() {
             var syncing = false
             fun syncState() {
                 syncing = true
+                viewModel.onAction(MainUiAction.SyncServiceState)
                 val hasOverlayPermission = Settings.canDrawOverlays(this)
+                val state = viewModel.uiState.value ?: MainUiState()
                 overlayPermissionCheckBox.isChecked = hasOverlayPermission
-                monitoringCheckBox.isChecked = BatteryOverlayService.isMonitoringEnabled
+                monitoringCheckBox.isChecked = state.isMonitoringEnabled
                 floatingOverlayCheckBox.isEnabled = hasOverlayPermission
-                floatingOverlayCheckBox.isChecked = BatteryOverlayService.isOverlayVisible
+                floatingOverlayCheckBox.isChecked = state.isOverlayVisible
                 syncing = false
                 LogCompat.d(
                     "Config dialog sync: overlayPermission=$hasOverlayPermission " +
-                            "monitoring=${BatteryOverlayService.isMonitoringEnabled} " +
-                            "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+                            "monitoring=${state.isMonitoringEnabled} " +
+                            "overlayVisible=${state.isOverlayVisible}"
                 )
             }
 
@@ -254,7 +287,7 @@ class MainActivity : Activity() {
                 .setView(dialogView)
                 .setPositiveButton(R.string.config_dialog_close, null)
                 .setOnDismissListener {
-                    refreshControllerInfo()
+                    requestControllerRefresh()
                 }
                 .show()
             LogCompat.d("Config dialog shown")
@@ -380,92 +413,65 @@ class MainActivity : Activity() {
             return false
         }
 
-        refreshControllerInfo()
+        viewModel.onAction(MainUiAction.SyncServiceState)
+        requestControllerRefresh()
         return true
     }
 
-    private fun refreshControllerInfo() {
-        if (!::deviceInfoView.isInitialized) {
+    private fun requestControllerRefresh() {
+        if (!::viewModel.isInitialized) {
             return
         }
-
-        val monitorState = if (BatteryOverlayService.isMonitoringEnabled) {
-            getString(R.string.monitor_service_running)
-        } else {
-            getString(R.string.monitor_service_stopped)
-        }
-        val overlayState = if (BatteryOverlayService.isOverlayVisible) {
-            getString(R.string.overlay_state_visible)
-        } else {
-            getString(R.string.overlay_state_hidden)
-        }
-
-        val sections = mutableListOf<String>()
-        sections.add("$monitorState\n$overlayState")
-
-        if (!inputDeviceGateway.isInputManagerAvailable()) {
-            sections.add(getString(R.string.input_manager_unavailable))
-            deviceInfoView.text = TextUtils.join("\n\n", sections)
-            return
-        }
-
-        val ps4Controllers = getConnectedPs4ControllersUseCase(
-            getString(R.string.unknown_device_name)
+        viewModel.onAction(
+            MainUiAction.RefreshControllerInfo(
+                unknownDeviceName = getString(R.string.unknown_device_name)
+            )
         )
-
-        if (ps4Controllers.isEmpty()) {
-            sections.add(getString(R.string.no_ps4_controller_connected))
-        } else {
-            val formattedControllers = ps4Controllers.map(::formatControllerInfo)
-            sections.add(TextUtils.join("\n\n", formattedControllers))
-        }
-
-        LogCompat.d(
-            "refreshControllerInfo controllers=${ps4Controllers.size} " +
-                    "serviceRunning=${BatteryOverlayService.isRunning} " +
-                    "monitoring=${BatteryOverlayService.isMonitoringEnabled} " +
-                    "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
-        )
-        deviceInfoView.text = TextUtils.join("\n\n", sections)
     }
 
-    private fun formatControllerInfo(controller: ControllerInfo): String {
-        return buildString {
-            append(getString(R.string.controller_name_line, controller.name))
-            append("\n")
-            append(
-                getString(
-                    R.string.controller_status_line,
-                    getString(R.string.controller_status_connected)
-                )
-            )
-            append("\n")
-            append(getString(R.string.controller_battery_line, formatBatteryLine(controller)))
-            append("\n")
-            append(
-                getString(
-                    R.string.controller_vendor_product_line,
-                    hex4(controller.vendorId),
-                    hex4(controller.productId)
-                )
-            )
-            append("\n")
-            append(getString(R.string.controller_device_id_line, controller.deviceId))
+    private fun observeUiState() {
+        viewModel.uiState.observe(this) { state ->
+            renderUiState(state)
         }
     }
 
-    private fun formatBatteryLine(controller: ControllerInfo): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return getString(R.string.battery_api_not_supported)
+    private fun renderUiState(state: MainUiState) {
+        if (!::deviceInfoView.isInitialized || !::batteryCircle.isInitialized) {
+            return
         }
 
-        val percent = controller.batteryPercent ?: return getString(R.string.battery_unavailable)
-        val status = controller.batteryStatus ?: BatteryChargeStatus.UNKNOWN
-        return getString(
-            R.string.battery_percentage_format,
-            percent,
-            batteryStatusLabel(status)
-        )
+        when (state.connectionState) {
+            MainUiState.ConnectionState.LOADING -> {
+                deviceInfoView.setText(R.string.loading_controller_info)
+            }
+
+            MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE -> {
+                deviceInfoView.setText(R.string.input_manager_unavailable)
+            }
+
+            MainUiState.ConnectionState.DISCONNECTED -> {
+                deviceInfoView.setText(R.string.status_card_controller_disconnected)
+            }
+
+            MainUiState.ConnectionState.CONNECTED -> {
+                deviceInfoView.setText(R.string.status_card_controller_connected)
+            }
+        }
+
+        updateBatteryUi(state.batteryPercent, state.batteryStatus)
+    }
+
+    private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
+        if (percent == null) {
+            batteryPercentText.setText(R.string.status_card_battery_unknown)
+            batteryCircle.setProgressCompat(0, false)
+        } else {
+            val clampedPercent = percent.coerceIn(0, 100)
+            batteryPercentText.text =
+                getString(R.string.status_card_battery_percent, clampedPercent)
+            batteryCircle.setProgressCompat(clampedPercent, false)
+        }
+        batteryStateText.text = batteryStatusLabel(status)
     }
 
     private fun batteryStatusLabel(status: BatteryChargeStatus): String {
@@ -476,10 +482,6 @@ class MainActivity : Activity() {
             BatteryChargeStatus.NOT_CHARGING -> getString(R.string.battery_status_not_charging)
             BatteryChargeStatus.UNKNOWN -> getString(R.string.battery_status_unknown)
         }
-    }
-
-    private fun hex4(value: Int): String {
-        return String.format(Locale.US, "0x%04X", value and 0xFFFF)
     }
 
     private fun showToast(messageRes: Int) {
