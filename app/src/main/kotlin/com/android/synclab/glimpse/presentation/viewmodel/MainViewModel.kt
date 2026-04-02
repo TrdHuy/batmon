@@ -1,14 +1,12 @@
 package com.android.synclab.glimpse.presentation.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.BatteryOverlayService
-import com.android.synclab.glimpse.presentation.model.MainUiAction
+import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.utils.LogCompat
 
@@ -17,32 +15,52 @@ class MainViewModel(
     private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableLiveData(MainUiState())
-    val uiState: LiveData<MainUiState> = _uiState
+    private var uiState: MainUiState = MainUiState()
+    private var onViewModelChange: ((EventChangeParam) -> Unit)? = null
 
     init {
-        syncServiceState()
+        syncServiceState(emitChange = false)
     }
 
-    fun onAction(action: MainUiAction) {
-        when (action) {
-            is MainUiAction.RefreshControllerInfo -> refreshControllerInfo(action.unknownDeviceName)
-            MainUiAction.SyncServiceState -> syncServiceState()
-        }
+    fun setOnViewModelChange(callback: ((EventChangeParam) -> Unit)?) {
+        onViewModelChange = callback
+        callback?.invoke(
+            EventChangeParam(
+                state = uiState,
+                eventType = EventChangeParam.EventType.VIEW_ATTACHED,
+                source = EventChangeParam.Source.SYSTEM,
+                note = "observer_registered"
+            )
+        )
     }
 
-    private fun refreshControllerInfo(unknownDeviceName: String) {
-        val current = currentState().copy(
+    fun clearOnViewModelChange() {
+        onViewModelChange = null
+    }
+
+    fun currentUiState(): MainUiState {
+        return uiState
+    }
+
+    fun refreshControllerInfo(
+        unknownDeviceName: String,
+        source: EventChangeParam.Source = EventChangeParam.Source.VIEW
+    ) {
+        val current = uiState.copy(
             isServiceRunning = BatteryOverlayService.isRunning,
             isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
             isOverlayVisible = BatteryOverlayService.isOverlayVisible
         )
 
         if (!inputDeviceGateway.isInputManagerAvailable()) {
-            _uiState.value = current.copy(
-                connectionState = MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE,
-                batteryPercent = null,
-                batteryStatus = BatteryChargeStatus.UNKNOWN
+            updateState(
+                newState = current.copy(
+                    connectionState = MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE,
+                    batteryPercent = null,
+                    batteryStatus = BatteryChargeStatus.UNKNOWN
+                ),
+                eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
+                source = source
             )
             return
         }
@@ -50,7 +68,7 @@ class MainViewModel(
         val ps4Controllers = getConnectedPs4ControllersUseCase(unknownDeviceName)
         val primaryController = ps4Controllers.firstOrNull()
 
-        _uiState.value = if (primaryController == null) {
+        val newState = if (primaryController == null) {
             current.copy(
                 connectionState = MainUiState.ConnectionState.DISCONNECTED,
                 batteryPercent = null,
@@ -64,6 +82,12 @@ class MainViewModel(
             )
         }
 
+        updateState(
+            newState = newState,
+            eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
+            source = source
+        )
+
         LogCompat.d(
             "MainViewModel refreshControllerInfo controllers=${ps4Controllers.size} " +
                     "primaryBattery=${primaryController?.batteryPercent} " +
@@ -71,17 +95,39 @@ class MainViewModel(
         )
     }
 
-    private fun syncServiceState() {
-        val current = currentState()
-        _uiState.value = current.copy(
+    fun syncServiceState(
+        source: EventChangeParam.Source = EventChangeParam.Source.VIEW,
+        emitChange: Boolean = true
+    ) {
+        val newState = uiState.copy(
             isServiceRunning = BatteryOverlayService.isRunning,
             isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
             isOverlayVisible = BatteryOverlayService.isOverlayVisible
         )
+        updateState(
+            newState = newState,
+            eventType = EventChangeParam.EventType.SERVICE_STATE_SYNCED,
+            source = source,
+            emitChange = emitChange
+        )
     }
 
-    private fun currentState(): MainUiState {
-        return _uiState.value ?: MainUiState()
+    private fun updateState(
+        newState: MainUiState,
+        eventType: EventChangeParam.EventType,
+        source: EventChangeParam.Source,
+        emitChange: Boolean = true
+    ) {
+        uiState = newState
+        if (emitChange) {
+            onViewModelChange?.invoke(
+                EventChangeParam(
+                    state = uiState,
+                    eventType = eventType,
+                    source = source
+                )
+            )
+        }
     }
 }
 

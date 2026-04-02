@@ -22,7 +22,7 @@ import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.presentation.model.MainUiAction
+import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
@@ -54,22 +54,22 @@ class MainActivity : AppCompatActivity() {
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
-            requestControllerRefresh()
+            requestControllerRefresh(EventChangeParam.Source.SYSTEM)
             mainHandler.postDelayed(this, REFRESH_INTERVAL_MS)
         }
     }
 
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) {
-            requestControllerRefresh()
+            requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
-            requestControllerRefresh()
+            requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
 
         override fun onInputDeviceChanged(deviceId: Int) {
-            requestControllerRefresh()
+            requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
     }
 
@@ -102,24 +102,24 @@ class MainActivity : AppCompatActivity() {
 
         setupToolbarMenu()
         setupBottomNav()
-        observeUiState()
+        bindViewModelObserver()
 
-        renderUiState(viewModel.uiState.value ?: MainUiState())
-        requestControllerRefresh()
+        renderUiState(viewModel.currentUiState())
+        requestControllerRefresh(EventChangeParam.Source.SYSTEM)
     }
 
     override fun onResume() {
         super.onResume()
         LogCompat.d("onResume")
-        val state = viewModel.uiState.value
+        val state = viewModel.currentUiState()
         LogCompat.e(
             "LIFECYCLE_MARKER onResume pid=${Process.myPid()} " +
-                    "serviceRunning=${state?.isServiceRunning ?: BatteryOverlayService.isRunning} " +
-                    "overlayVisible=${state?.isOverlayVisible ?: BatteryOverlayService.isOverlayVisible}"
+                    "serviceRunning=${state.isServiceRunning} " +
+                    "overlayVisible=${state.isOverlayVisible}"
         )
         inputDeviceGateway.registerInputDeviceListener(inputDeviceListener, mainHandler)
-        viewModel.onAction(MainUiAction.SyncServiceState)
-        requestControllerRefresh()
+        viewModel.syncServiceState(source = EventChangeParam.Source.SYSTEM)
+        requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         mainHandler.removeCallbacks(periodicRefresh)
         mainHandler.postDelayed(periodicRefresh, REFRESH_INTERVAL_MS)
     }
@@ -129,6 +129,13 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("onPause")
         inputDeviceGateway.unregisterInputDeviceListener(inputDeviceListener)
         mainHandler.removeCallbacks(periodicRefresh)
+    }
+
+    override fun onDestroy() {
+        if (::viewModel.isInitialized) {
+            viewModel.clearOnViewModelChange()
+        }
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(
@@ -209,9 +216,9 @@ class MainActivity : AppCompatActivity() {
             var syncing = false
             fun syncState() {
                 syncing = true
-                viewModel.onAction(MainUiAction.SyncServiceState)
+                viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
                 val hasOverlayPermission = Settings.canDrawOverlays(this)
-                val state = viewModel.uiState.value ?: MainUiState()
+                val state = viewModel.currentUiState()
                 overlayPermissionCheckBox.isChecked = hasOverlayPermission
                 monitoringCheckBox.isChecked = state.isMonitoringEnabled
                 floatingOverlayCheckBox.isEnabled = hasOverlayPermission
@@ -287,7 +294,7 @@ class MainActivity : AppCompatActivity() {
                 .setView(dialogView)
                 .setPositiveButton(R.string.config_dialog_close, null)
                 .setOnDismissListener {
-                    requestControllerRefresh()
+                    requestControllerRefresh(EventChangeParam.Source.VIEW)
                 }
                 .show()
             LogCompat.d("Config dialog shown")
@@ -413,25 +420,33 @@ class MainActivity : AppCompatActivity() {
             return false
         }
 
-        viewModel.onAction(MainUiAction.SyncServiceState)
-        requestControllerRefresh()
+        viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
+        requestControllerRefresh(EventChangeParam.Source.VIEW)
         return true
     }
 
-    private fun requestControllerRefresh() {
+    private fun requestControllerRefresh(
+        source: EventChangeParam.Source = EventChangeParam.Source.VIEW
+    ) {
         if (!::viewModel.isInitialized) {
             return
         }
-        viewModel.onAction(
-            MainUiAction.RefreshControllerInfo(
-                unknownDeviceName = getString(R.string.unknown_device_name)
-            )
+        viewModel.refreshControllerInfo(
+            unknownDeviceName = getString(R.string.unknown_device_name),
+            source = source
         )
     }
 
-    private fun observeUiState() {
-        viewModel.uiState.observe(this) { state ->
-            renderUiState(state)
+    private fun bindViewModelObserver() {
+        viewModel.setOnViewModelChange { changeParam ->
+            renderUiState(changeParam.state)
+            LogCompat.d(
+                "onViewModelChange event=${changeParam.eventType} " +
+                        "source=${changeParam.source} note=${changeParam.note} " +
+                        "serviceRunning=${changeParam.state.isServiceRunning} " +
+                        "monitoring=${changeParam.state.isMonitoringEnabled} " +
+                        "overlayVisible=${changeParam.state.isOverlayVisible}"
+            )
         }
     }
 
