@@ -1,41 +1,374 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="#121212">
 
-    <android.widget.Toolbar
-        android:id="@+id/topToolbar"
-        android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideStart5"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minHeight="?android:attr/actionBarSize"
-        android:popupTheme="@android:style/Theme.Material.Light"
-        android:title="@string/controller_monitor_title"
-        android:titleTextColor="@android:color/black" />
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.05" />
 
-    <TextView
-        android:id="@+id/subtitleView"
-        android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideEnd95"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/controller_monitor_subtitle"
-        android:textColor="#333333"
-        android:textSize="14sp" />
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.95" />
 
     <ScrollView
-        android:layout_width="match_parent"
+        android:id="@+id/contentScroll"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
-        android:layout_weight="1">
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/deviceInfoView"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/contentContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/loading_controller_info"
-            android:textColor="#111111"
-            android:textSize="16sp" />
+            android:layout_height="match_parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/phoneScreenCard"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@drawable/bg_ui_phone_shell"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/topToolbar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:layout_marginTop="24dp"
+                    android:minHeight="0dp"
+                    app:popupTheme="@style/Theme.AppCompat.Light"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/statusPanelTopGuide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    app:layout_constraintGuide_percent="0.18" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/statusPanel"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="@drawable/bg_ui_status_panel"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    app:layout_constraintDimensionRatio="H,4:3"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide">
+
+                    <ImageView
+                        android:id="@+id/controllerIcon"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:contentDescription="@string/cd_controller_icon"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_gamepad"
+                        android:tint="#7E96AA"
+                        
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.60"
+                        app:layout_constraintWidth_percent="0.40" />
+
+                    <TextView
+                        android:id="@+id/deviceInfoView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginEnd="14dp"
+                        android:layout_marginBottom="12dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:text="PlayStation 4 Controller Connected"
+                        android:textColor="#D8DCE2"
+                        android:textSize="14sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/batteryCluster"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintBottom_toTopOf="@id/statusPanel"
+                    app:layout_constraintEnd_toEndOf="@id/statusPanel"
+                    app:layout_constraintStart_toStartOf="@id/statusPanel"
+                    app:layout_constraintTop_toTopOf="@id/statusPanel"
+                    app:layout_constraintWidth_percent="0.34">
+
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/batteryCircle"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:indeterminate="false"
+                        app:indicatorColor="#3D8BFF"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintDimensionRatio="1:1"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:trackColor="#2A3F58"
+                        app:trackThickness="8dp" />
+
+                    <TextView
+                        android:id="@+id/batteryPercentText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="78%"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="@id/batteryCircle"
+                        app:layout_constraintEnd_toEndOf="@id/batteryCircle"
+                        app:layout_constraintStart_toStartOf="@id/batteryCircle"
+                        app:layout_constraintTop_toTopOf="@id/batteryCircle" />
+
+                    <TextView
+                        android:id="@+id/batteryStateText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Charging"
+                        android:textColor="#6FD5FF"
+                        android:textSize="11sp"
+                        app:layout_constraintEnd_toEndOf="@id/batteryCircle"
+                        app:layout_constraintStart_toStartOf="@id/batteryCircle"
+                        app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
+
+                    <ImageView
+                        android:id="@+id/chargingIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="@string/cd_charging_icon"
+                        android:elevation="6dp"
+                        android:src="@android:drawable/ic_lock_idle_charging"
+                        android:tint="#F5A623"
+                        android:translationY="-10dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <LinearLayout
+                    android:id="@+id/settingsPrimaryCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_ui_settings_card"
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="8dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/statusPanel">
+
+                    <LinearLayout
+                        android:id="@+id/rowBackgroundMonitoring"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="7dp"
+                        android:paddingBottom="7dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="10dp"
+                            android:contentDescription="@string/cd_background_monitoring_icon"
+                            android:src="@android:drawable/ic_menu_view"
+                            android:tint="#C6CDD7" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/settings_background_monitoring"
+                            android:textColor="#E8EBEF"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchBackgroundMonitoring"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowLiveOverlay"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="7dp"
+                        android:paddingBottom="7dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="10dp"
+                            android:contentDescription="@string/cd_live_overlay_icon"
+                            android:src="@android:drawable/ic_menu_info_details"
+                            android:tint="#C6CDD7" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/settings_live_overlay"
+                            android:textColor="#E8EBEF"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchLiveOverlay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowCustomizeVibe"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="7dp"
+                        android:paddingBottom="7dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="10dp"
+                            android:contentDescription="@string/cd_customize_vibe_icon"
+                            android:src="@android:drawable/ic_menu_gallery"
+                            android:tint="#C6CDD7" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/settings_customize_vibe"
+                            android:textColor="#E8EBEF"
+                            android:textSize="14sp" />
+
+                        <ImageView
+                            android:id="@+id/customVibeIndicator"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@string/cd_vibe_color_indicator"
+                            android:src="@android:drawable/presence_online"
+                            android:tint="#4DA4FF" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/limitChargingCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_ui_limit_card"
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="8dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/settingsPrimaryCard">
+
+                    <LinearLayout
+                        android:id="@+id/rowLimitCharging"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="7dp"
+                        android:paddingBottom="7dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="10dp"
+                            android:contentDescription="@string/cd_limit_charging_icon"
+                            android:src="@android:drawable/ic_lock_idle_charging"
+                            android:tint="#E3B258" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/settings_limit_charging"
+                            android:textColor="#E8EBEF"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchLimitCharging"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <com.google.android.material.bottomnavigation.BottomNavigationView
+                    android:id="@+id/bottomNav"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_ui_bottom_nav"
+                    android:minHeight="56dp"
+                    app:itemIconTint="@color/bottom_nav_item_tint"
+                    app:itemRippleColor="@android:color/transparent"
+                    app:itemTextColor="@color/bottom_nav_item_tint"
+                    app:labelVisibilityMode="unlabeled"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/limitChargingCard"
+                    app:menu="@menu/bottom_nav_menu" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
     </ScrollView>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
