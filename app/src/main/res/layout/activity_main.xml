@@ -216,8 +216,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
                             android:text="@string/settings_background_monitoring"
-                            android:textColor="#E8EBEF"
+                            android:textColor="#D2D8DE"
                             android:textSize="14sp" />
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
@@ -253,8 +254,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
                             android:text="@string/settings_live_overlay"
-                            android:textColor="#E8EBEF"
+                            android:textColor="#D2D8DE"
                             android:textSize="14sp" />
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
@@ -290,8 +292,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
                             android:text="@string/settings_customize_vibe"
-                            android:textColor="#E8EBEF"
+                            android:textColor="#D2D8DE"
                             android:textSize="14sp" />
 
                         <ImageView
@@ -342,8 +345,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
                             android:text="@string/settings_limit_charging"
-                            android:textColor="#E8EBEF"
+                            android:textColor="#D2D8DE"
                             android:textSize="14sp" />
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
