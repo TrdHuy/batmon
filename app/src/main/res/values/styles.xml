@@ -5,6 +5,8 @@
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorSecondary">#3D8BFF</item>
         <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="android:fontFamily">@font/samsung_sharp_sans</item>
+        <item name="fontFamily">@font/samsung_sharp_sans</item>
         <item name="android:statusBarColor">#121212</item>
         <item name="android:navigationBarColor">#121212</item>
     </style>
