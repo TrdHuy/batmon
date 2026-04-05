@@ -32,12 +32,12 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/phoneScreenCard"
                 android:layout_width="0dp"
-                android:layout_height="0dp"
+                android:layout_height="wrap_content"
                 android:background="@drawable/bg_ui_phone_shell"
                 android:clipChildren="false"
                 android:clipToPadding="false"
@@ -45,7 +45,6 @@
                 android:paddingTop="10dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="10dp"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
@@ -66,7 +65,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    app:layout_constraintGuide_percent="0.18" />
+                    app:layout_constraintGuide_begin="52dp" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/statusPanel"
@@ -75,7 +74,7 @@
                     android:background="@drawable/bg_ui_status_panel"
                     android:clipChildren="false"
                     android:clipToPadding="false"
-                    app:layout_constraintDimensionRatio="H,4:3"
+                    app:layout_constraintDimensionRatio="H,16:5"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide">
@@ -94,7 +93,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="0.60"
-                        app:layout_constraintWidth_percent="0.40" />
+                        app:layout_constraintWidth_percent="0.28" />
 
                     <TextView
                         android:id="@+id/deviceInfoView"
@@ -124,7 +123,7 @@
                     app:layout_constraintEnd_toEndOf="@id/statusPanel"
                     app:layout_constraintStart_toStartOf="@id/statusPanel"
                     app:layout_constraintTop_toTopOf="@id/statusPanel"
-                    app:layout_constraintWidth_percent="0.34">
+                    app:layout_constraintWidth_percent="0.23">
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/batteryCircle"
@@ -364,13 +363,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:layout_marginBottom="8dp"
                     android:background="@drawable/bg_ui_bottom_nav"
                     android:minHeight="56dp"
                     app:itemIconTint="@color/bottom_nav_item_tint"
                     app:itemRippleColor="@android:color/transparent"
                     app:itemTextColor="@color/bottom_nav_item_tint"
                     app:labelVisibilityMode="unlabeled"
-                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/limitChargingCard"
