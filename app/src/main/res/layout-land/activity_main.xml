@@ -77,7 +77,8 @@
                     app:layout_constraintDimensionRatio="H,16:5"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide">
+                    app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide"
+                    app:layout_constraintWidth_percent="0.8472">
 
                     <ImageView
                         android:id="@+id/controllerIcon"
@@ -86,7 +87,7 @@
                         android:contentDescription="@string/cd_controller_icon"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_ui_ps4_controller"
-                        android:tint="#7E96AA"
+                        android:tint="#CDCDCD"
                         
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -178,11 +179,23 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <TextView
+                    android:id="@+id/utilCategoryLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/panel_util_category"
+                    android:textColor="#7F7F7F"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="@id/statusPanel"
+                    app:layout_constraintTop_toBottomOf="@id/statusPanel" />
+
                 <LinearLayout
                     android:id="@+id/settingsPrimaryCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="6dp"
                     android:background="@drawable/bg_ui_settings_card"
                     android:orientation="vertical"
                     android:paddingStart="10dp"
@@ -191,7 +204,8 @@
                     android:paddingBottom="8dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/statusPanel">
+                    app:layout_constraintTop_toBottomOf="@id/utilCategoryLabel"
+                    app:layout_constraintWidth_percent="0.8472">
 
                     <LinearLayout
                         android:id="@+id/rowBackgroundMonitoring"
@@ -304,11 +318,23 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/otherCategoryLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/panel_other_category"
+                    android:textColor="#7F7F7F"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="@id/settingsPrimaryCard"
+                    app:layout_constraintTop_toBottomOf="@id/settingsPrimaryCard" />
+
                 <LinearLayout
                     android:id="@+id/limitChargingCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="6dp"
                     android:background="@drawable/bg_ui_limit_card"
                     android:orientation="vertical"
                     android:paddingStart="10dp"
@@ -317,7 +343,8 @@
                     android:paddingBottom="8dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/settingsPrimaryCard">
+                    app:layout_constraintTop_toBottomOf="@id/otherCategoryLabel"
+                    app:layout_constraintWidth_percent="0.8472">
 
                     <LinearLayout
                         android:id="@+id/rowLimitCharging"
@@ -357,23 +384,6 @@
                     </LinearLayout>
 
                 </LinearLayout>
-
-                <com.google.android.material.bottomnavigation.BottomNavigationView
-                    android:id="@+id/bottomNav"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/bg_ui_bottom_nav"
-                    android:minHeight="56dp"
-                    app:itemIconTint="@color/bottom_nav_item_tint"
-                    app:itemRippleColor="@android:color/transparent"
-                    app:itemTextColor="@color/bottom_nav_item_tint"
-                    app:labelVisibilityMode="unlabeled"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/limitChargingCard"
-                    app:menu="@menu/bottom_nav_menu" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -82,6 +82,8 @@
     <string name="status_card_controller_disconnected">No PlayStation 4 Controller Connected</string>
     <string name="status_card_battery_unknown" formatted="false">--%</string>
     <string name="status_card_battery_percent">%1$d%%</string>
+    <string name="panel_util_category">Util category</string>
+    <string name="panel_other_category">Others</string>
     <string name="nav_home">Home</string>
     <string name="nav_activity">Activity</string>
     <string name="nav_profile">Profile</string>
