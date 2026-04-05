@@ -27,7 +27,6 @@ import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 
 class MainActivity : AppCompatActivity() {
@@ -44,7 +43,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
     private lateinit var batteryCircle: CircularProgressIndicator
-    private lateinit var bottomNav: BottomNavigationView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var viewModel: MainViewModel
@@ -98,10 +96,8 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
-        bottomNav = findViewById(R.id.bottomNav)
 
         setupToolbarMenu()
-        setupBottomNav()
         bindViewModelObserver()
 
         renderUiState(viewModel.currentUiState())
@@ -192,14 +188,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnMenuItemClickListener true
             }
             false
-        }
-    }
-
-    private fun setupBottomNav() {
-        bottomNav.selectedItemId = R.id.nav_home
-        bottomNav.setOnItemSelectedListener { item ->
-            LogCompat.d("BottomNav selected item=${item.itemId}")
-            true
         }
     }
 

@@ -71,6 +71,8 @@
     <string name="settings_live_overlay">Live Battery Overlay</string>
     <string name="settings_customize_vibe">Customize Vibe (Lightbar)</string>
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
+    <string name="settings_protect_battery">Protect Battery</string>
+    <string name="settings_limit_charging_subtitle">Limit charging to 80%</string>
     <string name="cd_background_monitoring_icon">Background monitoring icon</string>
     <string name="cd_live_overlay_icon">Live battery overlay icon</string>
     <string name="cd_customize_vibe_icon">Customize vibe icon</string>
@@ -82,6 +84,8 @@
     <string name="status_card_controller_disconnected">No PlayStation 4 Controller Connected</string>
     <string name="status_card_battery_unknown" formatted="false">--%</string>
     <string name="status_card_battery_percent">%1$d%%</string>
+    <string name="panel_util_category">Util category</string>
+    <string name="panel_other_category">Others</string>
     <string name="nav_home">Home</string>
     <string name="nav_activity">Activity</string>
     <string name="nav_profile">Profile</string>
