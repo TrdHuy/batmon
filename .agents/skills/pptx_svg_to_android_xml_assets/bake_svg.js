@@ -1,4 +1,3 @@
-// .agents/skills/pptx_to_android_xml/bake_svg.js
 const fs = require('fs');
 const cheerio = require('cheerio');
 const svgpath = require('svgpath');
@@ -7,7 +6,7 @@ const inputPath = process.argv[2];
 const outputPath = process.argv[3];
 
 if (!inputPath || !outputPath) {
-    console.error("[Lỗi] Vui lòng cung cấp đủ đường dẫn file nguồn và file đích.");
+    console.error("[Lỗi] Vui lòng cung cấp đủ đường dẫn file nguồn và đích.");
     process.exit(1);
 }
 
@@ -15,87 +14,89 @@ try {
     const svgCode = fs.readFileSync(inputPath, 'utf8');
     const $ = cheerio.load(svgCode, { xmlMode: true });
 
-    $('g[transform]').each((i, el) => {
-        const transform = $(el).attr('transform');
-        const match = transform.match(/translate\(([^, ]+)[\s,]+([^)]+)\)/);
+    // BƯỚC 1: CONVERT TẤT CẢ <rect> THÀNH <path> ĐỂ DỄ BAKE TỌA ĐỘ
+    $('rect').each((i, el) => {
+        const x = parseFloat($(el).attr('x') || 0);
+        const y = parseFloat($(el).attr('y') || 0);
+        const w = parseFloat($(el).attr('width') || 0);
+        const h = parseFloat($(el).attr('height') || 0);
+        let rx = parseFloat($(el).attr('rx') || $(el).attr('ry') || 0);
+        let ry = parseFloat($(el).attr('ry') || $(el).attr('rx') || 0);
+
+        if (rx > w / 2) rx = w / 2;
+        if (ry > h / 2) ry = h / 2;
+
+        let d = '';
+        if (rx === 0 && ry === 0) {
+            d = `M${x} ${y} H${x + w} V${y + h} H${x} Z`;
+        } else {
+            // Toán học để vẽ hình chữ nhật bo góc bằng Path
+            d = `M${x + rx} ${y} ` +
+                `H${x + w - rx} A${rx} ${ry} 0 0 1 ${x + w} ${y + ry} ` +
+                `V${y + h - ry} A${rx} ${ry} 0 0 1 ${x + w - rx} ${y + h} ` +
+                `H${x + rx} A${rx} ${ry} 0 0 1 ${x} ${y + h - ry} ` +
+                `V${y + ry} A${rx} ${ry} 0 0 1 ${x + rx} ${y} Z`;
+        }
+
+        // Thay thế <rect> bằng <path> nhưng giữ nguyên mọi thuộc tính khác (fill, matrix...)
+        const attribs = { ...$(el).attr(), d: d };
+        delete attribs.x; delete attribs.y; delete attribs.width; 
+        delete attribs.height; delete attribs.rx; delete attribs.ry;
         
-        if (match) {
-            const tx = parseFloat(match[1]);
-            const ty = parseFloat(match[2]);
+        $(el).replaceWith($('<path>').attr(attribs));
+    });
 
-            $(el).children().each((j, child) => {
-                const tagName = child.name;
-                const childTransform = $(child).attr('transform');
-
-                // TRƯỜNG HỢP 1: THẺ CON CÓ SẴN TRANSFORM (Ví dụ: rect có matrix)
-                if (childTransform) {
-                    if (childTransform.startsWith('matrix')) {
-                        // Cấu trúc matrix(a, b, c, d, e, f)
-                        // Cộng tx vào e, cộng ty vào f. Tuyệt đối không sửa x, y.
-                        const matrixMatch = childTransform.match(/matrix\(([^)]+)\)/);
-                        if (matrixMatch) {
-                            const vals = matrixMatch[1].split(/[\s,]+/).map(parseFloat);
-                            if (vals.length === 6) {
-                                vals[4] = +(vals[4] + tx).toFixed(3);
-                                vals[5] = +(vals[5] + ty).toFixed(3);
-                                $(child).attr('transform', `matrix(${vals.join(' ')})`);
-                            }
-                        }
-                    } else if (childTransform.startsWith('translate')) {
-                        // Cộng dồn 2 cái translate lại với nhau
-                        const tMatch = childTransform.match(/translate\(([^, ]+)[\s,]+([^)]+)\)/);
-                        if (tMatch) {
-                            const ctx = parseFloat(tMatch[1]);
-                            const cty = parseFloat(tMatch[2]);
-                            $(child).attr('transform', `translate(${ctx + tx} ${cty + ty})`);
-                        }
-                    } else {
-                        // Nếu là rotate, scale... thì nhét translate của cha lên đầu
-                        $(child).attr('transform', `translate(${tx} ${ty}) ${childTransform}`);
-                    }
-                } 
-                // TRƯỜNG HỢP 2: THẺ CON KHÔNG CÓ TRANSFORM (Sửa thẳng vào tọa độ vật lý)
-                else {
-                    if (tagName === 'path') {
-                        const originalD = $(child).attr('d');
-                        if (originalD) {
-                            const newD = svgpath(originalD).translate(tx, ty).round(3).toString();
-                            $(child).attr('d', newD);
-                        }
-                    } else if (tagName === 'rect') {
-                        const x = parseFloat($(child).attr('x') || 0);
-                        const y = parseFloat($(child).attr('y') || 0);
-                        $(child).attr('x', +(x + tx).toFixed(3));
-                        $(child).attr('y', +(y + ty).toFixed(3));
-                    } else if (tagName === 'circle' || tagName === 'ellipse') {
-                        const cx = parseFloat($(child).attr('cx') || 0);
-                        const cy = parseFloat($(child).attr('cy') || 0);
-                        $(child).attr('cx', +(cx + tx).toFixed(3));
-                        $(child).attr('cy', +(cy + ty).toFixed(3));
-                    } else if (tagName === 'g') {
-                        $(child).attr('transform', `translate(${tx} ${ty})`);
-                    }
-                }
-            });
-
-            // Xóa transform của thẻ cha sau khi đã "nhồi" hết xuống thẻ con
+    // BƯỚC 2: BAKE TRANSFORM CỦA CHÍNH CÁC THẺ <path> (BAO GỒM CẢ MA TRẬN)
+    $('path[transform]').each((i, el) => {
+        const transform = $(el).attr('transform');
+        const d = $(el).attr('d');
+        if (d && transform) {
+            // svgpath tự động hiểu matrix() và tính toán lại tọa độ tuyệt đối
+            const newD = svgpath(d).transform(transform).round(3).toString();
+            $(el).attr('d', newD);
             $(el).removeAttr('transform');
         }
     });
 
+    // BƯỚC 3: ÉP TRANSFORM TỪ CÁC THẺ GROUP <g> XUỐNG CÁC THẺ CON
+    let hasGroupTransform = true;
+    while (hasGroupTransform) {
+        hasGroupTransform = false;
+        $('g[transform]').each((i, el) => {
+            hasGroupTransform = true;
+            const gTransform = $(el).attr('transform');
+            
+            // Ép vào các thẻ path con
+            $(el).children('path').each((j, childPath) => {
+                 const d = $(childPath).attr('d');
+                 if(d) {
+                     const newD = svgpath(d).transform(gTransform).round(3).toString();
+                     $(childPath).attr('d', newD);
+                 }
+            });
+
+            // Cộng dồn transform vào thẻ group con (nếu group bị lồng nhau)
+            $(el).children('g').each((j, childG) => {
+                 const cTrans = $(childG).attr('transform') || '';
+                 $(childG).attr('transform', gTransform + ' ' + cTrans); 
+            });
+
+            $(el).removeAttr('transform');
+        });
+    }
+
+    // BƯỚC 4: BẢO ĐẢM VIEWPORT
     const svgEl = $('svg');
     if (!svgEl.attr('viewBox')) {
         const w = parseFloat(svgEl.attr('width'));
         const h = parseFloat(svgEl.attr('height'));
-        if (!isNaN(w) && !isNaN(h)) {
-            svgEl.attr('viewBox', `0 0 ${w} ${h}`);
-        }
+        if (!isNaN(w) && !isNaN(h)) svgEl.attr('viewBox', `0 0 ${w} ${h}`);
     }
 
     fs.writeFileSync(outputPath, $.xml());
-    console.log(`[Thành công] Đã xử lý (Bake Transform) và lưu tại: ${outputPath}`);
+    console.log(`[Thành công] Đã Flatten toàn bộ hình học và ma trận. Lưu tại: ${outputPath}`);
 
 } catch (error) {
-    console.error(`[Lỗi] Không thể xử lý:`, error.message);
+    console.error(`[Lỗi]:`, error.message);
     process.exit(1);
 }
