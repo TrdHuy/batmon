@@ -85,7 +85,7 @@
                         android:layout_height="0dp"
                         android:contentDescription="@string/cd_controller_icon"
                         android:scaleType="fitCenter"
-                        android:src="@drawable/ic_gamepad"
+                        android:src="@drawable/ic_ui_ps4_controller"
                         android:tint="#7E96AA"
                         
                         app:layout_constraintBottom_toBottomOf="parent"
@@ -166,12 +166,11 @@
 
                     <ImageView
                         android:id="@+id/chargingIcon"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
                         android:contentDescription="@string/cd_charging_icon"
                         android:elevation="6dp"
-                        android:src="@android:drawable/ic_lock_idle_charging"
-                        android:tint="#F5A623"
+                        android:src="@drawable/ic_ui_charging"
                         android:translationY="-10dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -204,12 +203,11 @@
                         android:paddingBottom="7dp">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_marginEnd="10dp"
                             android:contentDescription="@string/cd_background_monitoring_icon"
-                            android:src="@android:drawable/ic_menu_view"
-                            android:tint="#C6CDD7" />
+                            android:src="@drawable/ic_ui_monitor" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -242,12 +240,11 @@
                         android:paddingBottom="7dp">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_marginEnd="10dp"
                             android:contentDescription="@string/cd_live_overlay_icon"
-                            android:src="@android:drawable/ic_menu_info_details"
-                            android:tint="#C6CDD7" />
+                            android:src="@drawable/ic_ui_overlay" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -280,12 +277,11 @@
                         android:paddingBottom="7dp">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_marginEnd="10dp"
                             android:contentDescription="@string/cd_customize_vibe_icon"
-                            android:src="@android:drawable/ic_menu_gallery"
-                            android:tint="#C6CDD7" />
+                            android:src="@drawable/ic_ui_vibe" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -333,12 +329,11 @@
                         android:paddingBottom="7dp">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_marginEnd="10dp"
                             android:contentDescription="@string/cd_limit_charging_icon"
-                            android:src="@android:drawable/ic_lock_idle_charging"
-                            android:tint="#E3B258" />
+                            android:src="@drawable/ic_ui_protect_battery" />
 
                         <TextView
                             android:layout_width="0dp"
