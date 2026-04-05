@@ -10,6 +10,7 @@ import android.view.Gravity
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.graphics.ColorUtils
+import kotlin.math.roundToInt
 
 class GlimpseToggleView @JvmOverloads constructor(
     context: Context,
@@ -17,21 +18,31 @@ class GlimpseToggleView @JvmOverloads constructor(
     defStyleAttr: Int = androidx.appcompat.R.attr.checkboxStyle
 ) : AppCompatCheckBox(context, attrs, defStyleAttr) {
 
+    companion object {
+        private val CHECKED_ATTR = intArrayOf(android.R.attr.checked)
+    }
+
     private val density = resources.displayMetrics.density
     private val trackRect = RectF()
+    private val trackStrokeRect = RectF()
     private val thumbRect = RectF()
-    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val trackFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
+    private val trackStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+    }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private val defaultWidthPx = dpToPx(46f)
-    private val defaultHeightPx = dpToPx(26f)
-    private val thumbSizePx = dpToPx(18f)
+    private val defaultWidthPx = dpToPx(43f)
+    private val defaultHeightPx = dpToPx(20f)
+    private val thumbSizePx = dpToPx(15f)
     private val thumbInsetPx = dpToPx(4f)
+    private val trackStrokeWidthPx = dpToPxF(2f)
 
-    private val checkedTrackColor = 0xFF33608A.toInt()
-    private val uncheckedTrackColor = 0xFF273234.toInt()
-    private val checkedThumbColor = 0xFFF8FCFF.toInt()
-    private val uncheckedThumbColor = 0xFFF4F7FA.toInt()
+    private val checkedTrackColor = 0xFF375E7F.toInt()
+    private val uncheckedTrackStrokeColor = 0xFF375E7F.toInt()
+    private val thumbColor = 0xFFF2F2F2.toInt()
 
     private var thumbProgress = if (isChecked) 1f else 0f
     private var progressAnimator: ValueAnimator? = null
@@ -49,7 +60,20 @@ class GlimpseToggleView @JvmOverloads constructor(
         includeFontPadding = false
         isClickable = true
         isFocusable = true
-        thumbProgress = if (isChecked) 1f else 0f
+
+        val checkedFromXml = if (attrs != null) {
+            val typedArray = context.obtainStyledAttributes(attrs, CHECKED_ATTR, defStyleAttr, 0)
+            try {
+                typedArray.getBoolean(0, isChecked)
+            } finally {
+                typedArray.recycle()
+            }
+        } else {
+            isChecked
+        }
+
+        super.setChecked(checkedFromXml)
+        thumbProgress = if (checkedFromXml) 1f else 0f
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -84,20 +108,45 @@ class GlimpseToggleView @JvmOverloads constructor(
         invalidate()
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Keep rendered state in sync with checked state restored by the framework.
+        thumbProgress = if (isChecked) 1f else 0f
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         val width = width.toFloat()
         val height = height.toFloat()
         val radius = height / 2f
 
         trackRect.set(0f, 0f, width, height)
-        trackPaint.color = ColorUtils.blendARGB(uncheckedTrackColor, checkedTrackColor, thumbProgress)
-        canvas.drawRoundRect(trackRect, radius, radius, trackPaint)
+        val checkedAlpha = (thumbProgress * 255f).roundToInt().coerceIn(0, 255)
+        if (checkedAlpha > 0) {
+            trackFillPaint.color = ColorUtils.setAlphaComponent(checkedTrackColor, checkedAlpha)
+            canvas.drawRoundRect(trackRect, radius, radius, trackFillPaint)
+        }
+
+        val uncheckedAlpha = ((1f - thumbProgress) * 255f).roundToInt().coerceIn(0, 255)
+        if (uncheckedAlpha > 0) {
+            val inset = trackStrokeWidthPx / 2f
+            trackStrokeRect.set(
+                inset,
+                inset,
+                width - inset,
+                height - inset
+            )
+            trackStrokePaint.strokeWidth = trackStrokeWidthPx
+            trackStrokePaint.color =
+                ColorUtils.setAlphaComponent(uncheckedTrackStrokeColor, uncheckedAlpha)
+            canvas.drawRoundRect(trackStrokeRect, radius, radius, trackStrokePaint)
+        }
 
         val travel = width - (2f * thumbInsetPx) - thumbSizePx
         val thumbLeft = thumbInsetPx + (travel * thumbProgress)
         val thumbTop = (height - thumbSizePx) / 2f
         thumbRect.set(thumbLeft, thumbTop, thumbLeft + thumbSizePx, thumbTop + thumbSizePx)
-        thumbPaint.color = ColorUtils.blendARGB(uncheckedThumbColor, checkedThumbColor, thumbProgress)
+        thumbPaint.color = thumbColor
         canvas.drawOval(thumbRect, thumbPaint)
     }
 
@@ -116,5 +165,9 @@ class GlimpseToggleView @JvmOverloads constructor(
 
     private fun dpToPx(dp: Float): Int {
         return (dp * density).toInt()
+    }
+
+    private fun dpToPxF(dp: Float): Float {
+        return dp * density
     }
 }

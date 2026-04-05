@@ -236,8 +236,8 @@
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
                             android:id="@+id/switchBackgroundMonitoring"
-                            android:layout_width="46dp"
-                            android:layout_height="26dp"
+                            android:layout_width="43dp"
+                            android:layout_height="20dp"
                             android:checked="true"
                             android:contentDescription="@string/settings_background_monitoring"
                             android:minWidth="0dp"
@@ -273,9 +273,9 @@
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
                             android:id="@+id/switchLiveOverlay"
-                            android:layout_width="46dp"
-                            android:layout_height="26dp"
-                            android:checked="true"
+                            android:layout_width="43dp"
+                            android:layout_height="20dp"
+                            android:checked="false"
                             android:contentDescription="@string/settings_live_overlay"
                             android:minWidth="0dp"
                             android:minHeight="0dp"
@@ -392,8 +392,8 @@
 
                         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
                             android:id="@+id/switchLimitCharging"
-                            android:layout_width="46dp"
-                            android:layout_height="26dp"
+                            android:layout_width="43dp"
+                            android:layout_height="20dp"
                             android:checked="false"
                             android:contentDescription="@string/settings_protect_battery"
                             android:minWidth="0dp"
