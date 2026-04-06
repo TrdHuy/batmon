@@ -18,12 +18,16 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
+import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
+import com.android.synclab.glimpse.presentation.view.SettingItemAdapter
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
@@ -43,12 +47,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
     private lateinit var batteryCircle: CircularProgressIndicator
+    private lateinit var utilSettingsRecycler: RecyclerView
+    private lateinit var otherSettingsRecycler: RecyclerView
+    private lateinit var utilSettingsAdapter: SettingItemAdapter
+    private lateinit var otherSettingsAdapter: SettingItemAdapter
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var viewModel: MainViewModel
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
+    private var protectBatteryEnabled = false
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -96,8 +105,11 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
+        utilSettingsRecycler = findViewById(R.id.utilSettingsRecycler)
+        otherSettingsRecycler = findViewById(R.id.otherSettingsRecycler)
 
         setupToolbarMenu()
+        setupSettingsLists()
         bindViewModelObserver()
 
         renderUiState(viewModel.currentUiState())
@@ -189,6 +201,113 @@ class MainActivity : AppCompatActivity() {
             }
             false
         }
+    }
+
+    private fun setupSettingsLists() {
+        utilSettingsAdapter = SettingItemAdapter(
+            onToggleChanged = ::handleSettingToggleChanged,
+            onItemClicked = ::handleSettingItemClicked
+        )
+        otherSettingsAdapter = SettingItemAdapter(
+            onToggleChanged = ::handleSettingToggleChanged,
+            onItemClicked = ::handleSettingItemClicked
+        )
+
+        utilSettingsRecycler.layoutManager = LinearLayoutManager(this)
+        utilSettingsRecycler.adapter = utilSettingsAdapter
+        utilSettingsRecycler.itemAnimator = null
+        utilSettingsRecycler.isNestedScrollingEnabled = false
+
+        otherSettingsRecycler.layoutManager = LinearLayoutManager(this)
+        otherSettingsRecycler.adapter = otherSettingsAdapter
+        otherSettingsRecycler.itemAnimator = null
+        otherSettingsRecycler.isNestedScrollingEnabled = false
+
+        utilSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+            utilSettingsAdapter.updateContainerHeight(view.height)
+        }
+        otherSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+            otherSettingsAdapter.updateContainerHeight(view.height)
+        }
+
+        utilSettingsRecycler.post {
+            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
+        }
+        otherSettingsRecycler.post {
+            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
+        }
+    }
+
+    private fun handleSettingToggleChanged(
+        itemId: SettingItemUiModel.ItemId,
+        checked: Boolean
+    ) {
+        LogCompat.d("settingToggleChanged id=$itemId checked=$checked")
+        when (itemId) {
+            SettingItemUiModel.ItemId.BACKGROUND_MONITORING -> {
+                if (checked) {
+                    startMonitoring()
+                } else if (dispatchServiceAction(BatteryOverlayService.ACTION_STOP_MONITORING, false)) {
+                    showToast(R.string.toast_monitoring_stopped)
+                }
+            }
+
+            SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY -> {
+                if (checked) {
+                    if (!Settings.canDrawOverlays(this)) {
+                        requestOverlayPermission()
+                        showToast(R.string.toast_overlay_permission_required)
+                        refreshSettingsStateLater(300L)
+                        return
+                    }
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, false)) {
+                        showToast(R.string.toast_overlay_shown)
+                    }
+                } else {
+                    if (!BatteryOverlayService.isRunning) {
+                        LogCompat.d("Ignore hide overlay because service is not running")
+                        refreshSettingsStateLater(200L)
+                        return
+                    }
+                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, false)) {
+                        showToast(R.string.toast_overlay_hidden)
+                    }
+                }
+            }
+
+            SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
+                protectBatteryEnabled = checked
+            }
+
+            SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
+                // No toggle action for this item type.
+            }
+        }
+        refreshSettingsStateLater()
+    }
+
+    private fun handleSettingItemClicked(itemId: SettingItemUiModel.ItemId) {
+        LogCompat.d("settingItemClicked id=$itemId")
+        when (itemId) {
+            SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
+                // Placeholder for vibe customization action.
+            }
+
+            SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
+            SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
+            SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
+                // Toggle rows are handled from onToggleChanged.
+            }
+        }
+    }
+
+    private fun refreshSettingsStateLater(delayMs: Long = 250L) {
+        mainHandler.postDelayed(
+            {
+                viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
+            },
+            delayMs
+        )
     }
 
     private fun showConfigDialog() {
@@ -462,6 +581,60 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateBatteryUi(state.batteryPercent, state.batteryStatus)
+        renderSettingItems(state)
+    }
+
+    private fun renderSettingItems(state: MainUiState) {
+        if (!::utilSettingsAdapter.isInitialized || !::otherSettingsAdapter.isInitialized) {
+            return
+        }
+
+        utilSettingsAdapter.submitList(
+            listOf(
+                SettingItemUiModel(
+                    id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
+                    iconRes = R.drawable.ic_ui_monitor,
+                    title = getString(R.string.settings_background_monitoring),
+                    control = SettingItemUiModel.Control.Toggle(
+                        checked = state.isMonitoringEnabled
+                    )
+                ),
+                SettingItemUiModel(
+                    id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
+                    iconRes = R.drawable.ic_ui_overlay,
+                    title = getString(R.string.settings_live_overlay),
+                    control = SettingItemUiModel.Control.Toggle(
+                        checked = state.isOverlayVisible
+                    )
+                ),
+                SettingItemUiModel(
+                    id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
+                    iconRes = R.drawable.ic_ui_vibe,
+                    title = getString(R.string.settings_customize_vibe),
+                    control = SettingItemUiModel.Control.None
+                )
+            )
+        )
+        utilSettingsRecycler.post {
+            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
+        }
+
+        otherSettingsAdapter.submitList(
+            listOf(
+                SettingItemUiModel(
+                    id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
+                    iconRes = R.drawable.ic_ui_protect_battery,
+                    title = getString(R.string.settings_protect_battery),
+                    subtitle = getString(R.string.settings_limit_charging_subtitle),
+                    control = SettingItemUiModel.Control.Toggle(
+                        checked = protectBatteryEnabled
+                    )
+                )
+            )
+        )
+        otherSettingsRecycler.post {
+            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
+        }
     }
 
     private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {

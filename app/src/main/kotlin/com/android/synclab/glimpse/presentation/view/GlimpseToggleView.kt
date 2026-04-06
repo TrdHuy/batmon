@@ -34,10 +34,10 @@ class GlimpseToggleView @JvmOverloads constructor(
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private val defaultWidthPx = dpToPx(43f)
-    private val defaultHeightPx = dpToPx(20f)
-    private val thumbSizePx = dpToPx(15f)
-    private val thumbInsetPx = dpToPx(4f)
+    private val defaultWidthPx = dpToPx(40f)
+    private val defaultHeightPx = dpToPx(18f)
+    private val thumbSizePx = dpToPx(14f)
+    private val thumbInsetPx = dpToPx(3f)
     private val trackStrokeWidthPx = dpToPxF(2f)
 
     private val checkedTrackColor = 0xFF375E7F.toInt()

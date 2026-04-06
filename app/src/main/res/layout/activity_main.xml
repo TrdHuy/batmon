@@ -109,7 +109,7 @@
                         android:maxLines="2"
                         android:text="PlayStation 4 Controller Connected"
                         android:textColor="#D8DCE2"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent" />
@@ -147,7 +147,7 @@
                         android:layout_height="wrap_content"
                         android:text="78%"
                         android:textColor="#FFFFFF"
-                        android:textSize="32sp"
+                        android:textSize="27sp"
                         android:textStyle="bold"
                         app:layout_constraintBottom_toBottomOf="@id/batteryCircle"
                         app:layout_constraintEnd_toEndOf="@id/batteryCircle"
@@ -161,7 +161,7 @@
                         android:layout_marginTop="2dp"
                         android:text="Charging"
                         android:textColor="#6FD5FF"
-                        android:textSize="11sp"
+                        android:textSize="9sp"
                         app:layout_constraintEnd_toEndOf="@id/batteryCircle"
                         app:layout_constraintStart_toStartOf="@id/batteryCircle"
                         app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
@@ -184,142 +184,41 @@
                     android:id="@+id/utilCategoryLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="32dp"
                     android:text="@string/panel_util_category"
                     android:textColor="#7F7F7F"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="@id/statusPanel"
                     app:layout_constraintTop_toBottomOf="@id/statusPanel" />
 
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/settingsPrimaryCard"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="12dp"
                     android:background="@drawable/bg_ui_settings_card"
                     android:elevation="6dp"
-                    android:orientation="vertical"
-                    android:paddingStart="10dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="10dp"
-                    android:paddingBottom="8dp"
                     android:translationZ="2dp"
+                    app:layout_constraintDimensionRatio="H,4648200:2039112"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/utilCategoryLabel"
                     app:layout_constraintWidth_percent="0.8472">
 
-                    <LinearLayout
-                        android:id="@+id/rowBackgroundMonitoring"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="7dp"
-                        android:paddingBottom="7dp">
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/utilSettingsRecycler"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        android:scrollbars="none"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_marginEnd="10dp"
-                            android:contentDescription="@string/cd_background_monitoring_icon"
-                            android:src="@drawable/ic_ui_monitor" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/samsung_sharp_sans_medium"
-                            android:text="@string/settings_background_monitoring"
-                            android:textColor="#D2D8DE"
-                            android:textSize="16sp" />
-
-                        <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
-                            android:id="@+id/switchBackgroundMonitoring"
-                            android:layout_width="43dp"
-                            android:layout_height="20dp"
-                            android:checked="true"
-                            android:contentDescription="@string/settings_background_monitoring"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:padding="0dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/rowLiveOverlay"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="7dp"
-                        android:paddingBottom="7dp">
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_marginEnd="10dp"
-                            android:contentDescription="@string/cd_live_overlay_icon"
-                            android:src="@drawable/ic_ui_overlay" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/samsung_sharp_sans_medium"
-                            android:text="@string/settings_live_overlay"
-                            android:textColor="#D2D8DE"
-                            android:textSize="16sp" />
-
-                        <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
-                            android:id="@+id/switchLiveOverlay"
-                            android:layout_width="43dp"
-                            android:layout_height="20dp"
-                            android:checked="false"
-                            android:contentDescription="@string/settings_live_overlay"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:padding="0dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/rowCustomizeVibe"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="7dp"
-                        android:paddingBottom="7dp">
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_marginEnd="10dp"
-                            android:contentDescription="@string/cd_customize_vibe_icon"
-                            android:src="@drawable/ic_ui_vibe" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/samsung_sharp_sans_medium"
-                            android:text="@string/settings_customize_vibe"
-                            android:textColor="#D2D8DE"
-                            android:textSize="16sp" />
-
-                        <ImageView
-                            android:id="@+id/customVibeIndicator"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="@string/cd_vibe_color_indicator"
-                            android:background="@drawable/bg_ui_vibe_indicator"
-                            android:padding="2dp" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <TextView
                     android:id="@+id/otherCategoryLabel"
@@ -328,82 +227,38 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/panel_other_category"
                     android:textColor="#7F7F7F"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="@id/settingsPrimaryCard"
                     app:layout_constraintTop_toBottomOf="@id/settingsPrimaryCard" />
 
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/limitChargingCard"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
                     android:layout_marginTop="6dp"
                     android:background="@drawable/bg_ui_limit_card"
                     android:elevation="6dp"
-                    android:orientation="vertical"
-                    android:paddingStart="10dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="10dp"
-                    android:paddingBottom="8dp"
                     android:translationZ="2dp"
+                    app:layout_constraintDimensionRatio="H,4648200:777240"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/otherCategoryLabel"
                     app:layout_constraintWidth_percent="0.8472">
 
-                    <LinearLayout
-                        android:id="@+id/rowLimitCharging"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="7dp"
-                        android:paddingBottom="7dp">
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/otherSettingsRecycler"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        android:scrollbars="none"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_marginEnd="10dp"
-                            android:contentDescription="@string/cd_limit_charging_icon"
-                            android:src="@drawable/ic_ui_protect_battery" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/samsung_sharp_sans_medium"
-                                android:text="@string/settings_protect_battery"
-                                android:textColor="#D2D8DE"
-                                android:textSize="16sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/samsung_sharp_sans_bold"
-                                android:text="@string/settings_limit_charging_subtitle"
-                                android:textColor="#7F7F7F"
-                                android:textSize="11sp" />
-
-                        </LinearLayout>
-
-                        <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
-                            android:id="@+id/switchLimitCharging"
-                            android:layout_width="43dp"
-                            android:layout_height="20dp"
-                            android:checked="false"
-                            android:contentDescription="@string/settings_protect_battery"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:padding="0dp" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

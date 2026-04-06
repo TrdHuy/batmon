@@ -69,7 +69,7 @@
     <string name="unknown_controller_name">Gamepad</string>
     <string name="settings_background_monitoring">Background Monitoring</string>
     <string name="settings_live_overlay">Live Battery Overlay</string>
-    <string name="settings_customize_vibe">Customize Vibe (Lightbar)</string>
+    <string name="settings_customize_vibe">Customize Vibe</string>
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
     <string name="settings_protect_battery">Protect Battery</string>
     <string name="settings_limit_charging_subtitle">Limit charging to 80%</string>
