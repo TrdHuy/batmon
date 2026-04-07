@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Android Debug: Full",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/start-android-debug.sh full"
+    },
+    {
+      "label": "Android Debug: Attach",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/start-android-debug.sh attach"
+    }
+  ]
+}
