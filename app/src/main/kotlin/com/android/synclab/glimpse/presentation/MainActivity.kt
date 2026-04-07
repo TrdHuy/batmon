@@ -36,6 +36,7 @@ import com.google.android.material.progressindicator.CircularProgressIndicator
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val REFRESH_INTERVAL_MS = 5_000L
+        private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
     }
@@ -527,8 +528,13 @@ class MainActivity : AppCompatActivity() {
             return false
         }
 
-        viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
-        requestControllerRefresh(EventChangeParam.Source.VIEW)
+        mainHandler.postDelayed(
+            {
+                viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
+                requestControllerRefresh(EventChangeParam.Source.VIEW)
+            },
+            SERVICE_ACTION_STATE_SYNC_DELAY_MS
+        )
         return true
     }
 

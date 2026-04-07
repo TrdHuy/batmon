@@ -19,54 +19,78 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.95" />
 
+    <TextView
+        android:id="@+id/appTitleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="50dp"
+        android:fontFamily="@font/samsung_sharp_sans_bold"
+        android:text="@string/app_title_glimpse"
+        android:textColor="#F8F8F8"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/topToolbar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:layout_marginEnd="12dp"
+        android:background="@android:color/transparent"
+        android:minHeight="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:popupTheme="@style/Theme.AppCompat.Light" />
+
+    <View
+        android:id="@+id/headerSpacer"
+        android:layout_width="0dp"
+        android:layout_height="104dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ScrollView
         android:id="@+id/contentScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fadeScrollbars="false"
         android:fillViewport="true"
+        android:paddingBottom="18dp"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollbars="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/headerSpacer">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/phoneScreenCard"
                 android:layout_width="0dp"
-                android:layout_height="0dp"
+                android:layout_height="wrap_content"
                 android:background="@drawable/bg_ui_phone_shell"
                 android:clipChildren="false"
                 android:clipToPadding="false"
-                android:paddingStart="12dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="10dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
-
-                <androidx.appcompat.widget.Toolbar
-                    android:id="@+id/topToolbar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    android:layout_marginTop="24dp"
-                    android:minHeight="0dp"
-                    app:popupTheme="@style/Theme.AppCompat.Light"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
 
                 <androidx.constraintlayout.widget.Guideline
                     android:id="@+id/statusPanelTopGuide"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    app:layout_constraintGuide_percent="0.20" />
+                    app:layout_constraintGuide_begin="128dp" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/statusPanel"
@@ -75,7 +99,7 @@
                     android:background="@drawable/bg_ui_status_panel"
                     android:clipChildren="false"
                     android:clipToPadding="false"
-                    app:layout_constraintDimensionRatio="H,4:3"
+                    app:layout_constraintDimensionRatio="H,6100:5000"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@id/statusPanelTopGuide"
@@ -89,13 +113,12 @@
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_ui_ps4_controller"
                         android:tint="#CDCDCD"
-                        
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintVertical_bias="0.60"
-                        app:layout_constraintWidth_percent="0.40" />
+                        app:layout_constraintVertical_bias="0.56"
+                        app:layout_constraintWidth_percent="0.557" />
 
                     <TextView
                         android:id="@+id/deviceInfoView"
@@ -120,25 +143,28 @@
                     android:id="@+id/batteryCluster"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
+                    android:background="@drawable/bg_ui_battery_panel"
+                    android:elevation="8dp"
                     app:layout_constraintDimensionRatio="1:1"
                     app:layout_constraintBottom_toTopOf="@id/statusPanel"
                     app:layout_constraintEnd_toEndOf="@id/statusPanel"
                     app:layout_constraintStart_toStartOf="@id/statusPanel"
                     app:layout_constraintTop_toTopOf="@id/statusPanel"
-                    app:layout_constraintWidth_percent="0.34">
+                    app:layout_constraintWidth_percent="0.3889">
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/batteryCircle"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:indeterminate="false"
-                        app:indicatorColor="#3D8BFF"
+                        app:indicatorColor="#2C64FF"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintDimensionRatio="1:1"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:trackColor="#2A3F58"
+                        app:layout_constraintWidth_percent="0.8571"
+                        app:trackColor="#33FFFFFF"
                         app:trackThickness="8dp" />
 
                     <TextView
@@ -147,7 +173,7 @@
                         android:layout_height="wrap_content"
                         android:text="78%"
                         android:textColor="#FFFFFF"
-                        android:textSize="27sp"
+                        android:textSize="28sp"
                         android:textStyle="bold"
                         app:layout_constraintBottom_toBottomOf="@id/batteryCircle"
                         app:layout_constraintEnd_toEndOf="@id/batteryCircle"
@@ -162,18 +188,19 @@
                         android:text="Charging"
                         android:textColor="#6FD5FF"
                         android:textSize="9sp"
+                        android:visibility="gone"
                         app:layout_constraintEnd_toEndOf="@id/batteryCircle"
                         app:layout_constraintStart_toStartOf="@id/batteryCircle"
                         app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
 
                     <ImageView
                         android:id="@+id/chargingIcon"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="62dp"
+                        android:layout_height="102dp"
                         android:contentDescription="@string/cd_charging_icon"
                         android:elevation="6dp"
                         android:src="@drawable/ic_ui_charging"
-                        android:translationY="-10dp"
+                        android:translationY="-52dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
@@ -184,7 +211,7 @@
                     android:id="@+id/utilCategoryLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="31dp"
                     android:text="@string/panel_util_category"
                     android:textColor="#7F7F7F"
                     android:textSize="12sp"
@@ -196,15 +223,15 @@
                     android:id="@+id/settingsPrimaryCard"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="25dp"
                     android:background="@drawable/bg_ui_settings_card"
                     android:elevation="6dp"
                     android:translationZ="2dp"
-                    app:layout_constraintDimensionRatio="H,4648200:2039112"
+                    app:layout_constraintDimensionRatio="H,5800:2451"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/utilCategoryLabel"
-                    app:layout_constraintWidth_percent="0.8472">
+                    app:layout_constraintWidth_percent="0.9667">
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/utilSettingsRecycler"
@@ -224,7 +251,7 @@
                     android:id="@+id/otherCategoryLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="9dp"
                     android:text="@string/panel_other_category"
                     android:textColor="#7F7F7F"
                     android:textSize="12sp"
@@ -236,15 +263,15 @@
                     android:id="@+id/limitChargingCard"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="25dp"
                     android:background="@drawable/bg_ui_limit_card"
                     android:elevation="6dp"
                     android:translationZ="2dp"
-                    app:layout_constraintDimensionRatio="H,4648200:777240"
+                    app:layout_constraintDimensionRatio="H,5800:820"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/otherCategoryLabel"
-                    app:layout_constraintWidth_percent="0.8472">
+                    app:layout_constraintWidth_percent="0.9667">
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/otherSettingsRecycler"
@@ -259,6 +286,15 @@
                         app:layout_constraintTop_toTopOf="parent" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <View
+                    android:id="@+id/phoneCardBottomSpacer"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/limitChargingCard" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
