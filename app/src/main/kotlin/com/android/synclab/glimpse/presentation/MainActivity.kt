@@ -600,6 +600,8 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
                     iconRes = R.drawable.ic_ui_monitor,
+                    iconWidthDp = 26f,
+                    iconHeightDp = 14f,
                     title = getString(R.string.settings_background_monitoring),
                     control = SettingItemUiModel.Control.Toggle(
                         checked = state.isMonitoringEnabled
@@ -608,6 +610,8 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
                     iconRes = R.drawable.ic_ui_overlay,
+                    iconWidthDp = 25f,
+                    iconHeightDp = 25f,
                     title = getString(R.string.settings_live_overlay),
                     control = SettingItemUiModel.Control.Toggle(
                         checked = state.isOverlayVisible
@@ -616,6 +620,8 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
                     iconRes = R.drawable.ic_ui_vibe,
+                    iconWidthDp = 26f,
+                    iconHeightDp = 26f,
                     title = getString(R.string.settings_customize_vibe),
                     control = SettingItemUiModel.Control.None
                 )
@@ -630,6 +636,8 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
                     iconRes = R.drawable.ic_ui_protect_battery,
+                    iconWidthDp = 22f,
+                    iconHeightDp = 26f,
                     title = getString(R.string.settings_protect_battery),
                     subtitle = getString(R.string.settings_limit_charging_subtitle),
                     control = SettingItemUiModel.Control.Toggle(

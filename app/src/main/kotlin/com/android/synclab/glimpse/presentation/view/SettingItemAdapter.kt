@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
+import kotlin.math.roundToInt
 
 class SettingItemAdapter(
     private val onToggleChanged: (SettingItemUiModel.ItemId, Boolean) -> Unit,
@@ -78,6 +79,7 @@ class SettingItemAdapter(
         private val toggle: GlimpseToggleView = view.findViewById(R.id.settingItemToggle)
         private val indicator: ImageView = view.findViewById(R.id.settingItemIndicator)
         private val actionIcon: ImageView = view.findViewById(R.id.settingItemActionIcon)
+        private val density = view.resources.displayMetrics.density
         private val edgeInsetPx: Int =
             (view.resources.displayMetrics.density * 10f).toInt()
 
@@ -113,6 +115,7 @@ class SettingItemAdapter(
             applyEdgeStyle(position = position, totalCount = totalCount)
 
             icon.setImageResource(item.iconRes)
+            updateIconSize(item.iconWidthDp, item.iconHeightDp)
             title.text = item.title
 
             val subtitleText = item.subtitle
@@ -167,6 +170,18 @@ class SettingItemAdapter(
             }
             params.height = desiredHeight
             root.layoutParams = params
+        }
+
+        private fun updateIconSize(widthDp: Float, heightDp: Float) {
+            val desiredWidth = (widthDp * density).roundToInt()
+            val desiredHeight = (heightDp * density).roundToInt()
+            val params = icon.layoutParams
+            if (params.width == desiredWidth && params.height == desiredHeight) {
+                return
+            }
+            params.width = desiredWidth
+            params.height = desiredHeight
+            icon.layoutParams = params
         }
 
         private fun applyEdgeStyle(position: Int, totalCount: Int) {

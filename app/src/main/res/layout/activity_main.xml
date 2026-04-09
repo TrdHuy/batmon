@@ -165,7 +165,7 @@
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintWidth_percent="0.8571"
                         app:trackColor="#33FFFFFF"
-                        app:trackThickness="8dp" />
+                        app:trackThickness="9dp" />
 
                     <TextView
                         android:id="@+id/batteryPercentText"

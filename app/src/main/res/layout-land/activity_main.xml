@@ -150,7 +150,7 @@
                     app:layout_constraintEnd_toEndOf="@id/statusPanel"
                     app:layout_constraintStart_toStartOf="@id/statusPanel"
                     app:layout_constraintTop_toTopOf="@id/statusPanel"
-                    app:layout_constraintWidth_percent="0.3889">
+                    app:layout_constraintWidth_percent="0.4588">
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/batteryCircle"
@@ -165,7 +165,7 @@
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintWidth_percent="0.8571"
                         app:trackColor="#33FFFFFF"
-                        app:trackThickness="8dp" />
+                        app:trackThickness="9dp" />
 
                     <TextView
                         android:id="@+id/batteryPercentText"

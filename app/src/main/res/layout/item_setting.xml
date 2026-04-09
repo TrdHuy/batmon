@@ -10,9 +10,9 @@
 
     <ImageView
         android:id="@+id/settingItemIcon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginStart="10dp"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginStart="15dp"
         android:contentDescription="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -48,7 +48,7 @@
             android:includeFontPadding="true"
             android:fontFamily="@font/samsung_sharp_sans_bold"
             android:textColor="#7F7F7F"
-            android:textSize="9sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
@@ -57,7 +57,7 @@
         android:id="@+id/settingItemControlContainer"
         android:layout_width="36dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="14dp"
+        android:layout_marginEnd="15dp"
         android:paddingTop="2dp"
         android:paddingBottom="2dp"
         app:layout_constraintBottom_toBottomOf="parent"
