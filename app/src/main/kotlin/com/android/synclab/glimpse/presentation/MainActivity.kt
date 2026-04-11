@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.Settings
+import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
@@ -25,11 +26,11 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
+import com.android.synclab.glimpse.presentation.view.BatteryProgressView
 import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
-import com.google.android.material.progressindicator.CircularProgressIndicator
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -37,6 +38,10 @@ class MainActivity : AppCompatActivity() {
         private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
+        private const val MOCK_BATTERY_PREVIEW_ENABLED = true
+        private const val MOCK_BATTERY_PREVIEW_PERCENT = 100
+        private const val MOCK_BATTERY_PREVIEW_TEXT = "100%"
+        private const val DEBUG_HIDE_CHARGING_ICON = true
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -45,7 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var deviceInfoView: TextView
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
-    private lateinit var batteryCircle: CircularProgressIndicator
+    private lateinit var batteryCircle: BatteryProgressView
     private lateinit var utilSettingsPanel: SettingsPanelView
     private lateinit var otherSettingsPanel: SettingsPanelView
 
@@ -102,6 +107,18 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
+        batteryCircle.max = 100
+        if (DEBUG_HIDE_CHARGING_ICON) {
+            findViewById<View>(R.id.chargingIcon).visibility = View.GONE
+            LogCompat.d("Debug: charging icon hidden")
+        }
+        val batteryCluster: View = findViewById(R.id.batteryCluster)
+        batteryCircle.post {
+            LogCompat.e(
+                "batteryCluster=${batteryCluster.width}x${batteryCluster.height} " +
+                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height}"
+            )
+        }
         utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
         otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
 
@@ -618,11 +635,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
-        if (percent == null) {
+        if (MOCK_BATTERY_PREVIEW_ENABLED) {
+            batteryPercentText.text = MOCK_BATTERY_PREVIEW_TEXT
+            batteryCircle.setProgressCompat(MOCK_BATTERY_PREVIEW_PERCENT, false)
+            batteryStateText.text = batteryStatusLabel(status)
+            LogCompat.d("Battery preview mocked: text=$MOCK_BATTERY_PREVIEW_TEXT progress=$MOCK_BATTERY_PREVIEW_PERCENT")
+            return
+        }
+
+        val displayPercent = percent
+
+        if (displayPercent == null) {
             batteryPercentText.setText(R.string.status_card_battery_unknown)
             batteryCircle.setProgressCompat(0, false)
         } else {
-            val clampedPercent = percent.coerceIn(0, 100)
+            val clampedPercent = displayPercent.coerceIn(0, 100)
             batteryPercentText.text =
                 getString(R.string.status_card_battery_percent, clampedPercent)
             batteryCircle.setProgressCompat(clampedPercent, false)

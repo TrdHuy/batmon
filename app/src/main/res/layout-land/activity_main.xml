@@ -126,18 +126,14 @@
                     app:layout_constraintStart_toStartOf="@id/statusPanel"
                     app:layout_constraintTop_toTopOf="@id/statusPanel">
 
-                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                    <com.android.synclab.glimpse.presentation.view.BatteryProgressView
                         android:id="@+id/batteryCircle"
                         android:layout_width="@dimen/ui_battery_circle_size"
                         android:layout_height="@dimen/ui_battery_circle_size"
-                        android:indeterminate="false"
-                        app:indicatorColor="#2C64FF"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:trackColor="#33FFFFFF"
-                        app:trackThickness="9dp" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/batteryPercentText"
