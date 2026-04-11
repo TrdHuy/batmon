@@ -10,9 +10,11 @@ import android.graphics.RectF
 import android.graphics.SweepGradient
 import android.util.AttributeSet
 import android.view.View
+import com.android.synclab.glimpse.R
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 class BatteryProgressView @JvmOverloads constructor(
@@ -49,9 +51,11 @@ class BatteryProgressView @JvmOverloads constructor(
         }
 
     private var progress: Int = 0
+    private var coreDiameterPx: Float = resources.getDimension(R.dimen.ui_battery_circle_size)
     private var trackThicknessPx: Float = dp(9f)
-    private var glowThicknessPx: Float = dp(29f)
-    private var glowBlurPaddingPx: Float = dp(6f)
+    private var glowThicknessPx: Float = dp(20f)
+    private var glowBlurRadiusPx: Float = dp(4f)
+    private var glowOutsetPx: Float = glowBlurRadiusPx + dp(2f)
 
     private val arcRect = RectF()
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -64,8 +68,8 @@ class BatteryProgressView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.BUTT
         strokeWidth = glowThicknessPx
-        alpha = 220
-        maskFilter = BlurMaskFilter(dp(4f), BlurMaskFilter.Blur.NORMAL)
+        alpha = 160
+        maskFilter = BlurMaskFilter(glowBlurRadiusPx, BlurMaskFilter.Blur.NORMAL)
     }
     private val progressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -79,13 +83,21 @@ class BatteryProgressView @JvmOverloads constructor(
     }
     private val progressGlowEndCapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        alpha = 220
-        maskFilter = BlurMaskFilter(dp(4f), BlurMaskFilter.Blur.NORMAL)
+        alpha = 160
+        maskFilter = BlurMaskFilter(glowBlurRadiusPx, BlurMaskFilter.Blur.NORMAL)
     }
 
     fun setProgressCompat(value: Int, animated: Boolean) {
         progress = value.coerceIn(0, max)
         invalidate()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val desired = (coreDiameterPx + (2f * glowOutsetPx)).roundToInt()
+        val measuredWidth = resolveSize(desired, widthMeasureSpec)
+        val measuredHeight = resolveSize(desired, heightMeasureSpec)
+        val side = min(measuredWidth, measuredHeight)
+        setMeasuredDimension(side, side)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -97,10 +109,9 @@ class BatteryProgressView @JvmOverloads constructor(
 
         val cx = width / 2f
         val cy = height / 2f
-        // Keep the thick debug glow stroke fully inside the view bounds
-        // to avoid square-edge clipping on the circle's outer sides.
         val maxStroke = max(trackThicknessPx, glowThicknessPx)
-        val radius = (size / 2f) - (maxStroke / 2f) - glowBlurPaddingPx
+        val coreDiameter = (size - (2f * glowOutsetPx)).coerceAtLeast(maxStroke + dp(2f))
+        val radius = (coreDiameter / 2f) - (maxStroke / 2f)
         arcRect.set(cx - radius, cy - radius, cx + radius, cy + radius)
         progressPaint.shader = SweepGradient(
             cx,

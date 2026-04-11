@@ -131,6 +131,8 @@
                     android:layout_width="@dimen/ui_battery_cluster_size"
                     android:layout_height="@dimen/ui_battery_cluster_size"
                     android:background="@drawable/bg_ui_battery_panel"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:elevation="8dp"
                     app:layout_constraintBottom_toTopOf="@id/statusPanel"
                     app:layout_constraintEnd_toEndOf="@id/statusPanel"
@@ -139,8 +141,8 @@
 
                     <com.android.synclab.glimpse.presentation.view.BatteryProgressView
                         android:id="@+id/batteryCircle"
-                        android:layout_width="@dimen/ui_battery_circle_size"
-                        android:layout_height="@dimen/ui_battery_circle_size"
+                        android:layout_width="@dimen/ui_battery_circle_view_size"
+                        android:layout_height="@dimen/ui_battery_circle_view_size"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"

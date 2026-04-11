@@ -7,6 +7,7 @@
     <dimen name="ui_status_panel_height">267dp</dimen>
     <dimen name="ui_battery_cluster_size">149dp</dimen>
     <dimen name="ui_battery_circle_size">149dp</dimen>
+    <dimen name="ui_battery_circle_view_size">160dp</dimen>
     <dimen name="ui_controller_icon_width">181dp</dimen>
     <dimen name="ui_controller_icon_height">123dp</dimen>
     <dimen name="ui_controller_icon_top_margin">83dp</dimen>
