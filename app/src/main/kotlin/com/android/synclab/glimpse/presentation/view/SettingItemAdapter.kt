@@ -79,9 +79,8 @@ class SettingItemAdapter(
         private val toggle: GlimpseToggleView = view.findViewById(R.id.settingItemToggle)
         private val indicator: ImageView = view.findViewById(R.id.settingItemIndicator)
         private val actionIcon: ImageView = view.findViewById(R.id.settingItemActionIcon)
+        private val separator: View = view.findViewById(R.id.settingItemSeparator)
         private val density = view.resources.displayMetrics.density
-        private val edgeInsetPx: Int =
-            (view.resources.displayMetrics.density * 10f).toInt()
 
         private var boundItem: SettingItemUiModel? = null
 
@@ -195,20 +194,7 @@ class SettingItemAdapter(
                 else -> R.drawable.ripple_setting_item_white
             }
             root.foreground = AppCompatResources.getDrawable(root.context, rippleRes)
-
-            val topInset = when {
-                totalCount <= 1 -> 0
-                isFirst -> edgeInsetPx
-                else -> 0
-            }
-            val bottomInset = when {
-                totalCount <= 1 -> 0
-                isLast -> edgeInsetPx
-                else -> 0
-            }
-            if (root.paddingTop != topInset || root.paddingBottom != bottomInset) {
-                root.setPadding(0, topInset, 0, bottomInset)
-            }
+            separator.visibility = if (isLast || totalCount <= 1) View.GONE else View.VISIBLE
         }
     }
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ui_phone_card_width">384dp</dimen>
+    <dimen name="ui_phone_card_height">832dp</dimen>
+    <dimen name="ui_status_panel_top_margin">128dp</dimen>
+    <dimen name="ui_status_panel_width">325dp</dimen>
+    <dimen name="ui_status_panel_height">267dp</dimen>
+    <dimen name="ui_battery_cluster_size">149dp</dimen>
+    <dimen name="ui_battery_circle_size">128dp</dimen>
+    <dimen name="ui_controller_icon_width">181dp</dimen>
+    <dimen name="ui_controller_icon_height">123dp</dimen>
+    <dimen name="ui_controller_icon_top_margin">83dp</dimen>
+    <dimen name="ui_settings_panel_width">371dp</dimen>
+    <dimen name="ui_util_panel_top_margin">31dp</dimen>
+    <dimen name="ui_other_panel_top_margin">9dp</dimen>
+    <dimen name="ui_panel_card_height_default">157dp</dimen>
+    <dimen name="ui_panel_card_height_util">157dp</dimen>
+    <dimen name="ui_panel_card_height_other">53dp</dimen>
+    <dimen name="ui_panel_title_to_card_spacing">3dp</dimen>
+</resources>

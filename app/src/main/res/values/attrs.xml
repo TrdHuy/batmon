@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SettingsPanelView">
+        <attr name="panelTitle" format="string" />
+        <attr name="panelCardBackground" format="reference" />
+        <attr name="panelCardHeight" format="dimension" />
+    </declare-styleable>
+</resources>

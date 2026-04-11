@@ -18,8 +18,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
@@ -27,7 +25,7 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
-import com.android.synclab.glimpse.presentation.view.SettingItemAdapter
+import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
@@ -48,10 +46,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
     private lateinit var batteryCircle: CircularProgressIndicator
-    private lateinit var utilSettingsRecycler: RecyclerView
-    private lateinit var otherSettingsRecycler: RecyclerView
-    private lateinit var utilSettingsAdapter: SettingItemAdapter
-    private lateinit var otherSettingsAdapter: SettingItemAdapter
+    private lateinit var utilSettingsPanel: SettingsPanelView
+    private lateinit var otherSettingsPanel: SettingsPanelView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var viewModel: MainViewModel
@@ -106,8 +102,8 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
-        utilSettingsRecycler = findViewById(R.id.utilSettingsRecycler)
-        otherSettingsRecycler = findViewById(R.id.otherSettingsRecycler)
+        utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
+        otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
 
         setupToolbarMenu()
         setupSettingsLists()
@@ -205,38 +201,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSettingsLists() {
-        utilSettingsAdapter = SettingItemAdapter(
+        utilSettingsPanel.setInteractionHandlers(
             onToggleChanged = ::handleSettingToggleChanged,
             onItemClicked = ::handleSettingItemClicked
         )
-        otherSettingsAdapter = SettingItemAdapter(
+        otherSettingsPanel.setInteractionHandlers(
             onToggleChanged = ::handleSettingToggleChanged,
             onItemClicked = ::handleSettingItemClicked
         )
-
-        utilSettingsRecycler.layoutManager = LinearLayoutManager(this)
-        utilSettingsRecycler.adapter = utilSettingsAdapter
-        utilSettingsRecycler.itemAnimator = null
-        utilSettingsRecycler.isNestedScrollingEnabled = false
-
-        otherSettingsRecycler.layoutManager = LinearLayoutManager(this)
-        otherSettingsRecycler.adapter = otherSettingsAdapter
-        otherSettingsRecycler.itemAnimator = null
-        otherSettingsRecycler.isNestedScrollingEnabled = false
-
-        utilSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-            utilSettingsAdapter.updateContainerHeight(view.height)
-        }
-        otherSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-            otherSettingsAdapter.updateContainerHeight(view.height)
-        }
-
-        utilSettingsRecycler.post {
-            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
-        }
-        otherSettingsRecycler.post {
-            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
-        }
     }
 
     private fun handleSettingToggleChanged(
@@ -591,11 +563,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderSettingItems(state: MainUiState) {
-        if (!::utilSettingsAdapter.isInitialized || !::otherSettingsAdapter.isInitialized) {
+        if (!::utilSettingsPanel.isInitialized || !::otherSettingsPanel.isInitialized) {
             return
         }
 
-        utilSettingsAdapter.submitList(
+        utilSettingsPanel.submitItems(
             listOf(
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
@@ -627,11 +599,8 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
-        utilSettingsRecycler.post {
-            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
-        }
 
-        otherSettingsAdapter.submitList(
+        otherSettingsPanel.submitItems(
             listOf(
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
@@ -646,9 +615,6 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
-        otherSettingsRecycler.post {
-            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
-        }
     }
 
     private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
