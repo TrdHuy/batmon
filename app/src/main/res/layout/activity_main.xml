@@ -68,7 +68,9 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/phoneScreenCard"
@@ -141,8 +143,8 @@
 
                     <com.android.synclab.glimpse.presentation.view.BatteryProgressView
                         android:id="@+id/batteryCircle"
-                        android:layout_width="@dimen/ui_battery_circle_view_size"
-                        android:layout_height="@dimen/ui_battery_circle_view_size"
+                        android:layout_width="@dimen/ui_battery_circle_canvas_size"
+                        android:layout_height="@dimen/ui_battery_circle_canvas_size"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"

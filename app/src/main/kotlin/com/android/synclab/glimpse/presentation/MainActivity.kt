@@ -39,9 +39,10 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
         private const val MOCK_BATTERY_PREVIEW_ENABLED = true
-        private const val MOCK_BATTERY_PREVIEW_PERCENT = 100
-        private const val MOCK_BATTERY_PREVIEW_TEXT = "100%"
-        private const val DEBUG_HIDE_CHARGING_ICON = true
+        private const val MOCK_BATTERY_PREVIEW_PERCENT = 50
+        private const val MOCK_BATTERY_PREVIEW_TEXT = "50%"
+        private const val MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED = true
+        private const val DEBUG_HIDE_CHARGING_ICON = false
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -116,7 +117,11 @@ class MainActivity : AppCompatActivity() {
         batteryCircle.post {
             LogCompat.e(
                 "batteryCluster=${batteryCluster.width}x${batteryCluster.height} " +
-                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height}"
+                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height} " +
+                        "clusterPos=(${batteryCluster.x},${batteryCluster.y}) " +
+                        "circlePos=(${batteryCircle.x},${batteryCircle.y}) " +
+                        "circleLeftTop=(${batteryCircle.left},${batteryCircle.top}) " +
+                        "circleTranslation=(${batteryCircle.translationX},${batteryCircle.translationY})"
             )
         }
         utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
@@ -638,6 +643,7 @@ class MainActivity : AppCompatActivity() {
         if (MOCK_BATTERY_PREVIEW_ENABLED) {
             batteryPercentText.text = MOCK_BATTERY_PREVIEW_TEXT
             batteryCircle.setProgressCompat(MOCK_BATTERY_PREVIEW_PERCENT, false)
+            batteryCircle.setChargingAnimationEnabled(MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED)
             batteryStateText.text = batteryStatusLabel(status)
             LogCompat.d("Battery preview mocked: text=$MOCK_BATTERY_PREVIEW_TEXT progress=$MOCK_BATTERY_PREVIEW_PERCENT")
             return
@@ -654,6 +660,7 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.status_card_battery_percent, clampedPercent)
             batteryCircle.setProgressCompat(clampedPercent, false)
         }
+        batteryCircle.setChargingAnimationEnabled(status == BatteryChargeStatus.CHARGING)
         batteryStateText.text = batteryStatusLabel(status)
     }
 
