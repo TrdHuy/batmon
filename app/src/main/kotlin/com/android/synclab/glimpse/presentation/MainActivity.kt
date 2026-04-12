@@ -39,11 +39,6 @@ class MainActivity : AppCompatActivity() {
         private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
-        private const val MOCK_BATTERY_PREVIEW_ENABLED = true
-        private const val MOCK_BATTERY_PREVIEW_PERCENT = 50
-        private const val MOCK_BATTERY_PREVIEW_TEXT = "50%"
-        private const val MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED = true
-        private const val DEBUG_HIDE_CHARGING_ICON = false
         private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
         private const val CHARGING_GLOW_RADIUS_DP = 11f
     }
@@ -115,12 +110,7 @@ class MainActivity : AppCompatActivity() {
         batteryCircle = findViewById(R.id.batteryCircle)
         chargingIconView = findViewById(R.id.chargingIcon)
         batteryCircle.max = 100
-        if (DEBUG_HIDE_CHARGING_ICON) {
-            chargingIconView.visibility = View.GONE
-            LogCompat.d("Debug: charging icon hidden")
-        } else {
-            applyChargingIconGlow(false)
-        }
+        applyChargingIconGlow(false)
         val batteryCluster: View = findViewById(R.id.batteryCluster)
         batteryCircle.post {
             LogCompat.e(
@@ -648,16 +638,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
-        if (MOCK_BATTERY_PREVIEW_ENABLED) {
-            batteryPercentText.text = MOCK_BATTERY_PREVIEW_TEXT
-            batteryCircle.setProgressCompat(MOCK_BATTERY_PREVIEW_PERCENT, false)
-            batteryCircle.setChargingAnimationEnabled(MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED)
-            applyChargingIconGlow(MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED)
-            batteryStateText.text = batteryStatusLabel(status)
-            LogCompat.d("Battery preview mocked: text=$MOCK_BATTERY_PREVIEW_TEXT progress=$MOCK_BATTERY_PREVIEW_PERCENT")
-            return
-        }
-
         val displayPercent = percent
 
         if (displayPercent == null) {
