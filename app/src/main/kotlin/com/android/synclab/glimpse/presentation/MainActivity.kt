@@ -12,14 +12,13 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.Settings
+import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
@@ -27,17 +26,21 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
-import com.android.synclab.glimpse.presentation.view.SettingItemAdapter
+import com.android.synclab.glimpse.presentation.view.BatteryProgressView
+import com.android.synclab.glimpse.presentation.view.ChargingIconView
+import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.LogCompat
-import com.google.android.material.progressindicator.CircularProgressIndicator
 
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val REFRESH_INTERVAL_MS = 5_000L
+        private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
+        private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
+        private const val CHARGING_GLOW_RADIUS_DP = 11f
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -46,11 +49,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var deviceInfoView: TextView
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
-    private lateinit var batteryCircle: CircularProgressIndicator
-    private lateinit var utilSettingsRecycler: RecyclerView
-    private lateinit var otherSettingsRecycler: RecyclerView
-    private lateinit var utilSettingsAdapter: SettingItemAdapter
-    private lateinit var otherSettingsAdapter: SettingItemAdapter
+    private lateinit var batteryCircle: BatteryProgressView
+    private lateinit var chargingIconView: ChargingIconView
+    private lateinit var utilSettingsPanel: SettingsPanelView
+    private lateinit var otherSettingsPanel: SettingsPanelView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var viewModel: MainViewModel
@@ -58,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
+    private var lastChargingGlowState: Boolean? = null
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -105,8 +108,22 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
-        utilSettingsRecycler = findViewById(R.id.utilSettingsRecycler)
-        otherSettingsRecycler = findViewById(R.id.otherSettingsRecycler)
+        chargingIconView = findViewById(R.id.chargingIcon)
+        batteryCircle.max = 100
+        applyChargingIconGlow(false)
+        val batteryCluster: View = findViewById(R.id.batteryCluster)
+        batteryCircle.post {
+            LogCompat.e(
+                "batteryCluster=${batteryCluster.width}x${batteryCluster.height} " +
+                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height} " +
+                        "clusterPos=(${batteryCluster.x},${batteryCluster.y}) " +
+                        "circlePos=(${batteryCircle.x},${batteryCircle.y}) " +
+                        "circleLeftTop=(${batteryCircle.left},${batteryCircle.top}) " +
+                        "circleTranslation=(${batteryCircle.translationX},${batteryCircle.translationY})"
+            )
+        }
+        utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
+        otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
 
         setupToolbarMenu()
         setupSettingsLists()
@@ -204,38 +221,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSettingsLists() {
-        utilSettingsAdapter = SettingItemAdapter(
+        utilSettingsPanel.setInteractionHandlers(
             onToggleChanged = ::handleSettingToggleChanged,
             onItemClicked = ::handleSettingItemClicked
         )
-        otherSettingsAdapter = SettingItemAdapter(
+        otherSettingsPanel.setInteractionHandlers(
             onToggleChanged = ::handleSettingToggleChanged,
             onItemClicked = ::handleSettingItemClicked
         )
-
-        utilSettingsRecycler.layoutManager = LinearLayoutManager(this)
-        utilSettingsRecycler.adapter = utilSettingsAdapter
-        utilSettingsRecycler.itemAnimator = null
-        utilSettingsRecycler.isNestedScrollingEnabled = false
-
-        otherSettingsRecycler.layoutManager = LinearLayoutManager(this)
-        otherSettingsRecycler.adapter = otherSettingsAdapter
-        otherSettingsRecycler.itemAnimator = null
-        otherSettingsRecycler.isNestedScrollingEnabled = false
-
-        utilSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-            utilSettingsAdapter.updateContainerHeight(view.height)
-        }
-        otherSettingsRecycler.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-            otherSettingsAdapter.updateContainerHeight(view.height)
-        }
-
-        utilSettingsRecycler.post {
-            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
-        }
-        otherSettingsRecycler.post {
-            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
-        }
     }
 
     private fun handleSettingToggleChanged(
@@ -527,8 +520,13 @@ class MainActivity : AppCompatActivity() {
             return false
         }
 
-        viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
-        requestControllerRefresh(EventChangeParam.Source.VIEW)
+        mainHandler.postDelayed(
+            {
+                viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
+                requestControllerRefresh(EventChangeParam.Source.VIEW)
+            },
+            SERVICE_ACTION_STATE_SYNC_DELAY_MS
+        )
         return true
     }
 
@@ -585,15 +583,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderSettingItems(state: MainUiState) {
-        if (!::utilSettingsAdapter.isInitialized || !::otherSettingsAdapter.isInitialized) {
+        if (!::utilSettingsPanel.isInitialized || !::otherSettingsPanel.isInitialized) {
             return
         }
 
-        utilSettingsAdapter.submitList(
+        utilSettingsPanel.submitItems(
             listOf(
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
                     iconRes = R.drawable.ic_ui_monitor,
+                    iconWidthDp = 26f,
+                    iconHeightDp = 14f,
                     title = getString(R.string.settings_background_monitoring),
                     control = SettingItemUiModel.Control.Toggle(
                         checked = state.isMonitoringEnabled
@@ -602,6 +602,8 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
                     iconRes = R.drawable.ic_ui_overlay,
+                    iconWidthDp = 25f,
+                    iconHeightDp = 25f,
                     title = getString(R.string.settings_live_overlay),
                     control = SettingItemUiModel.Control.Toggle(
                         checked = state.isOverlayVisible
@@ -610,20 +612,21 @@ class MainActivity : AppCompatActivity() {
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
                     iconRes = R.drawable.ic_ui_vibe,
+                    iconWidthDp = 26f,
+                    iconHeightDp = 26f,
                     title = getString(R.string.settings_customize_vibe),
                     control = SettingItemUiModel.Control.None
                 )
             )
         )
-        utilSettingsRecycler.post {
-            utilSettingsAdapter.updateContainerHeight(utilSettingsRecycler.height)
-        }
 
-        otherSettingsAdapter.submitList(
+        otherSettingsPanel.submitItems(
             listOf(
                 SettingItemUiModel(
                     id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
                     iconRes = R.drawable.ic_ui_protect_battery,
+                    iconWidthDp = 22f,
+                    iconHeightDp = 26f,
                     title = getString(R.string.settings_protect_battery),
                     subtitle = getString(R.string.settings_limit_charging_subtitle),
                     control = SettingItemUiModel.Control.Toggle(
@@ -632,23 +635,49 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
-        otherSettingsRecycler.post {
-            otherSettingsAdapter.updateContainerHeight(otherSettingsRecycler.height)
-        }
     }
 
     private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
-        if (percent == null) {
+        val displayPercent = percent
+
+        if (displayPercent == null) {
             batteryPercentText.setText(R.string.status_card_battery_unknown)
             batteryCircle.setProgressCompat(0, false)
         } else {
-            val clampedPercent = percent.coerceIn(0, 100)
+            val clampedPercent = displayPercent.coerceIn(0, 100)
             batteryPercentText.text =
                 getString(R.string.status_card_battery_percent, clampedPercent)
             batteryCircle.setProgressCompat(clampedPercent, false)
         }
+        val isCharging = status == BatteryChargeStatus.CHARGING
+        batteryCircle.setChargingAnimationEnabled(isCharging)
+        applyChargingIconGlow(isCharging)
         batteryStateText.text = batteryStatusLabel(status)
     }
+
+    private fun applyChargingIconGlow(isCharging: Boolean) {
+        if (lastChargingGlowState == isCharging) {
+            return
+        }
+        lastChargingGlowState = isCharging
+
+        if (!::chargingIconView.isInitialized) {
+            return
+        }
+
+        if (!isCharging) {
+            chargingIconView.setGlowEnabled(false)
+            return
+        }
+
+        chargingIconView.setGlowStyle(
+            color = CHARGING_GLOW_COLOR,
+            radiusPx = dpToPx(CHARGING_GLOW_RADIUS_DP)
+        )
+        chargingIconView.setGlowEnabled(true)
+    }
+
+    private fun dpToPx(dp: Float): Float = dp * resources.displayMetrics.density
 
     private fun batteryStatusLabel(status: BatteryChargeStatus): String {
         return when (status) {

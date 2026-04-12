@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "🚀 Debug Glimpse (Full)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 8700,
+      "preLaunchTask": "Android Debug: Full"
+    },
+    {
+      "type": "java",
+      "name": "⚡ Debug Glimpse (Attach Only)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 8700,
+      "preLaunchTask": "Android Debug: Attach"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
+import kotlin.math.roundToInt
 
 class SettingItemAdapter(
     private val onToggleChanged: (SettingItemUiModel.ItemId, Boolean) -> Unit,
@@ -78,8 +79,8 @@ class SettingItemAdapter(
         private val toggle: GlimpseToggleView = view.findViewById(R.id.settingItemToggle)
         private val indicator: ImageView = view.findViewById(R.id.settingItemIndicator)
         private val actionIcon: ImageView = view.findViewById(R.id.settingItemActionIcon)
-        private val edgeInsetPx: Int =
-            (view.resources.displayMetrics.density * 10f).toInt()
+        private val separator: View = view.findViewById(R.id.settingItemSeparator)
+        private val density = view.resources.displayMetrics.density
 
         private var boundItem: SettingItemUiModel? = null
 
@@ -113,6 +114,7 @@ class SettingItemAdapter(
             applyEdgeStyle(position = position, totalCount = totalCount)
 
             icon.setImageResource(item.iconRes)
+            updateIconSize(item.iconWidthDp, item.iconHeightDp)
             title.text = item.title
 
             val subtitleText = item.subtitle
@@ -169,6 +171,18 @@ class SettingItemAdapter(
             root.layoutParams = params
         }
 
+        private fun updateIconSize(widthDp: Float, heightDp: Float) {
+            val desiredWidth = (widthDp * density).roundToInt()
+            val desiredHeight = (heightDp * density).roundToInt()
+            val params = icon.layoutParams
+            if (params.width == desiredWidth && params.height == desiredHeight) {
+                return
+            }
+            params.width = desiredWidth
+            params.height = desiredHeight
+            icon.layoutParams = params
+        }
+
         private fun applyEdgeStyle(position: Int, totalCount: Int) {
             val isFirst = position == 0
             val isLast = position == totalCount - 1
@@ -180,20 +194,7 @@ class SettingItemAdapter(
                 else -> R.drawable.ripple_setting_item_white
             }
             root.foreground = AppCompatResources.getDrawable(root.context, rippleRes)
-
-            val topInset = when {
-                totalCount <= 1 -> 0
-                isFirst -> edgeInsetPx
-                else -> 0
-            }
-            val bottomInset = when {
-                totalCount <= 1 -> 0
-                isLast -> edgeInsetPx
-                else -> 0
-            }
-            if (root.paddingTop != topInset || root.paddingBottom != bottomInset) {
-                root.setPadding(0, topInset, 0, bottomInset)
-            }
+            separator.visibility = if (isLast || totalCount <= 1) View.GONE else View.VISIBLE
         }
     }
 }

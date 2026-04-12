@@ -10,11 +10,11 @@
 
     <ImageView
         android:id="@+id/settingItemIcon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginStart="10dp"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginStart="15dp"
         android:contentDescription="@null"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/settingItemSeparator"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -25,7 +25,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/settingItemSeparator"
         app:layout_constraintEnd_toStartOf="@id/settingItemControlContainer"
         app:layout_constraintStart_toEndOf="@id/settingItemIcon"
         app:layout_constraintTop_toTopOf="parent">
@@ -48,25 +48,25 @@
             android:includeFontPadding="true"
             android:fontFamily="@font/samsung_sharp_sans_bold"
             android:textColor="#7F7F7F"
-            android:textSize="9sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
 
     <FrameLayout
         android:id="@+id/settingItemControlContainer"
-        android:layout_width="40dp"
+        android:layout_width="36dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="10dp"
+        android:layout_marginEnd="15dp"
         android:paddingTop="2dp"
         android:paddingBottom="2dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/settingItemSeparator"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.android.synclab.glimpse.presentation.view.GlimpseToggleView
             android:id="@+id/settingItemToggle"
-            android:layout_width="40dp"
+            android:layout_width="36dp"
             android:layout_height="18dp"
             android:layout_gravity="center"
             android:minWidth="0dp"
@@ -91,5 +91,16 @@
             android:contentDescription="@null"
             android:visibility="gone" />
     </FrameLayout>
+
+    <View
+        android:id="@+id/settingItemSeparator"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="#0F0F0F"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

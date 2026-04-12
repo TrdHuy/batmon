@@ -7,8 +7,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.Gravity
-import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatCheckBox
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.core.graphics.ColorUtils
 import kotlin.math.roundToInt
 
@@ -34,14 +34,14 @@ class GlimpseToggleView @JvmOverloads constructor(
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private val defaultWidthPx = dpToPx(40f)
+    private val defaultWidthPx = dpToPx(36f)
     private val defaultHeightPx = dpToPx(18f)
     private val thumbSizePx = dpToPx(14f)
-    private val thumbInsetPx = dpToPx(3f)
-    private val trackStrokeWidthPx = dpToPxF(2f)
+    private val thumbInsetPx = dpToPx(2f)
+    private val trackStrokeWidthPx = dpToPxF(1.5f)
 
-    private val checkedTrackColor = 0xFF375E7F.toInt()
-    private val uncheckedTrackStrokeColor = 0xFF375E7F.toInt()
+    private val checkedTrackColor = 0xFF2C64FF.toInt()
+    private val uncheckedTrackStrokeColor = 0xFF2C64FF.toInt()
     private val thumbColor = 0xFFF2F2F2.toInt()
 
     private var thumbProgress = if (isChecked) 1f else 0f
@@ -153,8 +153,8 @@ class GlimpseToggleView @JvmOverloads constructor(
     private fun animateThumbTo(target: Float) {
         progressAnimator?.cancel()
         progressAnimator = ValueAnimator.ofFloat(thumbProgress, target).apply {
-            duration = 170L
-            interpolator = AccelerateDecelerateInterpolator()
+            duration = 240L
+            interpolator = FastOutSlowInInterpolator()
             addUpdateListener { animator ->
                 thumbProgress = animator.animatedValue as Float
                 invalidate()

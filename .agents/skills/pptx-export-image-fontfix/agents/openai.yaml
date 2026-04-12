@@ -1,0 +1,4 @@
+interface:
+  display_name: "PPTX Export FontFix"
+  short_description: "Export PPTX slide PNG with Samsung Sharp Sans preserved"
+  default_prompt: "Export slide image from a PPTX using OLE font extraction and LibreOffice font-fix flow."

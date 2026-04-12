@@ -5,6 +5,8 @@ import androidx.annotation.DrawableRes
 data class SettingItemUiModel(
     val id: ItemId,
     @DrawableRes val iconRes: Int,
+    val iconWidthDp: Float = 24f,
+    val iconHeightDp: Float = 24f,
     val title: String,
     val subtitle: String? = null,
     val control: Control

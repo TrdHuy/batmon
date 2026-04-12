@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">glimpse</string>
+    <string name="app_title_glimpse">GLIMPSE</string>
 
     <string name="controller_monitor_title">Glimpse - PS4 Controller Monitor</string>
     <string name="controller_monitor_subtitle">Monitor connected PS4 controllers (DualShock 4) and current battery level</string>
