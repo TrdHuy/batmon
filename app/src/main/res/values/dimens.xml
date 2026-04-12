@@ -9,6 +9,11 @@
     <dimen name="ui_battery_circle_size">138dp</dimen>
     <dimen name="ui_battery_circle_canvas_size">222dp</dimen>
     <dimen name="ui_battery_circle_view_size">160dp</dimen>
+    <dimen name="ui_charging_icon_width">62dp</dimen>
+    <dimen name="ui_charging_icon_height">102dp</dimen>
+    <dimen name="ui_charging_glow_host_width">94dp</dimen>
+    <dimen name="ui_charging_glow_host_height">134dp</dimen>
+    <dimen name="ui_charging_glow_host_translation_y">-68dp</dimen>
     <dimen name="ui_controller_icon_width">181dp</dimen>
     <dimen name="ui_controller_icon_height">123dp</dimen>
     <dimen name="ui_controller_icon_top_margin">83dp</dimen>

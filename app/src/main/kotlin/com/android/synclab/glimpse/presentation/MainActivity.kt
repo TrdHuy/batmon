@@ -27,6 +27,7 @@ import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
 import com.android.synclab.glimpse.presentation.view.BatteryProgressView
+import com.android.synclab.glimpse.presentation.view.ChargingIconView
 import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
@@ -43,6 +44,8 @@ class MainActivity : AppCompatActivity() {
         private const val MOCK_BATTERY_PREVIEW_TEXT = "50%"
         private const val MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED = true
         private const val DEBUG_HIDE_CHARGING_ICON = false
+        private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
+        private const val CHARGING_GLOW_RADIUS_DP = 11f
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -52,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
     private lateinit var batteryCircle: BatteryProgressView
+    private lateinit var chargingIconView: ChargingIconView
     private lateinit var utilSettingsPanel: SettingsPanelView
     private lateinit var otherSettingsPanel: SettingsPanelView
 
@@ -61,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
+    private var lastChargingGlowState: Boolean? = null
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -108,10 +113,13 @@ class MainActivity : AppCompatActivity() {
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
         batteryCircle = findViewById(R.id.batteryCircle)
+        chargingIconView = findViewById(R.id.chargingIcon)
         batteryCircle.max = 100
         if (DEBUG_HIDE_CHARGING_ICON) {
-            findViewById<View>(R.id.chargingIcon).visibility = View.GONE
+            chargingIconView.visibility = View.GONE
             LogCompat.d("Debug: charging icon hidden")
+        } else {
+            applyChargingIconGlow(false)
         }
         val batteryCluster: View = findViewById(R.id.batteryCluster)
         batteryCircle.post {
@@ -644,6 +652,7 @@ class MainActivity : AppCompatActivity() {
             batteryPercentText.text = MOCK_BATTERY_PREVIEW_TEXT
             batteryCircle.setProgressCompat(MOCK_BATTERY_PREVIEW_PERCENT, false)
             batteryCircle.setChargingAnimationEnabled(MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED)
+            applyChargingIconGlow(MOCK_CHARGING_ANIMATION_PREVIEW_ENABLED)
             batteryStateText.text = batteryStatusLabel(status)
             LogCompat.d("Battery preview mocked: text=$MOCK_BATTERY_PREVIEW_TEXT progress=$MOCK_BATTERY_PREVIEW_PERCENT")
             return
@@ -660,9 +669,35 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.status_card_battery_percent, clampedPercent)
             batteryCircle.setProgressCompat(clampedPercent, false)
         }
-        batteryCircle.setChargingAnimationEnabled(status == BatteryChargeStatus.CHARGING)
+        val isCharging = status == BatteryChargeStatus.CHARGING
+        batteryCircle.setChargingAnimationEnabled(isCharging)
+        applyChargingIconGlow(isCharging)
         batteryStateText.text = batteryStatusLabel(status)
     }
+
+    private fun applyChargingIconGlow(isCharging: Boolean) {
+        if (lastChargingGlowState == isCharging) {
+            return
+        }
+        lastChargingGlowState = isCharging
+
+        if (!::chargingIconView.isInitialized) {
+            return
+        }
+
+        if (!isCharging) {
+            chargingIconView.setGlowEnabled(false)
+            return
+        }
+
+        chargingIconView.setGlowStyle(
+            color = CHARGING_GLOW_COLOR,
+            radiusPx = dpToPx(CHARGING_GLOW_RADIUS_DP)
+        )
+        chargingIconView.setGlowEnabled(true)
+    }
+
+    private fun dpToPx(dp: Float): Float = dp * resources.displayMetrics.density
 
     private fun batteryStatusLabel(status: BatteryChargeStatus): String {
         return when (status) {
