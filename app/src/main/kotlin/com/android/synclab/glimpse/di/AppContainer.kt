@@ -3,8 +3,10 @@ package com.android.synclab.glimpse.di
 import android.app.Service
 import android.content.Context
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
+import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCase
+import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
@@ -28,6 +30,14 @@ class AppContainer private constructor(
 
     fun providePrimaryGamepadBatteryUseCase(): GetPrimaryGamepadBatteryUseCase {
         return GetPrimaryGamepadBatteryUseCase(gamepadRepository)
+    }
+
+    fun provideSetPs4ControllerLightColorUseCase(): SetPs4ControllerLightColorUseCase {
+        return SetPs4ControllerLightColorUseCase(gamepadRepository)
+    }
+
+    fun provideClosePs4ControllerLightSessionUseCase(): ClosePs4ControllerLightSessionUseCase {
+        return ClosePs4ControllerLightSessionUseCase(gamepadRepository)
     }
 
     fun provideOverlayWindowController(context: Context): OverlayWindowController {

@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.Build
@@ -12,6 +13,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.Settings
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
@@ -22,15 +25,19 @@ import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.di.AppContainer
+import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
+import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
 import com.android.synclab.glimpse.presentation.view.BatteryProgressView
 import com.android.synclab.glimpse.presentation.view.ChargingIconView
+import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
 import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
+import com.android.synclab.glimpse.utils.InputDeviceLogUtils
 import com.android.synclab.glimpse.utils.LogCompat
 
 class MainActivity : AppCompatActivity() {
@@ -55,12 +62,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var otherSettingsPanel: SettingsPanelView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
+    private lateinit var setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase
+    private lateinit var closePs4ControllerLightSessionUseCase: ClosePs4ControllerLightSessionUseCase
     private lateinit var viewModel: MainViewModel
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
     private var lastChargingGlowState: Boolean? = null
+    private var selectedVibeColor: Int = Color.rgb(44, 100, 255)
+    private var customizeVibeDialog: CustomizeVibeDialog? = null
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -71,14 +82,17 @@ class MainActivity : AppCompatActivity() {
 
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) {
+            logInputDeviceCallback(event = "added", deviceId = deviceId)
             requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
+            logInputDeviceCallback(event = "removed", deviceId = deviceId)
             requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
 
         override fun onInputDeviceChanged(deviceId: Int) {
+            logInputDeviceCallback(event = "changed", deviceId = deviceId)
             requestControllerRefresh(EventChangeParam.Source.SYSTEM)
         }
     }
@@ -95,6 +109,9 @@ class MainActivity : AppCompatActivity() {
 
         val appContainer = AppContainer.from(applicationContext)
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
+        setPs4ControllerLightColorUseCase = appContainer.provideSetPs4ControllerLightColorUseCase()
+        closePs4ControllerLightSessionUseCase =
+            appContainer.provideClosePs4ControllerLightSessionUseCase()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
@@ -157,6 +174,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        customizeVibeDialog?.dismiss()
+        customizeVibeDialog = null
+        if (::closePs4ControllerLightSessionUseCase.isInitialized) {
+            closePs4ControllerLightSessionUseCase("onDestroy")
+        }
         if (::viewModel.isInitialized) {
             viewModel.clearOnViewModelChange()
         }
@@ -283,7 +305,7 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("settingItemClicked id=$itemId")
         when (itemId) {
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
-                // Placeholder for vibe customization action.
+                showCustomizeVibeDialog()
             }
 
             SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
@@ -292,6 +314,28 @@ class MainActivity : AppCompatActivity() {
                 // Toggle rows are handled from onToggleChanged.
             }
         }
+    }
+
+    private fun showCustomizeVibeDialog() {
+        val activeDialog = customizeVibeDialog
+        if (activeDialog?.isShowing == true) {
+            LogCompat.d("CustomizeVibeDialog already visible")
+            return
+        }
+
+        val dialog = CustomizeVibeDialog(
+            context = this,
+            initialColor = selectedVibeColor,
+            setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
+            onColorApplied = { color ->
+                selectedVibeColor = color
+            },
+            onDismiss = {
+                customizeVibeDialog = null
+            }
+        )
+        customizeVibeDialog = dialog
+        dialog.show()
     }
 
     private fun refreshSettingsStateLater(delayMs: Long = 250L) {
@@ -540,6 +584,76 @@ class MainActivity : AppCompatActivity() {
             unknownDeviceName = getString(R.string.unknown_device_name),
             source = source
         )
+    }
+
+    private fun logInputDeviceCallback(event: String, deviceId: Int) {
+        if (!::inputDeviceGateway.isInitialized) {
+            LogCompat.d("InputDeviceListener event=$event deviceId=$deviceId gateway=uninitialized")
+            return
+        }
+
+        val device = inputDeviceGateway.getInputDevices().firstOrNull { it.id == deviceId }
+            ?: InputDevice.getDevice(deviceId)
+        if (device == null) {
+            val ids = inputDeviceGateway.getInputDevices().joinToString(prefix = "[", postfix = "]") { it.id.toString() }
+            LogCompat.d("InputDeviceListener event=$event deviceId=$deviceId device=not_found knownDeviceIds=$ids")
+            return
+        }
+
+        val supportsGamepad = device.supportsSource(InputDevice.SOURCE_GAMEPAD)
+        val supportsJoystick = device.supportsSource(InputDevice.SOURCE_JOYSTICK)
+        if (!isDiagnosticInputDeviceLoggingEnabled()) {
+            LogCompat.d("InputDeviceListener event=$event deviceId=${device.id}")
+            return
+        }
+        LogCompat.d(
+            "InputDeviceListener event=$event " +
+                    "deviceId=${device.id} " +
+                    "sources=0x${device.sources.toString(16)} " +
+                    "supportsGamepad=$supportsGamepad supportsJoystick=$supportsJoystick " +
+                    "${InputDeviceLogUtils.buildBatteryInfo(device)}"
+        )
+
+        LogCompat.d(
+            "InputDeviceDiagnostic event=$event " +
+                    "deviceId=${device.id} descriptor=${device.descriptor} " +
+                    "vendor=${device.vendorId} product=${device.productId} " +
+                    "external=${device.isExternal} virtual=${device.isVirtual} enabled=${device.isEnabled} " +
+                    "controllerNumber=${device.controllerNumber} " +
+                    "hasMicrophone=${device.hasMicrophone()} " +
+                    "keyboardType=${device.keyboardType}(${keyboardTypeLabel(device.keyboardType)})"
+        )
+
+        val motionRanges = device.motionRanges.joinToString(separator = "; ") { range ->
+            val axisLabel = MotionEvent.axisToString(range.axis)
+            "axis=${range.axis}($axisLabel),source=0x${range.source.toString(16)},min=${range.min},max=${range.max},flat=${range.flat},fuzz=${range.fuzz},resolution=${range.resolution}"
+        }
+        LogCompat.d(
+            "InputDeviceMotionRanges deviceId=${device.id} count=${device.motionRanges.size} " +
+                    if (motionRanges.isEmpty()) "ranges=[]" else "ranges=[$motionRanges]"
+        )
+
+        LogCompat.d("InputDeviceDump begin event=$event deviceId=${device.id}")
+        device.toString()
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .forEach { line ->
+                LogCompat.d("InputDeviceDump deviceId=${device.id} $line")
+            }
+        LogCompat.d("InputDeviceDump end event=$event deviceId=${device.id}")
+    }
+
+    private fun isDiagnosticInputDeviceLoggingEnabled(): Boolean {
+        return LogCompat.isDebugBuild()
+    }
+
+    private fun keyboardTypeLabel(type: Int): String {
+        return when (type) {
+            InputDevice.KEYBOARD_TYPE_NONE -> "none"
+            InputDevice.KEYBOARD_TYPE_NON_ALPHABETIC -> "non_alphabetic"
+            InputDevice.KEYBOARD_TYPE_ALPHABETIC -> "alphabetic"
+            else -> "unknown"
+        }
     }
 
     private fun bindViewModelObserver() {

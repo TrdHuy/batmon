@@ -52,6 +52,16 @@
     <string name="toast_overlay_shown">Floating overlay is now visible.</string>
     <string name="toast_overlay_hidden">Floating overlay is now hidden.</string>
     <string name="toast_action_failed">Action failed, check logs for details.</string>
+    <string name="customize_vibe_dialog_title">Customize Vibe</string>
+    <string name="customize_vibe_dialog_red">Red</string>
+    <string name="customize_vibe_dialog_green">Green</string>
+    <string name="customize_vibe_dialog_blue">Blue</string>
+    <string name="customize_vibe_dialog_close">Close</string>
+    <string name="toast_customize_vibe_no_controller">No suitable controller found for light color change.</string>
+    <string name="toast_customize_vibe_no_lights">Controller has no target light to change.</string>
+    <string name="toast_customize_vibe_not_supported">Device does not support controller light APIs.</string>
+    <string name="toast_customize_vibe_permission_denied">Missing system permission to control controller light.</string>
+    <string name="toast_customize_vibe_failed">Failed to change controller light color. Check logs.</string>
 
     <string name="notification_channel_name">Glimpse Gamepad Monitor</string>
     <string name="notification_channel_description">Monitors gamepad battery and displays overlay.</string>

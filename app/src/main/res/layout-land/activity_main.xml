@@ -165,14 +165,13 @@
                         app:layout_constraintStart_toStartOf="@id/batteryCircle"
                         app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
 
-                    <ImageView
+                    <com.android.synclab.glimpse.presentation.view.ChargingIconView
                         android:id="@+id/chargingIcon"
-                        android:layout_width="62dp"
-                        android:layout_height="102dp"
                         android:contentDescription="@string/cd_charging_icon"
                         android:elevation="6dp"
-                        android:src="@drawable/ic_ui_charging"
-                        android:translationY="-52dp"
+                        android:layout_width="@dimen/ui_charging_glow_host_width"
+                        android:layout_height="@dimen/ui_charging_glow_host_height"
+                        android:translationY="@dimen/ui_charging_glow_host_translation_y"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />

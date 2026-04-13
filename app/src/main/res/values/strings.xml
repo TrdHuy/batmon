@@ -52,6 +52,16 @@
     <string name="toast_overlay_shown">Đã bật floating overlay.</string>
     <string name="toast_overlay_hidden">Đã ẩn floating overlay.</string>
     <string name="toast_action_failed">Thao tác thất bại, vui lòng kiểm tra log.</string>
+    <string name="customize_vibe_dialog_title">Customize Vibe</string>
+    <string name="customize_vibe_dialog_red">Red</string>
+    <string name="customize_vibe_dialog_green">Green</string>
+    <string name="customize_vibe_dialog_blue">Blue</string>
+    <string name="customize_vibe_dialog_close">Đóng</string>
+    <string name="toast_customize_vibe_no_controller">Không có tay cầm phù hợp để đổi màu light bar.</string>
+    <string name="toast_customize_vibe_no_lights">Tay cầm không có light target để đổi màu.</string>
+    <string name="toast_customize_vibe_not_supported">Thiết bị không hỗ trợ API điều khiển light bar.</string>
+    <string name="toast_customize_vibe_permission_denied">Thiếu quyền system để điều khiển light bar.</string>
+    <string name="toast_customize_vibe_failed">Không thể đổi màu light bar. Kiểm tra log để debug.</string>
 
     <string name="notification_channel_name">Glimpse Gamepad Monitor</string>
     <string name="notification_channel_description">Theo dõi pin tay cầm gamepad và hiển thị overlay.</string>
