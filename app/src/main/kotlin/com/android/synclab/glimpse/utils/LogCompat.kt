@@ -4,6 +4,14 @@ import android.util.Log
 
 object LogCompat {
     const val TAG = "ds4batmon"
+    private val isDebugBuildCached: Boolean by lazy(LazyThreadSafetyMode.NONE) {
+        runCatching {
+            val buildConfigClass = Class.forName("com.android.synclab.glimpse.BuildConfig")
+            buildConfigClass.getField("DEBUG").getBoolean(null)
+        }.getOrDefault(false)
+    }
+
+    fun isDebugBuild(): Boolean = isDebugBuildCached
 
     fun d(message: String) {
         Log.d(TAG, message)

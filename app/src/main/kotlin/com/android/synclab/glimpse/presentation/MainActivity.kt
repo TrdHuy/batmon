@@ -37,6 +37,7 @@ import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
 import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
+import com.android.synclab.glimpse.utils.InputDeviceLogUtils
 import com.android.synclab.glimpse.utils.LogCompat
 
 class MainActivity : AppCompatActivity() {
@@ -599,17 +600,28 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        val supportsGamepad = device.supportsSource(InputDevice.SOURCE_GAMEPAD)
+        val supportsJoystick = device.supportsSource(InputDevice.SOURCE_JOYSTICK)
+        if (!isDiagnosticInputDeviceLoggingEnabled()) {
+            LogCompat.d("InputDeviceListener event=$event deviceId=${device.id}")
+            return
+        }
         LogCompat.d(
             "InputDeviceListener event=$event " +
-                    "deviceId=${device.id} name=${device.name} " +
-                    "descriptor=${device.descriptor} " +
-                    "vendor=${device.vendorId} product=${device.productId} " +
+                    "deviceId=${device.id} " +
                     "sources=0x${device.sources.toString(16)} " +
+                    "supportsGamepad=$supportsGamepad supportsJoystick=$supportsJoystick " +
+                    "${InputDeviceLogUtils.buildBatteryInfo(device)}"
+        )
+
+        LogCompat.d(
+            "InputDeviceDiagnostic event=$event " +
+                    "deviceId=${device.id} descriptor=${device.descriptor} " +
+                    "vendor=${device.vendorId} product=${device.productId} " +
                     "external=${device.isExternal} virtual=${device.isVirtual} enabled=${device.isEnabled} " +
                     "controllerNumber=${device.controllerNumber} " +
                     "hasMicrophone=${device.hasMicrophone()} " +
-                    "keyboardType=${device.keyboardType}(${keyboardTypeLabel(device.keyboardType)}) " +
-                    "${buildBatteryInfo(device)}"
+                    "keyboardType=${device.keyboardType}(${keyboardTypeLabel(device.keyboardType)})"
         )
 
         val motionRanges = device.motionRanges.joinToString(separator = "; ") { range ->
@@ -631,21 +643,8 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("InputDeviceDump end event=$event deviceId=${device.id}")
     }
 
-    private fun buildBatteryInfo(device: InputDevice): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return "batteryState=unsupported_sdk_${Build.VERSION.SDK_INT}"
-        }
-
-        return runCatching {
-            val state = device.batteryState
-            if (state == null) {
-                "batteryState=null"
-            } else {
-                "batteryPresent=${state.isPresent} batteryCapacity=${state.capacity} batteryStatus=${state.status}"
-            }
-        }.getOrElse { throwable ->
-            "batteryReadError=${throwable.javaClass.simpleName}"
-        }
+    private fun isDiagnosticInputDeviceLoggingEnabled(): Boolean {
+        return LogCompat.isDebugBuild()
     }
 
     private fun keyboardTypeLabel(type: Int): String {
@@ -806,9 +805,5 @@ class MainActivity : AppCompatActivity() {
 
     private fun showToast(messageRes: Int) {
         Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

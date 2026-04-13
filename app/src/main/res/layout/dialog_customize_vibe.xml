@@ -46,10 +46,12 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/redLabelText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/samsung_sharp_sans_medium"
+            android:labelFor="@id/redSeekBar"
             android:text="@string/customize_vibe_dialog_red"
             android:textColor="#E0E6ED"
             android:textSize="13sp" />
@@ -81,10 +83,12 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/greenLabelText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/samsung_sharp_sans_medium"
+            android:labelFor="@id/greenSeekBar"
             android:text="@string/customize_vibe_dialog_green"
             android:textColor="#E0E6ED"
             android:textSize="13sp" />
@@ -116,10 +120,12 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/blueLabelText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/samsung_sharp_sans_medium"
+            android:labelFor="@id/blueSeekBar"
             android:text="@string/customize_vibe_dialog_blue"
             android:textColor="#E0E6ED"
             android:textSize="13sp" />
