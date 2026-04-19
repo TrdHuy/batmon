@@ -93,6 +93,9 @@
     <string name="cd_controller_icon">Biểu tượng tay cầm</string>
     <string name="status_card_controller_connected">PlayStation 4 Controller Connected</string>
     <string name="status_card_controller_disconnected">No PlayStation 4 Controller Connected</string>
+    <string name="status_card_controller_unique_id_format">ID: %1$s</string>
+    <string name="status_card_controller_unique_id_unavailable">--</string>
+    <string name="status_card_controller_unique_id_placeholder">ID: --</string>
     <string name="status_card_battery_unknown" formatted="false">--%</string>
     <string name="status_card_battery_percent">%1$d%%</string>
     <string name="panel_util_category">Util category</string>

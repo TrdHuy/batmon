@@ -58,6 +58,7 @@ class GamepadRepositoryImpl(
                     name = device.name ?: defaultDeviceName,
                     vendorId = device.vendorId,
                     productId = device.productId,
+                    descriptor = device.descriptor,
                     batteryPercent = batteryInfo.first,
                     batteryStatus = batteryInfo.second
                 )

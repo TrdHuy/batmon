@@ -6,6 +6,7 @@ data class MainUiState(
     val connectionState: ConnectionState = ConnectionState.LOADING,
     val batteryPercent: Int? = null,
     val batteryStatus: BatteryChargeStatus = BatteryChargeStatus.UNKNOWN,
+    val controllerUniqueId: String? = null,
     val isServiceRunning: Boolean = false,
     val isMonitoringEnabled: Boolean = false,
     val isOverlayVisible: Boolean = false
