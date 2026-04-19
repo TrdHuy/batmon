@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var deviceInfoView: TextView
     private lateinit var batteryPercentText: TextView
     private lateinit var batteryStateText: TextView
+    private lateinit var batteryUniqueIdText: TextView
     private lateinit var batteryCircle: BatteryProgressView
     private lateinit var chargingIconView: ChargingIconView
     private lateinit var utilSettingsPanel: SettingsPanelView
@@ -124,6 +125,7 @@ class MainActivity : AppCompatActivity() {
         deviceInfoView = findViewById(R.id.deviceInfoView)
         batteryPercentText = findViewById(R.id.batteryPercentText)
         batteryStateText = findViewById(R.id.batteryStateText)
+        batteryUniqueIdText = findViewById(R.id.batteryUniqueIdText)
         batteryCircle = findViewById(R.id.batteryCircle)
         chargingIconView = findViewById(R.id.chargingIcon)
         batteryCircle.max = 100
@@ -670,7 +672,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderUiState(state: MainUiState) {
-        if (!::deviceInfoView.isInitialized || !::batteryCircle.isInitialized) {
+        if (!::deviceInfoView.isInitialized ||
+            !::batteryCircle.isInitialized ||
+            !::batteryUniqueIdText.isInitialized
+        ) {
             return
         }
 
@@ -692,8 +697,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        updateControllerUniqueIdUi(state.controllerUniqueId)
         updateBatteryUi(state.batteryPercent, state.batteryStatus)
         renderSettingItems(state)
+    }
+
+    private fun updateControllerUniqueIdUi(uniqueId: String?) {
+        val value = uniqueId
+            ?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.status_card_controller_unique_id_unavailable)
+        batteryUniqueIdText.text = getString(R.string.status_card_controller_unique_id_format, value)
     }
 
     private fun renderSettingItems(state: MainUiState) {

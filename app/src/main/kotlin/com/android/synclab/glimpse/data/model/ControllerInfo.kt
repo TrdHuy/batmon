@@ -5,6 +5,7 @@ data class ControllerInfo(
     val name: String,
     val vendorId: Int,
     val productId: Int,
+    val descriptor: String?,
     val batteryPercent: Int?,
     val batteryStatus: BatteryChargeStatus?
 )

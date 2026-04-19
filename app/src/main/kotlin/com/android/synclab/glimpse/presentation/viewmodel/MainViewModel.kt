@@ -3,6 +3,7 @@ package com.android.synclab.glimpse.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.BatteryOverlayService
@@ -57,7 +58,8 @@ class MainViewModel(
                 newState = current.copy(
                     connectionState = MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE,
                     batteryPercent = null,
-                    batteryStatus = BatteryChargeStatus.UNKNOWN
+                    batteryStatus = BatteryChargeStatus.UNKNOWN,
+                    controllerUniqueId = null
                 ),
                 eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
                 source = source
@@ -72,13 +74,15 @@ class MainViewModel(
             current.copy(
                 connectionState = MainUiState.ConnectionState.DISCONNECTED,
                 batteryPercent = null,
-                batteryStatus = BatteryChargeStatus.UNKNOWN
+                batteryStatus = BatteryChargeStatus.UNKNOWN,
+                controllerUniqueId = null
             )
         } else {
             current.copy(
                 connectionState = MainUiState.ConnectionState.CONNECTED,
                 batteryPercent = primaryController.batteryPercent,
-                batteryStatus = primaryController.batteryStatus ?: BatteryChargeStatus.UNKNOWN
+                batteryStatus = primaryController.batteryStatus ?: BatteryChargeStatus.UNKNOWN,
+                controllerUniqueId = buildControllerUniqueId(primaryController)
             )
         }
 
@@ -91,8 +95,17 @@ class MainViewModel(
         LogCompat.d(
             "MainViewModel refreshControllerInfo controllers=${ps4Controllers.size} " +
                     "primaryBattery=${primaryController?.batteryPercent} " +
-                    "primaryStatus=${primaryController?.batteryStatus}"
+                    "primaryStatus=${primaryController?.batteryStatus} " +
+                    "primaryUniqueId=${newState.controllerUniqueId}"
         )
+    }
+
+    private fun buildControllerUniqueId(controller: ControllerInfo): String {
+        val descriptor = controller.descriptor?.trim().orEmpty()
+        if (descriptor.isNotEmpty()) {
+            return descriptor
+        }
+        return "VID:${controller.vendorId}_PID:${controller.productId}_DID:${controller.deviceId}"
     }
 
     fun syncServiceState(
