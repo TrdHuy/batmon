@@ -47,6 +47,10 @@ class MainViewModel(
         unknownDeviceName: String,
         source: EventChangeParam.Source = EventChangeParam.Source.VIEW
     ) {
+        LogCompat.d(
+            "MainViewModel refreshControllerInfo start source=$source " +
+                    "inputManagerAvailable=${inputDeviceGateway.isInputManagerAvailable()}"
+        )
         val current = uiState.copy(
             isServiceRunning = BatteryOverlayService.isRunning,
             isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
@@ -59,7 +63,9 @@ class MainViewModel(
                     connectionState = MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE,
                     batteryPercent = null,
                     batteryStatus = BatteryChargeStatus.UNKNOWN,
-                    controllerUniqueId = null
+                    controllerUniqueId = null,
+                    controllerDescriptor = null,
+                    controllerName = null
                 ),
                 eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
                 source = source
@@ -75,14 +81,18 @@ class MainViewModel(
                 connectionState = MainUiState.ConnectionState.DISCONNECTED,
                 batteryPercent = null,
                 batteryStatus = BatteryChargeStatus.UNKNOWN,
-                controllerUniqueId = null
+                controllerUniqueId = null,
+                controllerDescriptor = null,
+                controllerName = null
             )
         } else {
             current.copy(
                 connectionState = MainUiState.ConnectionState.CONNECTED,
                 batteryPercent = primaryController.batteryPercent,
                 batteryStatus = primaryController.batteryStatus ?: BatteryChargeStatus.UNKNOWN,
-                controllerUniqueId = buildControllerUniqueId(primaryController)
+                controllerUniqueId = buildControllerUniqueId(primaryController),
+                controllerDescriptor = primaryController.descriptor?.trim()?.takeIf { it.isNotEmpty() },
+                controllerName = primaryController.name
             )
         }
 
@@ -96,7 +106,9 @@ class MainViewModel(
             "MainViewModel refreshControllerInfo controllers=${ps4Controllers.size} " +
                     "primaryBattery=${primaryController?.batteryPercent} " +
                     "primaryStatus=${primaryController?.batteryStatus} " +
-                    "primaryUniqueId=${newState.controllerUniqueId}"
+                    "primaryUniqueId=${newState.controllerUniqueId} " +
+                    "primaryDescriptor=${newState.controllerDescriptor} " +
+                    "primaryName=${newState.controllerName}"
         )
     }
 
@@ -131,7 +143,18 @@ class MainViewModel(
         source: EventChangeParam.Source,
         emitChange: Boolean = true
     ) {
+        val oldState = uiState
         uiState = newState
+        LogCompat.d(
+            "MainViewModel updateState event=$eventType source=$source emitChange=$emitChange " +
+                    "connection=${oldState.connectionState}->${newState.connectionState} " +
+                    "battery=${oldState.batteryPercent}->${newState.batteryPercent} " +
+                    "status=${oldState.batteryStatus}->${newState.batteryStatus} " +
+                    "descriptor=${oldState.controllerDescriptor?.let(::maskIdentifier)}->${newState.controllerDescriptor?.let(::maskIdentifier)} " +
+                    "service=${oldState.isServiceRunning}->${newState.isServiceRunning} " +
+                    "monitoring=${oldState.isMonitoringEnabled}->${newState.isMonitoringEnabled} " +
+                    "overlay=${oldState.isOverlayVisible}->${newState.isOverlayVisible}"
+        )
         if (emitChange) {
             onViewModelChange?.invoke(
                 EventChangeParam(
@@ -141,6 +164,10 @@ class MainViewModel(
                 )
             )
         }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
 }
 

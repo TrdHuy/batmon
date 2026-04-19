@@ -24,9 +24,12 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerProfile
 import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
+import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
+import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
@@ -39,6 +42,9 @@ import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.InputDeviceLogUtils
 import com.android.synclab.glimpse.utils.LogCompat
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -48,9 +54,11 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
         private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
         private const val CHARGING_GLOW_RADIUS_DP = 11f
+        private val DEFAULT_VIBE_COLOR = Color.rgb(44, 100, 255)
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val profileIoExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private lateinit var toolbar: Toolbar
     private lateinit var deviceInfoView: TextView
@@ -65,13 +73,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase
     private lateinit var closePs4ControllerLightSessionUseCase: ClosePs4ControllerLightSessionUseCase
+    private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
+    private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
     private lateinit var viewModel: MainViewModel
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
     private var lastChargingGlowState: Boolean? = null
-    private var selectedVibeColor: Int = Color.rgb(44, 100, 255)
+    private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
+    private var activeControllerDescriptor: String? = null
+    private var activeControllerName: String? = null
+    private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
 
     private val periodicRefresh = object : Runnable {
@@ -113,6 +126,8 @@ class MainActivity : AppCompatActivity() {
         setPs4ControllerLightColorUseCase = appContainer.provideSetPs4ControllerLightColorUseCase()
         closePs4ControllerLightSessionUseCase =
             appContainer.provideClosePs4ControllerLightSessionUseCase()
+        getControllerProfileUseCase = appContainer.provideGetControllerProfileUseCase()
+        upsertControllerProfileUseCase = appContainer.provideUpsertControllerProfileUseCase()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
@@ -184,6 +199,7 @@ class MainActivity : AppCompatActivity() {
         if (::viewModel.isInitialized) {
             viewModel.clearOnViewModelChange()
         }
+        profileIoExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -324,6 +340,11 @@ class MainActivity : AppCompatActivity() {
             LogCompat.d("CustomizeVibeDialog already visible")
             return
         }
+        LogCompat.d(
+            "CustomizeVibeDialog open " +
+                    "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)} " +
+                    "selectedColor=${toHexColor(selectedVibeColor)}"
+        )
 
         val dialog = CustomizeVibeDialog(
             context = this,
@@ -331,6 +352,11 @@ class MainActivity : AppCompatActivity() {
             setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
             onColorApplied = { color ->
                 selectedVibeColor = color
+                LogCompat.d(
+                    "CustomizeVibeDialog onColorApplied color=${toHexColor(color)} " +
+                            "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)}"
+                )
+                persistControllerProfile(color)
             },
             onDismiss = {
                 customizeVibeDialog = null
@@ -582,6 +608,11 @@ class MainActivity : AppCompatActivity() {
         if (!::viewModel.isInitialized) {
             return
         }
+        LogCompat.d(
+            "requestControllerRefresh source=$source " +
+                    "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)} " +
+                    "loadedDescriptor=${lastLoadedProfileDescriptor?.let(::maskIdentifier)}"
+        )
         viewModel.refreshControllerInfo(
             unknownDeviceName = getString(R.string.unknown_device_name),
             source = source
@@ -697,9 +728,120 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        handleControllerProfileState(state)
         updateControllerUniqueIdUi(state.controllerUniqueId)
         updateBatteryUi(state.batteryPercent, state.batteryStatus)
         renderSettingItems(state)
+    }
+
+    private fun handleControllerProfileState(state: MainUiState) {
+        val descriptor = state.controllerDescriptor?.takeIf { it.isNotBlank() }
+        val previousDescriptor = activeControllerDescriptor
+        if (descriptor != previousDescriptor) {
+            LogCompat.d(
+                "ControllerProfile active controller changed " +
+                        "from=${previousDescriptor?.let(::maskIdentifier)} " +
+                        "to=${descriptor?.let(::maskIdentifier)} " +
+                        "connectionState=${state.connectionState}"
+            )
+        }
+        activeControllerDescriptor = descriptor
+        activeControllerName = state.controllerName?.takeIf { it.isNotBlank() }
+
+        if (descriptor == null) {
+            lastLoadedProfileDescriptor = null
+            if (previousDescriptor != null) {
+                selectedVibeColor = DEFAULT_VIBE_COLOR
+                LogCompat.d("ControllerProfile reset to default color because controller disconnected")
+            }
+            return
+        }
+
+        if (descriptor == lastLoadedProfileDescriptor) {
+            LogCompat.d(
+                "ControllerProfile load skipped id=${maskIdentifier(descriptor)} reason=already_loaded"
+            )
+            return
+        }
+
+        selectedVibeColor = DEFAULT_VIBE_COLOR
+        lastLoadedProfileDescriptor = descriptor
+        LogCompat.d(
+            "ControllerProfile load scheduled id=${maskIdentifier(descriptor)} " +
+                    "activeName=${activeControllerName ?: "n/a"}"
+        )
+        loadControllerProfile(descriptor)
+    }
+
+    private fun loadControllerProfile(descriptor: String) {
+        LogCompat.d("ControllerProfile load queued id=${maskIdentifier(descriptor)}")
+        profileIoExecutor.execute {
+            LogCompat.d("ControllerProfile load started id=${maskIdentifier(descriptor)}")
+            val profile = runCatching {
+                getControllerProfileUseCase(descriptor)
+            }.onFailure { throwable ->
+                LogCompat.e("ControllerProfile load failed id=${maskIdentifier(descriptor)}", throwable)
+            }.getOrNull()
+
+            mainHandler.post {
+                if (isDestroyed) {
+                    LogCompat.d(
+                        "ControllerProfile load ignored id=${maskIdentifier(descriptor)} reason=activity_destroyed"
+                    )
+                    return@post
+                }
+                if (activeControllerDescriptor != descriptor) {
+                    LogCompat.d(
+                        "ControllerProfile load ignored id=${maskIdentifier(descriptor)} " +
+                                "reason=active_controller_switched current=${activeControllerDescriptor?.let(::maskIdentifier)}"
+                    )
+                    return@post
+                }
+                if (profile == null) {
+                    LogCompat.d("ControllerProfile missing id=${maskIdentifier(descriptor)}")
+                    return@post
+                }
+                selectedVibeColor = profile.lightbarColor
+                if (activeControllerName.isNullOrBlank()) {
+                    activeControllerName = profile.deviceName
+                }
+                LogCompat.d(
+                    "ControllerProfile loaded id=${maskIdentifier(descriptor)} " +
+                            "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)}"
+                )
+            }
+        }
+    }
+
+    private fun persistControllerProfile(lightbarColor: Int) {
+        val descriptor = activeControllerDescriptor
+        if (descriptor.isNullOrBlank()) {
+            LogCompat.d("ControllerProfile save skipped: missing descriptor")
+            return
+        }
+        val deviceName = activeControllerName?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.unknown_device_name)
+        val profile = ControllerProfile(
+            id = descriptor,
+            deviceName = deviceName,
+            lightbarColor = lightbarColor
+        )
+        LogCompat.d(
+            "ControllerProfile save queued id=${maskIdentifier(descriptor)} " +
+                    "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+        )
+        profileIoExecutor.execute {
+            runCatching {
+                upsertControllerProfileUseCase(profile)
+            }.onSuccess {
+                LogCompat.d(
+                    "ControllerProfile saved id=${maskIdentifier(descriptor)} " +
+                            "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+                )
+            }.onFailure { throwable ->
+                LogCompat.e("ControllerProfile save failed id=${maskIdentifier(descriptor)}", throwable)
+            }
+        }
     }
 
     private fun updateControllerUniqueIdUi(uniqueId: String?) {
@@ -814,6 +956,14 @@ class MainActivity : AppCompatActivity() {
             BatteryChargeStatus.NOT_CHARGING -> getString(R.string.battery_status_not_charging)
             BatteryChargeStatus.UNKNOWN -> getString(R.string.battery_status_unknown)
         }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
+    }
+
+    private fun toHexColor(color: Int): String {
+        return String.format(Locale.US, "#%06X", 0xFFFFFF and color)
     }
 
     private fun showToast(messageRes: Int) {

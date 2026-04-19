@@ -7,6 +7,8 @@ data class MainUiState(
     val batteryPercent: Int? = null,
     val batteryStatus: BatteryChargeStatus = BatteryChargeStatus.UNKNOWN,
     val controllerUniqueId: String? = null,
+    val controllerDescriptor: String? = null,
+    val controllerName: String? = null,
     val isServiceRunning: Boolean = false,
     val isMonitoringEnabled: Boolean = false,
     val isOverlayVisible: Boolean = false

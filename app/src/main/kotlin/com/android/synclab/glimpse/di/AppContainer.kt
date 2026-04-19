@@ -2,23 +2,33 @@ package com.android.synclab.glimpse.di
 
 import android.app.Service
 import android.content.Context
+import com.android.synclab.glimpse.base.contracts.ControllerProfileRepository
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
+import com.android.synclab.glimpse.domain.usecase.DeleteControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
+import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
+import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
 import com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl
+import com.android.synclab.glimpse.infra.repository.roomdb.RoomControllerProfileRepository
+import com.android.synclab.glimpse.infra.repository.roomdb.core.GlimpseDatabase
+import com.android.synclab.glimpse.utils.LogCompat
 
 class AppContainer private constructor(
     appContext: Context
 ) {
     private val inputDeviceGateway: InputDeviceGateway = InputDeviceGateway(appContext)
+    private val glimpseDatabase: GlimpseDatabase = GlimpseDatabase.create(appContext)
 
     private val gamepadRepository: GamepadRepository =
         GamepadRepositoryImpl(inputDeviceGateway)
+    private val controllerProfileRepository: ControllerProfileRepository =
+        RoomControllerProfileRepository(glimpseDatabase.controllerProfileDao())
 
     fun provideInputDeviceGateway(): InputDeviceGateway {
         return inputDeviceGateway
@@ -40,6 +50,18 @@ class AppContainer private constructor(
         return ClosePs4ControllerLightSessionUseCase(gamepadRepository)
     }
 
+    fun provideGetControllerProfileUseCase(): GetControllerProfileUseCase {
+        return GetControllerProfileUseCase(controllerProfileRepository)
+    }
+
+    fun provideUpsertControllerProfileUseCase(): UpsertControllerProfileUseCase {
+        return UpsertControllerProfileUseCase(controllerProfileRepository)
+    }
+
+    fun provideDeleteControllerProfileUseCase(): DeleteControllerProfileUseCase {
+        return DeleteControllerProfileUseCase(controllerProfileRepository)
+    }
+
     fun provideOverlayWindowController(context: Context): OverlayWindowController {
         return OverlayWindowController(context)
     }
@@ -58,7 +80,10 @@ class AppContainer private constructor(
 
         fun from(context: Context): AppContainer {
             return instance ?: synchronized(this) {
-                instance ?: AppContainer(context.applicationContext).also { instance = it }
+                instance ?: AppContainer(context.applicationContext).also {
+                    LogCompat.i("AppContainer created")
+                    instance = it
+                }
             }
         }
     }
