@@ -23,6 +23,7 @@ description: Publish a local sam-agent-metrics HTML report to the repository Git
 - Use `/tmp/sam-agent-runs` for SAM output and `/tmp/batmon-gh-pages` for the Pages worktree unless there is a conflict.
 - Update the existing PR comment when the marker exists. Create a new comment only when no marker exists.
 - Keep the PR comment concise: summary first, then links.
+- Publish only the HTML assets required by `dev-report.html`; do not publish the full `raw-sam` or full `attempts` directory unless the user explicitly asks for deep raw output.
 - If `gh-pages` does not exist, create it as an orphan branch in the temporary worktree.
 - If GitHub Pages is not enabled, still push `gh-pages` and report that the repo setting must be enabled.
 
@@ -36,12 +37,12 @@ sam-reports/
       index.html
       agent-report.md
       agent-report.json
-      raw-sam/
+      attempts/svace/sam-result/html/
     latest/
       index.html
       agent-report.md
       agent-report.json
-      raw-sam/
+      attempts/svace/sam-result/html/
 ```
 
 Use these URL shapes in the PR comment:
@@ -94,7 +95,8 @@ https://trdhuy.github.io/batmon/sam-reports/pr-<PR_NUMBER>/<short_sha>/
    - Copy `dev-report.html` to `index.html`.
    - Copy `agent-report.md`.
    - Copy `agent-report.json`.
-   - Copy `raw-sam/` when available, because the HTML report may link to raw SAM assets.
+   - Copy only the HTML report directory needed by the redirect in `dev-report.html`, normally `attempts/svace/sam-result/html/`.
+   - Do not copy the full `attempts/` directory; it can be much larger than the browser report.
    - Write both commit-specific and `latest` folders.
 
 6. Commit and push `gh-pages`:
