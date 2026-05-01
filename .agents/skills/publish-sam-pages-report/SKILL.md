@@ -127,7 +127,13 @@ https://trdhuy.github.io/batmon/sam-reports/pr-<PR_NUMBER>/<short_sha>/
 8. Update or create the PR comment:
    - Fetch comments with `gh api repos/TrdHuy/batmon/issues/<PR_NUMBER>/comments`.
    - Find the comment containing `<!-- sam-agent-metrics-report -->`.
-   - Update it with `gh api --method PATCH .../issues/comments/<COMMENT_ID> -f body=@<body_file>`.
+   - Update it with a JSON payload so multiline Markdown is sent as the comment body:
+     ```bash
+     jq -n --arg body "$(cat "$BODY_FILE")" '{body: $body}' > /tmp/sam-comment-payload.json
+     gh api --method PATCH \
+       repos/TrdHuy/batmon/issues/comments/<COMMENT_ID> \
+       --input /tmp/sam-comment-payload.json
+     ```
    - If no marker exists, create it with `gh pr comment <PR_NUMBER> --body-file <body_file>`.
 
 ## Verification
