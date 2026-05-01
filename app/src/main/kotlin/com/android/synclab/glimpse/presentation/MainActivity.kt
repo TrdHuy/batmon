@@ -784,6 +784,21 @@ class MainActivity : AppCompatActivity() {
                 LogCompat.e("ControllerProfile load failed id=${maskIdentifier(descriptor)}", throwable)
             }.getOrNull()
 
+            if (profile != null) {
+                LogCompat.i(
+                    "ControllerProfile auto-restoring vibe id=${maskIdentifier(descriptor)} " +
+                            "color=${toHexColor(profile.lightbarColor)}"
+                )
+                runCatching {
+                    setPs4ControllerLightColorUseCase(profile.lightbarColor)
+                }.onFailure { throwable ->
+                    LogCompat.e(
+                        "ControllerProfile auto-restore failed id=${maskIdentifier(descriptor)}",
+                        throwable
+                    )
+                }
+            }
+
             mainHandler.post {
                 if (isDestroyed) {
                     LogCompat.d(
