@@ -21,4 +21,4 @@ To prevent identity conflicts between agents or local environments, all `gh` com
 GH_CONFIG_DIR=.config/gh gh <command>
 ```
 
-Always ensure this environment variable is set before executing any GitHub CLI operations. The current project-local account is `synclab-automation-system-gemini`.
+Always ensure this environment variable is set before executing any GitHub CLI operations.
