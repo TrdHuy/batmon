@@ -1,0 +1,2 @@
+Metric;Path;Package;Class;LineNo;Value;Violation
+CBO;app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt;com.android.synclab.glimpse.presentation;com.android.synclab.glimpse.presentation.MainActivity;0;87;Y

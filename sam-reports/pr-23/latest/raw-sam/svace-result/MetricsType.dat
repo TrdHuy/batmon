@@ -1,0 +1,100 @@
+309;LOC_FILE;Number of lines in the file. Number of lines of code in the file calculated as (last line number) - (first line number) + 1.;file level metrics
+302;CLOC_FILE;Number of lines of code with comments. If the line contains both code and comments, it is included in this metric.;file level metrics
+306;NCNBLOC_FILE;The number of lines of code in a file, not including comment lines and blank lines (Build LOC).;file level metrics
+301;NOCLASSDECL;Number of classes declared in a file at a global level (inner classes and their members are not included in this metric).;file level metrics
+304;RNOACCTOGLOB;Sum of the number of occurrences of global variable usages for all routines in a file.;file level metrics
+303;RNOCONTROLSTAT;Sum of the number of control statements for all routines in a file.;file level metrics
+315;NOUNFUNC;The number of unused function in a file.;file level metrics
+319;FIRACOMPSTATEMENT;Ratio of complex lines to total lines in a file (threshold: 3).;file level metrics
+321;FIRALONGLINES;Ratio of long lines to total lines in a file (threshold: 80).;file level metrics
+322;NORECURSION;Number of recursive functions.;file level metrics
+323;FCA;Afferent coupling.;file level metrics
+324;FCE;Efferent coupling.;file level metrics
+325;TOKEN_FILE;Number of tokens.;file level metrics
+326;NCTOKEN_FILE;Number of non-comment tokens.;file level metrics
+327;CTOKEN_FILE;Number of comment tokens.;file level metrics
+328;NOLOCALS_FILE;The number of local variables in the methods from a file.;file level metrics
+406;LOC_DIR;Number of lines in the directory.;directory level metrics
+408;CLOC_DIR;Number of lines of comments in the directory.;directory level metrics
+407;NCNBLOC_DIR;Number of lines of statements in the directory.;directory level metrics
+413;DRACOMPSTATEMENT;Ratio of complex lines to total lines in a directory (threshold: 3).;directory level metrics
+414;DRALONGLINES;Ratio of long lines to total lines in a directory (threshold: 80).;directory level metrics
+415;RALONGFILE;Ratio of long files to total files in a directory.;directory level metrics
+416;DFAT;Metric showing complexity of relations between file members.;package level metrics
+417;HDFAT;Metric showing complexity of relations between package members.;package level metrics
+418;TANGLE;Number of dependencies between nested packages to erase to make graph acyclic.;package level metrics
+419;DCA;Afferent coupling.;package level metrics
+420;DCE;Efferent coupling.;package level metrics
+202;NOMETH;Number of methods defined in the current class. Inherited methods are not counted.;class level metrics
+217;NONESTEDCLASS;Number of nested classes (member classes) of the class.;class level metrics
+203;NOPRIVDATADECL;Number of private attributes (private data fields) for a class.;class level metrics
+207;NOPRIVMETH;Number of private methods in a class.;class level metrics
+204;NOPROTDATADECL;Number of protected attributes (protected data fields) for a class.;class level metrics
+208;NOPROTMETH;Number of protected methods in a class.;class level metrics
+205;NOPUBDATADECL;;Number of public attributes (public data fields) for a class.;;class level metrics
+209;NOPUBMETH;Number of public methods in a class.;class level metrics
+206;NOSTDATADECL;Number of static attributes (static data fields) for a class.;class level metrics
+220;LEVINHER;The level of the class in the class hierarchy tree.;class level metrics
+201;LOC_CLASS;Number of lines of code in a class calculated as (last line number) - (first line number) + 1;class level metrics
+212;NCNBLOC_CLASS;The number of lines of code in a class, not including comment lines and blank lines.;class level metrics
+221;CLOC_CLASS;Number of lines of code with comments. If the line contains both code and comments, it is included in this metric.;class level metrics
+222;NOINHERIT;The number of child classes which inherit the class.;class level metrics
+224;BYTESIZEINSTANCE;The size of class instance calculated as the sum of member filed size and the parent class size.;class level metrics
+225;CNOUNFUNC;The number of unused member functions in the class.;class level metrics
+226;CBO;(Coupling between Object Classes) The number of other classes this class is coupled to.;class level metrics
+227;LCOM;(Lack of Cohesion Metric) The correlation between the methods and the local instance variables of a class.;class level metrics
+228;NOC;(Number of Children) The number of child classes or number of child package.;class level metrics
+229;DIT;(Depth Inheritance Tree) Max position of the class in the inheritance tree.;class level metrics
+230;WMC;(Weighted Methods per Class) The sum of the complexities of class methods except inherited methods.;class level metrics
+231;IFANIN;(Number of  Immediate Base Classes) The number of immediate base classes.;class level metrics
+232;WMCX;(Weighted Methods  per Class eXtended) The sum of the complexities of all class methods and inherited methods.;class level metrics
+234;CRACOMPSTATEMENT;Ratio of complex lines to total lines in a class (threshold: 3).;class level metrics
+236;CRALONGLINES;Ratio of long lines to total lines in a class (threshold: 80).;class level metrics
+237;RFC;Object-oriented metric that shows the interaction of the class' methods with other methods.;class level metrics
+238;CFAT;Metric showing complexity of relations between class members.;class level metrics
+240;CCA;Afferent coupling.;class level metrics
+241;CCE;Efferent coupling.;class level metrics
+242;TOKEN_CLASS;Number of tokens.;class level metrics
+243;NANCNBLOC_CLASS;The number of lines of code in a class not including asserts, comment lines and blank lines.;class level metrics
+244;NNNCNBLOC_CLASS;The number of lines of code in a class not including local classes, comment lines and blank lines.;class level metrics
+245;NANNNCNBLOC_CLASS;The number of lines of code in a class not including local classes, asserts, comment lines and blank lines.;class level metrics
+246;NCTOKEN_CLASS;Number of non-comment tokens.;class level metrics
+247;CTOKEN_CLASS;Number of comment tokens.;class level metrics
+248;NANNNCTOKEN_CLASS;Number of class tokens excluding comments, asserts, and nested classes.;class level metrics
+249;NOLOCALS_CLASS;The number of local variables in the class methods.;class level metrics
+102;CYCLOMATIC;Cyclomatic complexity (McCabe Cyclomatic Complexity metric) shows the number of areas a plane is divided by a method control flow graph.;func level metrics
+101;LOC_METHOD;Number of lines of code in a method calculated as (last line number) - (first line number) + 1.;func level metrics
+105;NCNBLOC_METHOD;The number of lines of code in a method, not including comment lines and blank lines.;func level metrics
+114;CLOC_METHOD;The number of comment lines in a method.;func level metrics
+103;NOPARMS;Number of parameters (arguments) in the function or method.;func level metrics
+104;MAXLEVEL;;Maximum level of nested control statements (if, switch, for, while, and do-while statements). The initial MAXLEVEL (for example, a method with no operators) is equal to 1.;func level metrics
+108;NOLOOPS;Number of for, while, and do-while statements in a method.;func level metrics
+109;NOIF;Number of if and switch statements in a method (if, else if, switch).;func level metrics
+110;NOBRANCH;Number of else and case statements in a method. Default statements are not included (else, else if, case).;func level metrics
+113;NORET;Number of return statements in a method (not return points).;func level metrics
+115;NOOVERLOADFUNC;The number of times this method is overloaded.;func level metrics
+116;MAXDEPTH;Maximum depth level of a method.;func level metrics
+117;USERANK;The importance level based on the usage informaton (cf. the PageRank Algorithm: http://ianrogers.uk/google-page-rank).;func level metrics
+119;NOCONTINUE;Number of continue statements in a method (unstructured control flow statement).;func level metrics
+121;NOIFWOELSE;Number of if statement with else if and without else. (This is consistent with the requirement to have a final default caluse in a switch statement).;func level metrics
+122;NOSWITCHWODEFAULT;Number of switch statements without a default statement.;func level metrics
+124;NOEMPTYDEFAULT;Number of empty default clauses in switch statements.;func level metrics
+125;FURACOMPSTATEMENT;Ratio of complex lines to total lines in a method (threshold: 3).;func level metrics
+126;NOLONGIDENTIFIERS;Number of long identifiers in a method (threshold: 31).;func level metrics
+127;NOMIXEDOPERATORS;Number of increment(++) and decrement(--) operators which are used with other operators.;func level metrics
+128;FURALONGLINES;Ratio of long lines to total lines in a method (threshold: 80).;func level metrics
+129;NOMERGEDLINES;Number of merged lines that can be separated on multiple lines.;func level metrics
+130;NOUNUSEDPARAMS;Number of unused method parameters.;func level metrics
+131;NOUNUSEDVARS;Number of unused local variables.;func level metrics
+133;MODIFIEDCYCLOMATIC;Consider a switch as a whole block (instead of a case as a whole block).;func level metrics
+134;MAXLEVEL_HIS;MAXLEVEL without a switch-like if (if elseif else).;func level metrics
+135;LOC_METHODBODY;Number of lines of code in a method body.;func level metrics
+136;STRICTCYCLOMATIC;CYCLOMATIC with added || and && operators.;func level metrics
+137;COGNITIVECYCLOMATIC;Sonarqube complexity.;func level metrics
+138;TOKEN_METHOD;Number of tokens.;func level metrics
+139;NANCNBLOC_METHOD;The number of lines of code in a method not including asserts, comment lines and blank lines.;func level metrics
+140;NNNCNBLOC_METHOD;The number of lines of code in a method not including local classes, comment lines and blank lines.;func level metrics
+141;NANNNCNBLOC_METHOD;The number of lines of code in a method not including local classes, asserts, comment lines and blank lines.;func level metrics
+142;NCTOKEN_METHOD;Number of non-comment tokens.;func level metrics
+143;CTOKEN_METHOD;Number of comment tokens.;func level metrics
+144;NOLOCALS_METHOD;Number of local variables in a method.;func level metrics

@@ -1,0 +1,2 @@
+Metric;Path;Package;Class;LineNo;Value;ClassType;Violation
+LOC;app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt;com.android.synclab.glimpse.presentation;com.android.synclab.glimpse.presentation.MainActivity;0;800;CLASS;Y

@@ -1,0 +1,5 @@
+#List of regular expressions for filtering warnings by file paths.
+#Leading and trailing spaces will be removed.
+#Example:
+#.*bits/stl_multiset\.h
+#.*bits/stl_map\.h

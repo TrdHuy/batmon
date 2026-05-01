@@ -1,0 +1,4 @@
+#List of regular expressions for excluding jars from decompiler by file paths.
+#Leading and trailing spaces will be removed.
+#Example:
+#kotlin-stdlib-\d-\d-\d\d.jar

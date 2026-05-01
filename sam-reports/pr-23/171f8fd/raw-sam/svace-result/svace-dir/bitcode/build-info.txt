@@ -1,0 +1,6 @@
+Svace version: 2026.02.1 (git rev 94cfe6023910832566771183ea2908e45edc299f)
+Host: huy-synclab
+Current directory: /home/huy/Desktop/workspace/gitprojects/batmon
+Build options: build --svace-dir /tmp/sam-agent-runs/batmon-20260501-111406/attempts/svace/svace-result/svace-dir --scra-only --verbose ./gradlew --no-daemon clean :app:assembleDebug
+Build start time: Fri, 01 May 2026 04:14:08 +0000
+Build finish time: Fri, 01 May 2026 04:14:46 +0000

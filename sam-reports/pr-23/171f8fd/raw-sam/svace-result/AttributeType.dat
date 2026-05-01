@@ -1,0 +1,4 @@
+103;SIGNATURE;Return type, full name and arguments of a method. E.g.: Client getClientByIDUnsafe(int cameraId).
+104;VARTYPE;Type of each variable including primitive and user defined types.
+105;STATIC;Define static keyword for a variable or a method.
+112;UNUSED;Whether the entity is conservatively unused
