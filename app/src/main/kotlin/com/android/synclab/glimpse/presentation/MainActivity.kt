@@ -132,7 +132,8 @@ class MainActivity : AppCompatActivity() {
             this,
             MainViewModelFactory(
                 inputDeviceGateway = inputDeviceGateway,
-                getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase()
+                getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase(),
+                monitoringStateProvider = appContainer.provideMonitoringStateProvider()
             )
         ).get(MainViewModel::class.java)
 

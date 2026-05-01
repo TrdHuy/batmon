@@ -4,6 +4,8 @@ import android.app.Service
 import android.content.Context
 import com.android.synclab.glimpse.base.contracts.ControllerProfileRepository
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
+import com.android.synclab.glimpse.base.contracts.MonitoringStateProvider
+import com.android.synclab.glimpse.data.state.MonitoringStateStore
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
 import com.android.synclab.glimpse.domain.usecase.DeleteControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
@@ -29,9 +31,14 @@ class AppContainer private constructor(
         GamepadRepositoryImpl(inputDeviceGateway)
     private val controllerProfileRepository: ControllerProfileRepository =
         RoomControllerProfileRepository(glimpseDatabase.controllerProfileDao())
+    private val monitoringStateProvider: MonitoringStateProvider = MonitoringStateStore
 
     fun provideInputDeviceGateway(): InputDeviceGateway {
         return inputDeviceGateway
+    }
+
+    fun provideMonitoringStateProvider(): MonitoringStateProvider {
+        return monitoringStateProvider
     }
 
     fun provideConnectedPs4ControllersUseCase(): GetConnectedPs4ControllersUseCase {

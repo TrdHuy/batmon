@@ -2,18 +2,19 @@ package com.android.synclab.glimpse.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.android.synclab.glimpse.base.contracts.MonitoringStateProvider
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.presentation.BatteryOverlayService
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.utils.LogCompat
 
 class MainViewModel(
     private val inputDeviceGateway: InputDeviceGateway,
-    private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase
+    private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
+    private val monitoringStateProvider: MonitoringStateProvider
 ) : ViewModel() {
 
     private var uiState: MainUiState = MainUiState()
@@ -52,9 +53,9 @@ class MainViewModel(
                     "inputManagerAvailable=${inputDeviceGateway.isInputManagerAvailable()}"
         )
         val current = uiState.copy(
-            isServiceRunning = BatteryOverlayService.isRunning,
-            isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
-            isOverlayVisible = BatteryOverlayService.isOverlayVisible
+            isServiceRunning = monitoringStateProvider.isServiceRunning,
+            isMonitoringEnabled = monitoringStateProvider.isMonitoringEnabled,
+            isOverlayVisible = monitoringStateProvider.isOverlayVisible
         )
 
         if (!inputDeviceGateway.isInputManagerAvailable()) {
@@ -125,9 +126,9 @@ class MainViewModel(
         emitChange: Boolean = true
     ) {
         val newState = uiState.copy(
-            isServiceRunning = BatteryOverlayService.isRunning,
-            isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
-            isOverlayVisible = BatteryOverlayService.isOverlayVisible
+            isServiceRunning = monitoringStateProvider.isServiceRunning,
+            isMonitoringEnabled = monitoringStateProvider.isMonitoringEnabled,
+            isOverlayVisible = monitoringStateProvider.isOverlayVisible
         )
         updateState(
             newState = newState,
@@ -173,14 +174,16 @@ class MainViewModel(
 
 class MainViewModelFactory(
     private val inputDeviceGateway: InputDeviceGateway,
-    private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase
+    private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
+    private val monitoringStateProvider: MonitoringStateProvider
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return MainViewModel(
                 inputDeviceGateway = inputDeviceGateway,
-                getConnectedPs4ControllersUseCase = getConnectedPs4ControllersUseCase
+                getConnectedPs4ControllersUseCase = getConnectedPs4ControllersUseCase,
+                monitoringStateProvider = monitoringStateProvider
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
