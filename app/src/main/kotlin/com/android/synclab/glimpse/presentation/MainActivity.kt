@@ -73,9 +73,12 @@ class MainActivity : AppCompatActivity() {
     private var protectBatteryEnabled = false
     private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
     private var activeControllerDescriptor: String? = null
+    private var activeControllerUniqueId: String? = null
     private var activeControllerName: String? = null
     private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
+    @Volatile
+    private var controllerProfileGeneration: Long = 0L
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -374,6 +377,7 @@ class MainActivity : AppCompatActivity() {
             context = this,
             initialColor = selectedVibeColor,
             setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
+            controllerIdentifier = activeControllerDescriptor ?: activeControllerUniqueId,
             onColorApplied = { color ->
                 selectedVibeColor = color
                 LogCompat.d(
@@ -768,6 +772,7 @@ class MainActivity : AppCompatActivity() {
         val descriptor = state.controllerDescriptor?.takeIf { it.isNotBlank() }
         val previousDescriptor = activeControllerDescriptor
         if (descriptor != previousDescriptor) {
+            controllerProfileGeneration++
             LogCompat.d(
                 "ControllerProfile active controller changed " +
                         "from=${previousDescriptor?.let(::maskIdentifier)} " +
@@ -776,6 +781,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
         activeControllerDescriptor = descriptor
+        activeControllerUniqueId = state.selectedControllerUniqueId?.takeIf { it.isNotBlank() }
         activeControllerName = state.controllerName?.takeIf { it.isNotBlank() }
 
         if (descriptor == null) {
@@ -805,6 +811,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadControllerProfile(descriptor: String) {
         LogCompat.d("ControllerProfile load queued id=${maskIdentifier(descriptor)}")
+        val requestGeneration = controllerProfileGeneration
         profileIoExecutor.execute {
             LogCompat.d("ControllerProfile load started id=${maskIdentifier(descriptor)}")
             val profile = runCatching {
@@ -814,17 +821,28 @@ class MainActivity : AppCompatActivity() {
             }.getOrNull()
 
             if (profile != null) {
-                LogCompat.i(
-                    "ControllerProfile auto-restoring vibe id=${maskIdentifier(descriptor)} " +
-                            "color=${toHexColor(profile.lightbarColor)}"
-                )
-                runCatching {
-                    setPs4ControllerLightColorUseCase(profile.lightbarColor)
-                }.onFailure { throwable ->
-                    LogCompat.e(
-                        "ControllerProfile auto-restore failed id=${maskIdentifier(descriptor)}",
-                        throwable
+                if (requestGeneration != controllerProfileGeneration) {
+                    LogCompat.d(
+                        "ControllerProfile auto-restore skipped id=${maskIdentifier(descriptor)} " +
+                                "reason=stale_request currentGeneration=$controllerProfileGeneration " +
+                                "requestGeneration=$requestGeneration"
                     )
+                } else {
+                    LogCompat.i(
+                        "ControllerProfile auto-restoring vibe id=${maskIdentifier(descriptor)} " +
+                                "color=${toHexColor(profile.lightbarColor)}"
+                    )
+                    runCatching {
+                        setPs4ControllerLightColorUseCase(
+                            profile.lightbarColor,
+                            controllerIdentifier = descriptor
+                        )
+                    }.onFailure { throwable ->
+                        LogCompat.e(
+                            "ControllerProfile auto-restore failed id=${maskIdentifier(descriptor)}",
+                            throwable
+                        )
+                    }
                 }
             }
 

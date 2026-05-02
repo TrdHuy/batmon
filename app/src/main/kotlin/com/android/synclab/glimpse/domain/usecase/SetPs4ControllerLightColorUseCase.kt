@@ -6,7 +6,13 @@ import com.android.synclab.glimpse.data.model.ControllerLightCommandResult
 class SetPs4ControllerLightColorUseCase(
     private val repository: GamepadRepository
 ) {
-    operator fun invoke(color: Int): ControllerLightCommandResult {
-        return repository.setPs4ControllerLightColor(color)
+    operator fun invoke(
+        color: Int,
+        controllerIdentifier: String? = null
+    ): ControllerLightCommandResult {
+        return repository.setPs4ControllerLightColor(
+            color = color,
+            controllerIdentifier = controllerIdentifier
+        )
     }
 }

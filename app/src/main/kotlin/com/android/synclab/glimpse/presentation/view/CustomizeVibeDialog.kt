@@ -27,6 +27,7 @@ class CustomizeVibeDialog(
     private val context: Context,
     private val initialColor: Int,
     private val setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase,
+    private val controllerIdentifier: String? = null,
     private val onColorApplied: (Int) -> Unit = {},
     private val onDismiss: () -> Unit = {}
 ) {
@@ -196,7 +197,10 @@ class CustomizeVibeDialog(
 
         worker.execute {
             val result = runCatching {
-                setPs4ControllerLightColorUseCase(color)
+                setPs4ControllerLightColorUseCase(
+                    color = color,
+                    controllerIdentifier = controllerIdentifier
+                )
             }.getOrElse { throwable ->
                 LogCompat.e("CustomizeVibeDialog apply failed", throwable)
                 ControllerLightCommandResult(
@@ -226,7 +230,9 @@ class CustomizeVibeDialog(
         LogCompat.d(
             "CustomizeVibeDialog result status=${result.status} " +
                     "color=${result.colorHex ?: toHexColor(color)} " +
-                    "deviceId=${result.targetDeviceId} detail=${result.detail}"
+                    "deviceId=${result.targetDeviceId} " +
+                    "controllerIdentifier=${controllerIdentifier ?: "n/a"} " +
+                    "detail=${result.detail}"
         )
 
         if (result.status == ControllerLightCommandStatus.SUCCESS) {
