@@ -9,6 +9,8 @@ data class MainUiState(
     val controllerUniqueId: String? = null,
     val controllerDescriptor: String? = null,
     val controllerName: String? = null,
+    val controllerPages: List<ControllerPageUiModel> = emptyList(),
+    val selectedControllerUniqueId: String? = null,
     val isServiceRunning: Boolean = false,
     val isMonitoringEnabled: Boolean = false,
     val isOverlayVisible: Boolean = false
