@@ -7,6 +7,7 @@ import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.model.DebugControllerPageFactory
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
@@ -15,7 +16,8 @@ import com.android.synclab.glimpse.utils.LogCompat
 class MainViewModel(
     private val inputDeviceGateway: InputDeviceGateway,
     private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
-    private val monitoringStateProvider: MonitoringStateProvider
+    private val monitoringStateProvider: MonitoringStateProvider,
+    private val isDebuggableApp: Boolean
 ) : ViewModel() {
 
     private var uiState: MainUiState = MainUiState()
@@ -58,6 +60,35 @@ class MainViewModel(
             isMonitoringEnabled = monitoringStateProvider.isMonitoringEnabled,
             isOverlayVisible = monitoringStateProvider.isOverlayVisible
         )
+
+        val mockModeEnabled = isDebugMockControllerPagesEnabled()
+        if (mockModeEnabled) {
+            val mockPages = DebugControllerPageFactory.createPages(
+                previousSelectedUniqueId = uiState.selectedControllerUniqueId
+            )
+            val selectedMockPage = mockPages.firstOrNull { it.isSelected } ?: mockPages.first()
+            val mockState = current.copy(
+                connectionState = MainUiState.ConnectionState.CONNECTED,
+                controllerPages = mockPages,
+                selectedControllerUniqueId = selectedMockPage.uniqueId,
+                batteryPercent = selectedMockPage.batteryPercent,
+                batteryStatus = selectedMockPage.batteryStatus,
+                controllerUniqueId = selectedMockPage.uniqueId,
+                controllerDescriptor = selectedMockPage.descriptor,
+                controllerName = selectedMockPage.name
+            )
+            updateState(
+                newState = mockState,
+                eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
+                source = source
+            )
+            LogCompat.d(
+                "MainViewModel refreshControllerInfo using mock pages " +
+                        "count=${mockPages.size} selectedUniqueId=${selectedMockPage.uniqueId} " +
+                        "battery=${selectedMockPage.batteryPercent} status=${selectedMockPage.batteryStatus}"
+            )
+            return
+        }
 
         if (!inputDeviceGateway.isInputManagerAvailable()) {
             updateState(
@@ -254,12 +285,33 @@ class MainViewModel(
     private fun maskIdentifier(raw: String): String {
         return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
+
+    private fun isDebugMockControllerPagesEnabled(): Boolean {
+        if (!isDebuggableApp) {
+            return false
+        }
+        return readSystemProperty("debug.glimpse.mock_controllers") == "1"
+    }
+
+    private fun readSystemProperty(name: String): String? {
+        return runCatching {
+            val process = ProcessBuilder("/system/bin/getprop", name)
+                .redirectErrorStream(true)
+                .start()
+            process.inputStream.bufferedReader().use { reader ->
+                reader.readText().trim().takeIf { it.isNotEmpty() }
+            }.also {
+                process.waitFor()
+            }
+        }.getOrNull()
+    }
 }
 
 class MainViewModelFactory(
     private val inputDeviceGateway: InputDeviceGateway,
     private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
-    private val monitoringStateProvider: MonitoringStateProvider
+    private val monitoringStateProvider: MonitoringStateProvider,
+    private val isDebuggableApp: Boolean
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
@@ -267,7 +319,8 @@ class MainViewModelFactory(
             return MainViewModel(
                 inputDeviceGateway = inputDeviceGateway,
                 getConnectedPs4ControllersUseCase = getConnectedPs4ControllersUseCase,
-                monitoringStateProvider = monitoringStateProvider
+                monitoringStateProvider = monitoringStateProvider,
+                isDebuggableApp = isDebuggableApp
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
