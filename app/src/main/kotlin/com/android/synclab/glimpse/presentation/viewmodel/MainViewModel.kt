@@ -7,6 +7,7 @@ import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.utils.LogCompat
@@ -62,6 +63,8 @@ class MainViewModel(
             updateState(
                 newState = current.copy(
                     connectionState = MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE,
+                    controllerPages = emptyList(),
+                    selectedControllerUniqueId = null,
                     batteryPercent = null,
                     batteryStatus = BatteryChargeStatus.UNKNOWN,
                     controllerUniqueId = null,
@@ -75,11 +78,23 @@ class MainViewModel(
         }
 
         val ps4Controllers = getConnectedPs4ControllersUseCase(unknownDeviceName)
-        val primaryController = ps4Controllers.firstOrNull()
+        val selectedUniqueId = resolveSelectedControllerUniqueId(ps4Controllers)
+        val selectedController = ps4Controllers.firstOrNull {
+            buildControllerUniqueId(it) == selectedUniqueId
+        }
+        val controllerPages = ps4Controllers.map { controller ->
+            val uniqueId = buildControllerUniqueId(controller)
+            controller.toControllerPage(
+                uniqueId = uniqueId,
+                isSelected = uniqueId == selectedUniqueId
+            )
+        }
 
-        val newState = if (primaryController == null) {
+        val newState = if (selectedController == null) {
             current.copy(
                 connectionState = MainUiState.ConnectionState.DISCONNECTED,
+                controllerPages = emptyList(),
+                selectedControllerUniqueId = null,
                 batteryPercent = null,
                 batteryStatus = BatteryChargeStatus.UNKNOWN,
                 controllerUniqueId = null,
@@ -89,11 +104,13 @@ class MainViewModel(
         } else {
             current.copy(
                 connectionState = MainUiState.ConnectionState.CONNECTED,
-                batteryPercent = primaryController.batteryPercent,
-                batteryStatus = primaryController.batteryStatus ?: BatteryChargeStatus.UNKNOWN,
-                controllerUniqueId = buildControllerUniqueId(primaryController),
-                controllerDescriptor = primaryController.descriptor?.trim()?.takeIf { it.isNotEmpty() },
-                controllerName = primaryController.name
+                controllerPages = controllerPages,
+                selectedControllerUniqueId = selectedUniqueId,
+                batteryPercent = selectedController.batteryPercent,
+                batteryStatus = selectedController.batteryStatus ?: BatteryChargeStatus.UNKNOWN,
+                controllerUniqueId = buildControllerUniqueId(selectedController),
+                controllerDescriptor = selectedController.descriptor?.trim()?.takeIf { it.isNotEmpty() },
+                controllerName = selectedController.name
             )
         }
 
@@ -105,11 +122,78 @@ class MainViewModel(
 
         LogCompat.d(
             "MainViewModel refreshControllerInfo controllers=${ps4Controllers.size} " +
-                    "primaryBattery=${primaryController?.batteryPercent} " +
-                    "primaryStatus=${primaryController?.batteryStatus} " +
-                    "primaryUniqueId=${newState.controllerUniqueId} " +
-                    "primaryDescriptor=${newState.controllerDescriptor} " +
+                    "controllerPages=${controllerPages.size} " +
+                    "selectedUniqueId=${selectedUniqueId?.let(::maskIdentifier)} " +
+                    "selectedBattery=${selectedController?.batteryPercent} " +
+                    "selectedStatus=${selectedController?.batteryStatus} " +
+                    "primaryUniqueId=${newState.controllerUniqueId?.let(::maskIdentifier)} " +
+                    "primaryDescriptor=${newState.controllerDescriptor?.let(::maskIdentifier)} " +
                     "primaryName=${newState.controllerName}"
+        )
+    }
+
+    fun selectController(
+        uniqueId: String,
+        source: EventChangeParam.Source = EventChangeParam.Source.VIEW
+    ) {
+        val target = uiState.controllerPages.firstOrNull { it.uniqueId == uniqueId }
+        if (target == null || target.isPlaceholder) {
+            LogCompat.d(
+                "MainViewModel selectController ignored uniqueId=${maskIdentifier(uniqueId)} " +
+                        "reason=not_found_or_placeholder"
+            )
+            return
+        }
+        if (uiState.selectedControllerUniqueId == uniqueId) {
+            LogCompat.d(
+                "MainViewModel selectController skipped uniqueId=${maskIdentifier(uniqueId)} reason=already_selected"
+            )
+            return
+        }
+
+        val updatedPages = uiState.controllerPages.map {
+            it.copy(isSelected = it.uniqueId == uniqueId)
+        }
+        updateState(
+            newState = uiState.copy(
+                controllerPages = updatedPages,
+                selectedControllerUniqueId = uniqueId,
+                batteryPercent = target.batteryPercent,
+                batteryStatus = target.batteryStatus,
+                controllerUniqueId = target.uniqueId,
+                controllerDescriptor = target.descriptor,
+                controllerName = target.name
+            ),
+            eventType = EventChangeParam.EventType.CONTROLLER_INFO_UPDATED,
+            source = source
+        )
+    }
+
+    private fun resolveSelectedControllerUniqueId(controllers: List<ControllerInfo>): String? {
+        if (controllers.isEmpty()) {
+            return null
+        }
+        val previousSelected = uiState.selectedControllerUniqueId
+        if (previousSelected != null && controllers.any { buildControllerUniqueId(it) == previousSelected }) {
+            return previousSelected
+        }
+        return controllers.firstOrNull()?.let(::buildControllerUniqueId)
+    }
+
+    private fun ControllerInfo.toControllerPage(
+        uniqueId: String,
+        isSelected: Boolean
+    ): ControllerPageUiModel {
+        return ControllerPageUiModel(
+            uniqueId = uniqueId,
+            descriptor = descriptor?.trim()?.takeIf { it.isNotEmpty() },
+            deviceId = deviceId,
+            name = name,
+            vendorId = vendorId,
+            productId = productId,
+            batteryPercent = batteryPercent,
+            batteryStatus = batteryStatus ?: BatteryChargeStatus.UNKNOWN,
+            isSelected = isSelected
         )
     }
 
