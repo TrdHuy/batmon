@@ -2,7 +2,7 @@
 
 <html>
 <head>
-    <title>SAM Report - DC</title>
+    <title>SAM Report - MCD</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta property="og:locale" content="en_US"/>
@@ -15,6 +15,7 @@
     <link href="css/plugins.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/style.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/jstree.bundle.css" rel="stylesheet" type="text/css"/>
+    <link href="css/vis.min.css" rel="stylesheet" type="text/css"/>
     <style>
         .flipper {
             transition: transform .5s;
@@ -38,6 +39,10 @@
 
         th {
             vertical-align: middle;
+        }
+
+        .dataTables_wrapper {
+            width: 98%;
         }
     </style>
 </head>
@@ -107,7 +112,7 @@
                                 <li class="breadcrumb-item">
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
-                                <li class="breadcrumb-item text-white fw-bold lh-1">DC</li>
+                                <li class="breadcrumb-item text-white fw-bold lh-1">MCD</li>
                             </ul>
                         </div>
 
@@ -128,15 +133,15 @@
                                                 <div class="col-sm-6">
 
                                                     <div class="fs-3 fw-semibold text-gray-400">Metric Name</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Duplicate Code</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Module Circular Dependency</div>
                                                 </div>
                                                 <div class="col-sm-3">
                                                     <div class="fs-3 fw-semibold text-gray-400">Violations</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">4</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                                 <div class="col-sm-3">
-                                                    <div class="fs-3 fw-semibold text-gray-400">DC Ratio</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0.21%</div>
+                                                    <div class="fs-3 fw-semibold text-gray-400">Max Cycle Count</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -145,9 +150,9 @@
                                 <div class="col-sm-4 align-items-stretch mb-8">
                                     <div class="card card-stretch">
                                         <div class="card-body p-0">
-                                            <div class="border border-dashed border-success text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
-                                                <span class="fs-2hx fw-semibold text-primary d-block">DC Score</span>
-                                                <span class="fs-2hx fw-bold text-success">4.96 <span class="fs-3 text-gray-400">/ 5</span></span>
+                                            <div class="border border-dashed border-primary text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
+                                                <span class="fs-2hx fw-semibold text-primary d-block">MCD Score</span>
+                                                <span class="fs-2hx fw-bold text-primary">5.0 <span class="fs-3 text-gray-400">/ 5</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -160,7 +165,7 @@
                                     <div class="card card-flush mt-6 mt-xl-9" style="min-height:60rem;max-height:60rem">
                                         <div class="card-header mt-5">
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">DC list</h3>
+                                                <h3 class="fw-bold mb-1">MCD list</h3>
                                                 <div class="fs-6 text-gray-400">File Tree</div>
                                             </div>
                                         </div>
@@ -170,7 +175,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-sm-8 mb-5">
+                                <div class="col-sm-8 mb-5" style="min-height:60rem;max-height:60rem">
                                     <div id="card-table" class="card card-flush mt-6 mt-xl-9 h-100 border-0 pb-0 flipper">
                                         <div class="card-front overflow-y-scroll">
                                             <div class="card-header m-0 px-0">
@@ -183,9 +188,11 @@
                                                     <table id="table-metric-violations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
                                                         <thead class="fs-7 text-gray-400 text-uppercase">
                                                         <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
+                                                            <th>Cycle Index</th>
+                                                            <th>Module</th>
+                                                            <th>Relation Count</th>
                                                             <th>Score Penalty</th>
+                                                            <th></th>
                                                         </tr>
                                                         </thead>
                                                         <tbody class="fs-5"></tbody>
@@ -194,27 +201,30 @@
                                             </div>
                                         </div>
                                         <div class="card-back overflow-y-scroll">
-                                            <div class="card-header m-0 px-0">
-                                                <div class="card-title flex-column">
-                                                    <h3 class="fw-bold mb-1 d-flex align-items-center">
-                                                        <i id="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i> Block Detail
-                                                    </h3>
+                                                <div class="card-header m-0 px-0">
+                                                    <div class="card-title flex-column">
+                                                        <h3 class="fw-bold mb-1 d-flex align-items-center">
+                                                            <i name="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i>
+                                                            Starting Node: <span id="span-module" class="ms-2"></span>
+                                                        </h3>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive h-100">
-                                                    <table id="table-blocks" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
-                                                        <thead class="fs-7 text-gray-400 text-uppercase">
-                                                        <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
-                                                            <th>Score Penalty</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody class="fs-5"></tbody>
-                                                    </table>
+                                                <div id="div-graph" class="card-body p-0 h-400px">
                                                 </div>
-                                            </div>
+                                                <hr/>
+                                                <table id="table-relations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold w-100">
+                                                    <thead class="fs-7 text-gray-400 text-uppercase">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Relation Type</th>
+                                                        <th>File From</th>
+                                                        <th>Entity From</th>
+                                                        <th>File To</th>
+                                                        <th>Entity To</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="fs-5"></tbody>
+                                                </table>
                                         </div>
                                     </div>
                                 </div>
@@ -225,7 +235,7 @@
                     <div id="kt_app_footer"
                          class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
                         <div class="text-dark order-2 order-md-1">
-                            <span class="text-muted fw-semibold me-1">2023&copy;</span>
+                            <span class="text-muted fw-semibold me-1">2024&copy;</span>
                             <span class="text-gray-800">SAM</span>
                         </div>
                     </div>
@@ -240,15 +250,27 @@
 <script src="js/scripts.bundle.js"></script>
 <script src="js/datatables.bundle.js"></script>
 <script src="js/jstree.bundle.js"></script>
+<script src="js/vis.min.js"></script>
+<script src="js/sam.graph.js"></script>
 
 </body>
 <script>
-    let violations = [{"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.04, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "975", "line_end": "983", "line_count": "9", "score_penalty": -0.04, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.04, "background_color": "#73fa68", "text_color": "#000000"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "975", "line_end": "983", "line_count": "9", "score_penalty": -0.04, "background_color": "#73fa68", "text_color": "#000000"}];
+    let sourcePath = '/home/huy/Desktop/workspace/gitprojects/batmon/';
+
+    let violations = [];
+
+    let graphData = {};
+
+    let mfsData = {};
+
+    let graph = null;
+    let $tableRelation = null;
+
     const drawTree = () => {
         var $tree = $('#file-tree');
         $tree.jstree({
             core: {
-                data: {"text": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse (4)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "filename": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "type": "directory", "state": {"opened": true}, "children": [{"text": "infra/repository/roomdb/RoomControllerProfileRepository.kt (2)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "filename": "infra/repository/roomdb/RoomControllerProfileRepository.kt", "type": "file", "state": {"opened": true}, "children": []}, {"text": "presentation/MainActivity.kt (2)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "filename": "presentation/MainActivity.kt", "type": "file", "state": {"opened": true}, "children": []}]},
+                data: {"text": " (0)", "fullpath": null, "filename": "", "type": "file", "state": {"opened": true}, "children": []},
                 themes: {
                     responsive: false
                 }
@@ -275,86 +297,165 @@
         return $tree;
     };
 
+    const addTreeClickEvent = (tree, table) => {
+        tree.on('changed.jstree', function (e, data) {
+            $('#card-table').toggleClass('flipped', false);
+            const selectedNode = data.node.original.fullpath
+            const filteredList = violations.filter(
+                item => (sourcePath + item.fullpath).replace('//', '/').includes(selectedNode)
+            )
+            table.clear().rows.add(filteredList).draw();
+        });
+    }
+
     const drawTable = (id, callback) => {
         return $(document.querySelector('#' + id)).DataTable({
             'data': violations,
             'columns': [{
-                type: 'num-fmt',
                 render: function (data, type, row) {
-                    if (type ==='display' || type === 'filter') {
-                        return`<div class="mb-1 text-dark fw-bold fs-6">
-                                            <span block-id=${row.block_key} class="cursor-pointer badge"
-                                                style="background-color:${row.background_color};color:${row.text_color}">
-                                                Block ${row.block_key.toString().padStart(2, '0')}
-                                            </span>
-                                        </div>`;
-                    }
-                    return row.block_key;
+                    return `<div class="text-dark fw-bold">${row.cycle_index}</div>`;
                 }
             }, {
                 render: function (data, type, row) {
-                    return `<div class="mb-1 text-dark fw-normal">
-                                <p class="mb-0 fs-7">
-                                    ${row.fullpath}:${row.line_start}~${row.line_end}
-                                    <i onclick="copyPath('${row.fullpath}')" class="cursor-pointer ki-outline ki-copy text-success"></i>
-                                </p>
+                    return `<div class="text-dark fw-bold">${row.fullpath}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="text-dark fw-bold">${row.relation_count}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="d-flex flex-row">
+                                <div class="d-flex">
+                                    <span class="badge badge-light-danger me-4 align-self-center align-middle">${row.score_penalty}</span>
+                                </div>
+                                <div class="d-flex flex-grow-1">
+                                    <span onclick="drawMCDGraph('${row.cycle_index}','${row.fullpath}')"
+                                        class="btn btn-sm btn-outline btn-outline-dark btn-icon-primary btn-text-dark float-end p-2">
+                                        <i class="ki-outline ki-chart-pie-4 fs-1 p-0"></i>
+                                    </span>
+                                </div>
                             </div>`;
                 }
-            }, {
-                render: function (data, type, row) {
-                    return `<span class="badge badge-light-danger">${row.score_penalty}</span>`;
-                }
-            }],
-            'drawCallback': () => {
-                callback?.();
-            }
+            }]
         });
-    }
-
-    const addTreeClickEvent = (tree, table) => {
-        tree.on('changed.jstree', function (e, data) {
-            $('#card-table').toggleClass('flipped', false);
-            $('.badge').off('click');
-            const selectedNode = data.node.original.fullpath
-            const filteredList = violations.filter(item => item.fullpath.includes(selectedNode))
-            redrawTable(table, filteredList);
-        });
-    }
-
-    const addRowClickEvent = () => {
-        $('.badge').on('click', (e) => {
-            $('#card-table').toggleClass('flipped', true);
-
-            let blockId = $(e.target).attr('block-id');
-            const filteredList = violations.filter(item => item.block_key == blockId);
-            redrawTable($tableBlock, filteredList);
-        });
-    }
-
-    const redrawTable = (table, dataList) => {
-        table.clear().rows.add(dataList).draw();
     }
 
     const addBackButtonEvent = () => {
-        $('#button-back').on('click', () => {
+        $('[name="button-back"]').on('click', () => {
             $('#card-table').toggleClass('flipped', false);
         });
     }
 
-    var $tree = drawTree();
-    var $tableMain = drawTable('table-metric-violations', addRowClickEvent);
-    var $tableBlock = drawTable('table-blocks');
+    const drawMCDGraph = (cycleIndex, moduleName) => {
+        if (graph != null) {
+            graph.destroy();
+        }
 
-    addTreeClickEvent($tree, $tableMain);
+        $('#span-module').text(moduleName);
+        $('#card-table').toggleClass('flipped', true);
+        let data = graphData[cycleIndex]
+        graph = new Graph("div-graph", data.nodes, data.edges);
+        graph.draw();
+
+        drawMCDRelation(cycleIndex)
+    }
+
+    function getCommonParentPath(filePaths) {
+        const components = filePaths.map(filePath => filePath.split(/[\\/]/));
+        const minLength = Math.min(...components.map(componentArray => componentArray.length));
+        const commonComponents = [];
+        for (let i = 0; i < minLength; i++) {
+            const currentComponent = components[0][i];
+            if (components.every(componentArray => componentArray[i] === currentComponent)) {
+                commonComponents.push(currentComponent);
+            } else {
+                break;
+            }
+        }
+
+        return commonComponents.join('/');
+    }
+
+
+    const drawMCDRelation = (cycleIndex) => {
+        if ($tableRelation != null) {
+            $tableRelation.destroy();
+        }
+
+        let filepaths = []
+        Object.keys(mfsData[cycleIndex]).forEach((key) => {
+            filepaths.push(key.split('>')[0])
+            filepaths.push(key.split('>')[1])
+        })
+        let commonPath = getCommonParentPath(filepaths)
+
+        let relations = []
+        let index = 0;
+        Object.keys(mfsData[cycleIndex]).forEach((key) => {
+            let mfs = mfsData[cycleIndex][key];
+            let fileFrom = mfs['file_from'].replace(commonPath, '');
+            let fileTo = mfs['file_to'].replace(commonPath, '');
+            mfs.relations.forEach((relation) => {
+                relations.push({
+                    index: ++index,
+                    relationType: relation['type'],
+                    fileFrom: fileFrom,
+                    fileTo: fileTo,
+                    lineFrom: relation['line_from'],
+                    lineTo: relation['line_to'],
+                    fromEntity: relation['entity_from'],
+                    toEntity: relation['entity_to'],
+                })
+            })
+        })
+
+        $('#span-cycle').text(cycleIndex);
+
+        $tableRelation = $(document.querySelector('#table-relations')).DataTable({
+            'data': relations,
+            "dom":
+                `<'row mb-2'
+                <'col-sm-6 d-flex align-items-center justify-conten-start dt-toolbar'l>
+                <'col-sm-6 d-flex align-items-center justify-content-end dt-toolbar'f>
+                >
+		        <'table-responsive'tr>
+		        <'row'
+		        <'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>
+		        <'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>
+		        >`,
+            'columns': [{
+                render: function (data, type, row) {
+                    return `<div >${row.index}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="fw-bold">${row.relationType}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="fs-7">${row.fileFrom}:${row.lineFrom}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="fs-7">${row.fromEntity}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="fs-7">${row.fileTo}:${row.lineTo}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="fs-7">${row.toEntity}</div>`;
+                }
+            }]
+        });
+    }
+
     addBackButtonEvent();
 
-    const copyPath = (path) => {
-        var $temp = $("<input>");
-        $("body").append($temp);
-        $temp.val(path).select();
-        document.execCommand("copy");
-        $temp.remove();
-        alert("Copied.");
-    }
+    var $tree = drawTree();
+    var $table = drawTable('table-metric-violations');
+    addTreeClickEvent($tree, $table);
 </script>
 </html>
