@@ -2,7 +2,7 @@
 
 <html>
 <head>
-    <title>SAM Report - DC</title>
+    <title>SAM Report - NCS</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta property="og:locale" content="en_US"/>
@@ -15,31 +15,7 @@
     <link href="css/plugins.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/style.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/jstree.bundle.css" rel="stylesheet" type="text/css"/>
-    <style>
-        .flipper {
-            transition: transform .5s;
-            transform-style: preserve-3d;
-        }
 
-        .flipper.flipped {
-            transform: rotateY(180deg);
-        }
-
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-        }
-
-        .card-back {
-            transform: rotateY(180deg);
-        }
-
-        th {
-            vertical-align: middle;
-        }
-    </style>
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" class="app-default">
 <script>
@@ -107,7 +83,7 @@
                                 <li class="breadcrumb-item">
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
-                                <li class="breadcrumb-item text-white fw-bold lh-1">DC</li>
+                                <li class="breadcrumb-item text-white fw-bold lh-1">NCS</li>
                             </ul>
                         </div>
 
@@ -128,15 +104,15 @@
                                                 <div class="col-sm-6">
 
                                                     <div class="fs-3 fw-semibold text-gray-400">Metric Name</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Duplicate Code</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Nested Control Statements</div>
                                                 </div>
                                                 <div class="col-sm-3">
                                                     <div class="fs-3 fw-semibold text-gray-400">Violations</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">4</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                                 <div class="col-sm-3">
-                                                    <div class="fs-3 fw-semibold text-gray-400">DC Ratio</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0.2%</div>
+                                                    <div class="fs-3 fw-semibold text-gray-400">NCS Average</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0.0</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -145,9 +121,9 @@
                                 <div class="col-sm-4 align-items-stretch mb-8">
                                     <div class="card card-stretch">
                                         <div class="card-body p-0">
-                                            <div class="border border-dashed border-success text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
-                                                <span class="fs-2hx fw-semibold text-primary d-block">DC Score</span>
-                                                <span class="fs-2hx fw-bold text-success">4.96 <span class="fs-3 text-gray-400">/ 5</span></span>
+                                            <div class="border border-dashed border-inverse text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
+                                                <span class="fs-2hx fw-semibold text-primary d-block">NCS Score</span>
+                                                <span class="fs-2hx fw-bold text-inverse">-1 <span class="fs-3 text-gray-400">/ 5</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -160,7 +136,7 @@
                                     <div class="card card-flush mt-6 mt-xl-9" style="min-height:60rem;max-height:60rem">
                                         <div class="card-header mt-5">
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">DC list</h3>
+                                                <h3 class="fw-bold mb-1">NCS list</h3>
                                                 <div class="fs-6 text-gray-400">File Tree</div>
                                             </div>
                                         </div>
@@ -171,53 +147,29 @@
                                 </div>
 
                                 <div class="col-sm-8 mb-5">
-                                    <div id="card-table" class="card card-flush mt-6 mt-xl-9 h-100 border-0 pb-0 flipper">
-                                        <div class="card-front overflow-y-scroll">
-                                            <div class="card-header m-0 px-0">
-                                                <div class="card-title flex-column">
-                                                    <h3 class="fw-bold mb-1">Violation list</h3>
-                                                </div>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive h-100">
-                                                    <table id="table-metric-violations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
-                                                        <thead class="fs-7 text-gray-400 text-uppercase">
-                                                        <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
-                                                            <th>Score Penalty</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody class="fs-5"></tbody>
-                                                    </table>
-                                                </div>
+                                    <div class="card card-flush mt-6 mt-xl-9 h-100 border-0 pb-0 overflow-y-scroll">
+                                        <div class="card-header m-0 px-0">
+                                            <div class="card-title flex-column">
+                                                <h3 class="fw-bold mb-1">Violation list</h3>
                                             </div>
                                         </div>
-                                        <div class="card-back overflow-y-scroll">
-                                            <div class="card-header m-0 px-0">
-                                                <div class="card-title flex-column">
-                                                    <h3 class="fw-bold mb-1 d-flex align-items-center">
-                                                        <i id="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i> Block Detail
-                                                    </h3>
-                                                </div>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive h-100">
-                                                    <table id="table-blocks" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
-                                                        <thead class="fs-7 text-gray-400 text-uppercase">
-                                                        <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
-                                                            <th>Score Penalty</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody class="fs-5"></tbody>
-                                                    </table>
-                                                </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive h-100">
+                                                <table id="table-metric-violations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
+                                                    <thead class="fs-7 text-gray-400 text-uppercase">
+                                                    <tr>
+                                                        <th>Location</th>
+                                                        <th>Nested control Statements</th>
+                                                        <th>Score Penalty</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="fs-5"></tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+
 
                             </div>
                         </div>
@@ -243,12 +195,12 @@
 
 </body>
 <script>
-    let violations = [{"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.04, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "908", "line_end": "916", "line_count": "9", "score_penalty": -0.04, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.04, "background_color": "#73fa68", "text_color": "#000000"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "908", "line_end": "916", "line_count": "9", "score_penalty": -0.04, "background_color": "#73fa68", "text_color": "#000000"}];
+    let violations = [];
     const drawTree = () => {
         var $tree = $('#file-tree');
         $tree.jstree({
             core: {
-                data: {"text": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse (4)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "filename": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "type": "directory", "state": {"opened": true}, "children": [{"text": "infra/repository/roomdb/RoomControllerProfileRepository.kt (2)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "filename": "infra/repository/roomdb/RoomControllerProfileRepository.kt", "type": "file", "state": {"opened": true}, "children": []}, {"text": "presentation/MainActivity.kt (2)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "filename": "presentation/MainActivity.kt", "type": "file", "state": {"opened": true}, "children": []}]},
+                data: {"text": " (0)", "fullpath": null, "filename": "", "type": "file", "state": {"opened": true}, "children": []},
                 themes: {
                     responsive: false
                 }
@@ -275,78 +227,42 @@
         return $tree;
     };
 
-    const drawTable = (id, callback) => {
-        return $(document.querySelector('#' + id)).DataTable({
+    const drawTable = () => {
+        return $(document.querySelector('#table-metric-violations')).DataTable({
             'data': violations,
             'columns': [{
-                type: 'num-fmt',
                 render: function (data, type, row) {
-                    if (type ==='display' || type === 'filter') {
-                        return`<div class="mb-1 text-dark fw-bold fs-6">
-                                            <span block-id=${row.block_key} class="cursor-pointer badge"
-                                                style="background-color:${row.background_color};color:${row.text_color}">
-                                                Block ${row.block_key.toString().padStart(2, '0')}
-                                            </span>
-                                        </div>`;
-                    }
-                    return row.block_key;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="mb-1 text-dark fw-normal">
-                                <p class="mb-0 fs-7">
-                                    ${row.fullpath}:${row.line_start}~${row.line_end}
+                    return `<div class="mb-1 text-dark fw-bold">
+                                <p class="mb-0">${row.entity_name}</p>
+                                <p class="mb-0 fs-7 text-muted fw-bold">
+                                    ${row.file_name}${row.line_number ? ':' + row.line_number : ''}
                                     <i onclick="copyPath('${row.fullpath}')" class="cursor-pointer ki-outline ki-copy text-success"></i>
                                 </p>
                             </div>`;
                 }
             }, {
                 render: function (data, type, row) {
+                    return `<div class="text-danger fw-bold text-center">${row.value}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
                     return `<span class="badge badge-light-danger">${row.score_penalty}</span>`;
                 }
-            }],
-            'drawCallback': () => {
-                callback?.();
-            }
+            }]
         });
     }
 
     const addTreeClickEvent = (tree, table) => {
         tree.on('changed.jstree', function (e, data) {
-            $('#card-table').toggleClass('flipped', false);
-            $('.badge').off('click');
             const selectedNode = data.node.original.fullpath
             const filteredList = violations.filter(item => item.fullpath.includes(selectedNode))
-            redrawTable(table, filteredList);
-        });
-    }
-
-    const addRowClickEvent = () => {
-        $('.badge').on('click', (e) => {
-            $('#card-table').toggleClass('flipped', true);
-
-            let blockId = $(e.target).attr('block-id');
-            const filteredList = violations.filter(item => item.block_key == blockId);
-            redrawTable($tableBlock, filteredList);
-        });
-    }
-
-    const redrawTable = (table, dataList) => {
-        table.clear().rows.add(dataList).draw();
-    }
-
-    const addBackButtonEvent = () => {
-        $('#button-back').on('click', () => {
-            $('#card-table').toggleClass('flipped', false);
+            table.clear().rows.add(filteredList).draw();
         });
     }
 
     var $tree = drawTree();
-    var $tableMain = drawTable('table-metric-violations', addRowClickEvent);
-    var $tableBlock = drawTable('table-blocks');
-
-    addTreeClickEvent($tree, $tableMain);
-    addBackButtonEvent();
+    var $table = drawTable();
+    addTreeClickEvent($tree, $table);
 
     const copyPath = (path) => {
         var $temp = $("<input>");
@@ -356,5 +272,6 @@
         $temp.remove();
         alert("Copied.");
     }
+
 </script>
 </html>
