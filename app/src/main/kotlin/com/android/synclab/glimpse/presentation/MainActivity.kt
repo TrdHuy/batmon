@@ -3,7 +3,6 @@ package com.android.synclab.glimpse.presentation
 import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.input.InputManager
@@ -125,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                 inputDeviceGateway = inputDeviceGateway,
                 getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase(),
                 monitoringStateProvider = appContainer.provideMonitoringStateProvider(),
-                isDebuggableApp = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                developerOptionManager = appContainer.provideDeveloperOptionManager()
             )
         ).get(MainViewModel::class.java)
 

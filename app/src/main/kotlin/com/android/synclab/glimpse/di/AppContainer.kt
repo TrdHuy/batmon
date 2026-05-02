@@ -3,9 +3,11 @@ package com.android.synclab.glimpse.di
 import android.app.Service
 import android.content.Context
 import com.android.synclab.glimpse.base.contracts.ControllerProfileRepository
+import com.android.synclab.glimpse.base.contracts.DeveloperOptionSource
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
 import com.android.synclab.glimpse.base.contracts.MonitoringStateProvider
 import com.android.synclab.glimpse.data.state.MonitoringStateStore
+import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
 import com.android.synclab.glimpse.domain.usecase.DeleteControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
@@ -14,6 +16,7 @@ import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCas
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.infra.developer.AndroidDeveloperOptionSource
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
 import com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl
@@ -26,6 +29,12 @@ class AppContainer private constructor(
 ) {
     private val inputDeviceGateway: InputDeviceGateway = InputDeviceGateway(appContext)
     private val glimpseDatabase: GlimpseDatabase = GlimpseDatabase.create(appContext)
+    private val developerOptionSource: DeveloperOptionSource =
+        AndroidDeveloperOptionSource(
+            isDebuggableApp = (appContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        )
+    private val developerOptionManager: DeveloperOptionManager =
+        DeveloperOptionManager(developerOptionSource)
 
     private val gamepadRepository: GamepadRepository =
         GamepadRepositoryImpl(inputDeviceGateway)
@@ -39,6 +48,10 @@ class AppContainer private constructor(
 
     fun provideMonitoringStateProvider(): MonitoringStateProvider {
         return monitoringStateProvider
+    }
+
+    fun provideDeveloperOptionManager(): DeveloperOptionManager {
+        return developerOptionManager
     }
 
     fun provideConnectedPs4ControllersUseCase(): GetConnectedPs4ControllersUseCase {

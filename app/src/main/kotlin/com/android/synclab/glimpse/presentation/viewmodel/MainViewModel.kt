@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.android.synclab.glimpse.base.contracts.MonitoringStateProvider
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.DebugControllerPageFactory
@@ -17,7 +18,7 @@ class MainViewModel(
     private val inputDeviceGateway: InputDeviceGateway,
     private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
     private val monitoringStateProvider: MonitoringStateProvider,
-    private val isDebuggableApp: Boolean
+    private val developerOptionManager: DeveloperOptionManager
 ) : ViewModel() {
 
     private var uiState: MainUiState = MainUiState()
@@ -61,7 +62,7 @@ class MainViewModel(
             isOverlayVisible = monitoringStateProvider.isOverlayVisible
         )
 
-        val mockModeEnabled = isDebugMockControllerPagesEnabled()
+        val mockModeEnabled = developerOptionManager.isMockControllerPagesEnabled()
         if (mockModeEnabled) {
             val mockPages = DebugControllerPageFactory.createPages(
                 previousSelectedUniqueId = uiState.selectedControllerUniqueId
@@ -286,32 +287,13 @@ class MainViewModel(
         return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
 
-    private fun isDebugMockControllerPagesEnabled(): Boolean {
-        if (!isDebuggableApp) {
-            return false
-        }
-        return readSystemProperty("debug.glimpse.mock_controllers") == "1"
-    }
-
-    private fun readSystemProperty(name: String): String? {
-        return runCatching {
-            val process = ProcessBuilder("/system/bin/getprop", name)
-                .redirectErrorStream(true)
-                .start()
-            process.inputStream.bufferedReader().use { reader ->
-                reader.readText().trim().takeIf { it.isNotEmpty() }
-            }.also {
-                process.waitFor()
-            }
-        }.getOrNull()
-    }
 }
 
 class MainViewModelFactory(
     private val inputDeviceGateway: InputDeviceGateway,
     private val getConnectedPs4ControllersUseCase: GetConnectedPs4ControllersUseCase,
     private val monitoringStateProvider: MonitoringStateProvider,
-    private val isDebuggableApp: Boolean
+    private val developerOptionManager: DeveloperOptionManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
@@ -320,7 +302,7 @@ class MainViewModelFactory(
                 inputDeviceGateway = inputDeviceGateway,
                 getConnectedPs4ControllersUseCase = getConnectedPs4ControllersUseCase,
                 monitoringStateProvider = monitoringStateProvider,
-                isDebuggableApp = isDebuggableApp
+                developerOptionManager = developerOptionManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
