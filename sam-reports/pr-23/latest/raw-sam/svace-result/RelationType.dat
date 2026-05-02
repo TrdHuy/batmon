@@ -1,9 +1,0 @@
-101;CALLS;The calls relationship is created when a source entity invokes code from a destination entity.;JAVA
-103;READS;Variable usages are classified as reading.;JAVA
-104;WRITES;Variable usages are classified as writing.;JAVA
-106;CONTAINS;An object contains other objects, where an object can be: directory, file, paclage, class, method, field.;JAVA
-201;INHERITS;This is a relationship that points from a derived type, class or interface to a base type, class, or interface.;JAVA
-202;OVERRIDES;This can override a virtual class method in a derived class, redefining an object’s behavior at runtime. This relationship points from the overriding method to the original method in the base class.;JAVA
-203;IMPORTS;This shows imports of all package symbols or a single symbol.;JAVA
-204;IMPLICITLY_CALLS;The implicitly calls relationship is created when a method creates an object of a class, thus implicitly calling its constructor.;JAVA
-210;RPC_CALLS;This calls through a remote procedure call interface.;JAVA
