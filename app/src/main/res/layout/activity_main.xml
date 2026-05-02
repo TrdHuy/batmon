@@ -72,174 +72,17 @@
             android:clipChildren="false"
             android:clipToPadding="false">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/phoneScreenCard"
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/controllerPager"
                 android:layout_width="@dimen/ui_phone_card_width"
                 android:layout_height="@dimen/ui_phone_card_height"
-                android:background="@drawable/bg_ui_phone_shell"
                 android:clipChildren="false"
                 android:clipToPadding="false"
+                android:overScrollMode="never"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/statusPanel"
-                    android:layout_width="@dimen/ui_status_panel_width"
-                    android:layout_height="@dimen/ui_status_panel_height"
-                    android:layout_marginTop="@dimen/ui_status_panel_top_margin"
-                    android:background="@drawable/bg_ui_status_panel"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <ImageView
-                        android:id="@+id/controllerIcon"
-                        android:layout_width="@dimen/ui_controller_icon_width"
-                        android:layout_height="@dimen/ui_controller_icon_height"
-                        android:layout_marginTop="@dimen/ui_controller_icon_top_margin"
-                        android:contentDescription="@string/cd_controller_icon"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_ui_ps4_controller"
-                        android:tint="#CDCDCD"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <TextView
-                        android:id="@+id/deviceInfoView"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginEnd="14dp"
-                        android:layout_marginBottom="4dp"
-                        android:ellipsize="end"
-                        android:gravity="center"
-                        android:maxLines="2"
-                        android:text="PlayStation 4 Controller Connected"
-                        android:textColor="#D8DCE2"
-                        android:textSize="14sp"
-                        app:layout_constraintBottom_toTopOf="@id/batteryUniqueIdText"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
-
-                    <TextView
-                        android:id="@+id/batteryUniqueIdText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginEnd="14dp"
-                        android:layout_marginBottom="10dp"
-                        android:ellipsize="middle"
-                        android:gravity="center"
-                        android:maxLines="1"
-                        android:text="@string/status_card_controller_unique_id_placeholder"
-                        android:textColor="#BFC7D3"
-                        android:textSize="8sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/batteryCluster"
-                    android:layout_width="@dimen/ui_battery_cluster_size"
-                    android:layout_height="@dimen/ui_battery_cluster_size"
-                    android:background="@drawable/bg_ui_battery_panel"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:elevation="8dp"
-                    app:layout_constraintBottom_toTopOf="@id/statusPanel"
-                    app:layout_constraintEnd_toEndOf="@id/statusPanel"
-                    app:layout_constraintStart_toStartOf="@id/statusPanel"
-                    app:layout_constraintTop_toTopOf="@id/statusPanel">
-
-                    <com.android.synclab.glimpse.presentation.view.BatteryProgressView
-                        android:id="@+id/batteryCircle"
-                        android:layout_width="@dimen/ui_battery_circle_canvas_size"
-                        android:layout_height="@dimen/ui_battery_circle_canvas_size"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <TextView
-                        android:id="@+id/batteryPercentText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="78%"
-                        android:textColor="#FFFFFF"
-                        android:textSize="28sp"
-                        android:textStyle="bold"
-                        app:layout_constraintBottom_toBottomOf="@id/batteryCircle"
-                        app:layout_constraintEnd_toEndOf="@id/batteryCircle"
-                        app:layout_constraintStart_toStartOf="@id/batteryCircle"
-                        app:layout_constraintTop_toTopOf="@id/batteryCircle" />
-
-                    <TextView
-                        android:id="@+id/batteryStateText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Charging"
-                        android:textColor="#6FD5FF"
-                        android:textSize="9sp"
-                        android:visibility="gone"
-                        app:layout_constraintEnd_toEndOf="@id/batteryCircle"
-                        app:layout_constraintStart_toStartOf="@id/batteryCircle"
-                        app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
-
-                    <com.android.synclab.glimpse.presentation.view.ChargingIconView
-                        android:id="@+id/chargingIcon"
-                        android:contentDescription="@string/cd_charging_icon"
-                        android:elevation="6dp"
-                        android:layout_width="@dimen/ui_charging_glow_host_width"
-                        android:layout_height="@dimen/ui_charging_glow_host_height"
-                        android:translationY="@dimen/ui_charging_glow_host_translation_y"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
-                <com.android.synclab.glimpse.presentation.view.SettingsPanelView
-                    android:id="@+id/utilSettingsPanel"
-                    android:layout_width="@dimen/ui_settings_panel_width"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ui_util_panel_top_margin"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/statusPanel"
-                    app:panelCardBackground="@drawable/bg_ui_settings_card"
-                    app:panelCardHeight="@dimen/ui_panel_card_height_util"
-                    app:panelTitle="@string/panel_util_category" />
-
-                <com.android.synclab.glimpse.presentation.view.SettingsPanelView
-                    android:id="@+id/otherSettingsPanel"
-                    android:layout_width="@dimen/ui_settings_panel_width"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ui_other_panel_top_margin"
-                    app:layout_constraintEnd_toEndOf="@id/utilSettingsPanel"
-                    app:layout_constraintStart_toStartOf="@id/utilSettingsPanel"
-                    app:layout_constraintTop_toBottomOf="@id/utilSettingsPanel"
-                    app:panelCardBackground="@drawable/bg_ui_limit_card"
-                    app:panelCardHeight="@dimen/ui_panel_card_height_other"
-                    app:panelTitle="@string/panel_other_category" />
-
-                <View
-                    android:id="@+id/phoneCardBottomSpacer"
-                    android:layout_width="0dp"
-                    android:layout_height="24dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/otherSettingsPanel" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

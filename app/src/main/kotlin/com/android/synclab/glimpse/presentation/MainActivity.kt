@@ -22,8 +22,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
+import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
-import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.data.model.ControllerProfile
 import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
@@ -34,10 +35,8 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
-import com.android.synclab.glimpse.presentation.view.BatteryProgressView
-import com.android.synclab.glimpse.presentation.view.ChargingIconView
 import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
-import com.android.synclab.glimpse.presentation.view.SettingsPanelView
+import com.android.synclab.glimpse.presentation.view.ControllerPageAdapter
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.InputDeviceLogUtils
@@ -52,8 +51,6 @@ class MainActivity : AppCompatActivity() {
         private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
-        private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
-        private const val CHARGING_GLOW_RADIUS_DP = 11f
         private val DEFAULT_VIBE_COLOR = Color.rgb(44, 100, 255)
     }
 
@@ -61,14 +58,8 @@ class MainActivity : AppCompatActivity() {
     private val profileIoExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private lateinit var toolbar: Toolbar
-    private lateinit var deviceInfoView: TextView
-    private lateinit var batteryPercentText: TextView
-    private lateinit var batteryStateText: TextView
-    private lateinit var batteryUniqueIdText: TextView
-    private lateinit var batteryCircle: BatteryProgressView
-    private lateinit var chargingIconView: ChargingIconView
-    private lateinit var utilSettingsPanel: SettingsPanelView
-    private lateinit var otherSettingsPanel: SettingsPanelView
+    private lateinit var controllerPager: ViewPager2
+    private lateinit var controllerPageAdapter: ControllerPageAdapter
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase
@@ -80,7 +71,6 @@ class MainActivity : AppCompatActivity() {
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
-    private var lastChargingGlowState: Boolean? = null
     private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
     private var activeControllerDescriptor: String? = null
     private var activeControllerName: String? = null
@@ -138,30 +128,18 @@ class MainActivity : AppCompatActivity() {
         ).get(MainViewModel::class.java)
 
         toolbar = findViewById(R.id.topToolbar)
-        deviceInfoView = findViewById(R.id.deviceInfoView)
-        batteryPercentText = findViewById(R.id.batteryPercentText)
-        batteryStateText = findViewById(R.id.batteryStateText)
-        batteryUniqueIdText = findViewById(R.id.batteryUniqueIdText)
-        batteryCircle = findViewById(R.id.batteryCircle)
-        chargingIconView = findViewById(R.id.chargingIcon)
-        batteryCircle.max = 100
-        applyChargingIconGlow(false)
-        val batteryCluster: View = findViewById(R.id.batteryCluster)
-        batteryCircle.post {
-            LogCompat.e(
-                "batteryCluster=${batteryCluster.width}x${batteryCluster.height} " +
-                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height} " +
-                        "clusterPos=(${batteryCluster.x},${batteryCluster.y}) " +
-                        "circlePos=(${batteryCircle.x},${batteryCircle.y}) " +
-                        "circleLeftTop=(${batteryCircle.left},${batteryCircle.top}) " +
-                        "circleTranslation=(${batteryCircle.translationX},${batteryCircle.translationY})"
-            )
-        }
-        utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
-        otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
+        controllerPager = findViewById(R.id.controllerPager)
+        controllerPageAdapter = ControllerPageAdapter(
+            onToggleChanged = { page, itemId, checked ->
+                onControllerPageToggleChanged(page.uniqueId, itemId, checked)
+            },
+            onItemClicked = { page, itemId ->
+                onControllerPageItemClicked(page.uniqueId, itemId)
+            }
+        )
 
         setupToolbarMenu()
-        setupSettingsLists()
+        setupControllerPager()
         bindViewModelObserver()
 
         renderUiState(viewModel.currentUiState())
@@ -261,14 +239,58 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSettingsLists() {
-        utilSettingsPanel.setInteractionHandlers(
-            onToggleChanged = ::handleSettingToggleChanged,
-            onItemClicked = ::handleSettingItemClicked
+    private fun setupControllerPager() {
+        controllerPager.adapter = controllerPageAdapter
+        controllerPager.registerOnPageChangeCallback(
+            object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    val page = controllerPageAdapter.getPageAt(position) ?: return
+                    if (page.isPlaceholder) {
+                        return
+                    }
+                    if (viewModel.currentUiState().selectedControllerUniqueId == page.uniqueId) {
+                        return
+                    }
+                    LogCompat.d(
+                        "ControllerPager onPageSelected position=$position uniqueId=${maskIdentifier(page.uniqueId)}"
+                    )
+                    viewModel.selectController(
+                        uniqueId = page.uniqueId,
+                        source = EventChangeParam.Source.VIEW
+                    )
+                }
+            }
         )
-        otherSettingsPanel.setInteractionHandlers(
-            onToggleChanged = ::handleSettingToggleChanged,
-            onItemClicked = ::handleSettingItemClicked
+    }
+
+    private fun onControllerPageToggleChanged(
+        uniqueId: String,
+        itemId: SettingItemUiModel.ItemId,
+        checked: Boolean
+    ) {
+        ensureControllerPageSelected(uniqueId)
+        handleSettingToggleChanged(itemId, checked)
+    }
+
+    private fun onControllerPageItemClicked(
+        uniqueId: String,
+        itemId: SettingItemUiModel.ItemId
+    ) {
+        ensureControllerPageSelected(uniqueId)
+        handleSettingItemClicked(itemId)
+    }
+
+    private fun ensureControllerPageSelected(uniqueId: String) {
+        val currentState = viewModel.currentUiState()
+        if (currentState.selectedControllerUniqueId == uniqueId) {
+            return
+        }
+        LogCompat.d(
+            "ControllerPager ensureSelected uniqueId=${maskIdentifier(uniqueId)}"
+        )
+        viewModel.selectController(
+            uniqueId = uniqueId,
+            source = EventChangeParam.Source.VIEW
         )
     }
 
@@ -704,35 +726,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderUiState(state: MainUiState) {
-        if (!::deviceInfoView.isInitialized ||
-            !::batteryCircle.isInitialized ||
-            !::batteryUniqueIdText.isInitialized
-        ) {
+        if (!::controllerPageAdapter.isInitialized || !::controllerPager.isInitialized) {
             return
         }
 
-        when (state.connectionState) {
-            MainUiState.ConnectionState.LOADING -> {
-                deviceInfoView.setText(R.string.loading_controller_info)
-            }
+        handleControllerProfileState(state)
+        controllerPageAdapter.submitState(
+            state = state,
+            selectedVibeColor = selectedVibeColor,
+            protectBatteryEnabled = protectBatteryEnabled
+        )
+        syncControllerPagerSelection(state)
+    }
 
-            MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE -> {
-                deviceInfoView.setText(R.string.input_manager_unavailable)
-            }
-
-            MainUiState.ConnectionState.DISCONNECTED -> {
-                deviceInfoView.setText(R.string.status_card_controller_disconnected)
-            }
-
-            MainUiState.ConnectionState.CONNECTED -> {
-                deviceInfoView.setText(R.string.status_card_controller_connected)
-            }
+    private fun syncControllerPagerSelection(state: MainUiState) {
+        val selectedUniqueId = state.selectedControllerUniqueId
+        val selectedIndex = if (selectedUniqueId.isNullOrBlank()) {
+            if (controllerPageAdapter.itemCount > 0) 0 else RecyclerView.NO_POSITION
+        } else {
+            (0 until controllerPageAdapter.itemCount).firstOrNull { position ->
+                controllerPageAdapter.getPageAt(position)?.uniqueId == selectedUniqueId
+            } ?: RecyclerView.NO_POSITION
         }
 
-        handleControllerProfileState(state)
-        updateControllerUniqueIdUi(state.controllerUniqueId)
-        updateBatteryUi(state.batteryPercent, state.batteryStatus)
-        renderSettingItems(state)
+        if (selectedIndex == RecyclerView.NO_POSITION) {
+            return
+        }
+
+        if (controllerPager.currentItem == selectedIndex) {
+            return
+        }
+
+        LogCompat.d(
+            "ControllerPager syncSelection current=${controllerPager.currentItem} target=$selectedIndex selectedUniqueId=${selectedUniqueId?.let(::maskIdentifier)}"
+        )
+        controllerPager.setCurrentItem(selectedIndex, false)
     }
 
     private fun handleControllerProfileState(state: MainUiState) {
@@ -857,120 +885,6 @@ class MainActivity : AppCompatActivity() {
             }.onFailure { throwable ->
                 LogCompat.e("ControllerProfile save failed id=${maskIdentifier(descriptor)}", throwable)
             }
-        }
-    }
-
-    private fun updateControllerUniqueIdUi(uniqueId: String?) {
-        val value = uniqueId
-            ?.takeIf { it.isNotBlank() }
-            ?: getString(R.string.status_card_controller_unique_id_unavailable)
-        batteryUniqueIdText.text = getString(R.string.status_card_controller_unique_id_format, value)
-    }
-
-    private fun renderSettingItems(state: MainUiState) {
-        if (!::utilSettingsPanel.isInitialized || !::otherSettingsPanel.isInitialized) {
-            return
-        }
-
-        utilSettingsPanel.submitItems(
-            listOf(
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
-                    iconRes = R.drawable.ic_ui_monitor,
-                    iconWidthDp = 26f,
-                    iconHeightDp = 14f,
-                    title = getString(R.string.settings_background_monitoring),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = state.isMonitoringEnabled
-                    )
-                ),
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
-                    iconRes = R.drawable.ic_ui_overlay,
-                    iconWidthDp = 25f,
-                    iconHeightDp = 25f,
-                    title = getString(R.string.settings_live_overlay),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = state.isOverlayVisible
-                    )
-                ),
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
-                    iconRes = R.drawable.ic_ui_vibe,
-                    iconWidthDp = 26f,
-                    iconHeightDp = 26f,
-                    title = getString(R.string.settings_customize_vibe),
-                    control = SettingItemUiModel.Control.None
-                )
-            )
-        )
-
-        otherSettingsPanel.submitItems(
-            listOf(
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
-                    iconRes = R.drawable.ic_ui_protect_battery,
-                    iconWidthDp = 22f,
-                    iconHeightDp = 26f,
-                    title = getString(R.string.settings_protect_battery),
-                    subtitle = getString(R.string.settings_limit_charging_subtitle),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = protectBatteryEnabled
-                    )
-                )
-            )
-        )
-    }
-
-    private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
-        val displayPercent = percent
-
-        if (displayPercent == null) {
-            batteryPercentText.setText(R.string.status_card_battery_unknown)
-            batteryCircle.setProgressCompat(0, false)
-        } else {
-            val clampedPercent = displayPercent.coerceIn(0, 100)
-            batteryPercentText.text =
-                getString(R.string.status_card_battery_percent, clampedPercent)
-            batteryCircle.setProgressCompat(clampedPercent, false)
-        }
-        val isCharging = status == BatteryChargeStatus.CHARGING
-        batteryCircle.setChargingAnimationEnabled(isCharging)
-        applyChargingIconGlow(isCharging)
-        batteryStateText.text = batteryStatusLabel(status)
-    }
-
-    private fun applyChargingIconGlow(isCharging: Boolean) {
-        if (lastChargingGlowState == isCharging) {
-            return
-        }
-        lastChargingGlowState = isCharging
-
-        if (!::chargingIconView.isInitialized) {
-            return
-        }
-
-        if (!isCharging) {
-            chargingIconView.setGlowEnabled(false)
-            return
-        }
-
-        chargingIconView.setGlowStyle(
-            color = CHARGING_GLOW_COLOR,
-            radiusPx = dpToPx(CHARGING_GLOW_RADIUS_DP)
-        )
-        chargingIconView.setGlowEnabled(true)
-    }
-
-    private fun dpToPx(dp: Float): Float = dp * resources.displayMetrics.density
-
-    private fun batteryStatusLabel(status: BatteryChargeStatus): String {
-        return when (status) {
-            BatteryChargeStatus.CHARGING -> getString(R.string.battery_status_charging)
-            BatteryChargeStatus.DISCHARGING -> getString(R.string.battery_status_discharging)
-            BatteryChargeStatus.FULL -> getString(R.string.battery_status_full)
-            BatteryChargeStatus.NOT_CHARGING -> getString(R.string.battery_status_not_charging)
-            BatteryChargeStatus.UNKNOWN -> getString(R.string.battery_status_unknown)
         }
     }
 
