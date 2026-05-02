@@ -1,3 +1,0 @@
-Metric;BlockKey;Path;LineStart;LineEnd;LineCount;ExcludeDuplicatedLine
-DC;1;app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt;55;63;9;Exclude
-DC;2;app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt;55;63;9;Exclude
