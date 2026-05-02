@@ -2,7 +2,7 @@
 
 <html>
 <head>
-    <title>SAM Report - LOC</title>
+    <title>SAM Report - NCS</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta property="og:locale" content="en_US"/>
@@ -36,7 +36,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0 me-lg-15">
-                    <a href="SAM_Report_batmon_20260502_index.html">
+                    <a href="SAM_Report_batmon_20260503_index.html">
                         <h1>SAM Report</h1>
                     </a>
                 </div>
@@ -52,7 +52,7 @@
                     <div class="app-navbar flex-shrink-0 align-self-center">
                         <div class="app-content-menu menu menu-rounded menu-gray-800 menu-state-bg flex-wrap fs-5 fw-semibold">
                             <div class="menu-item pe-2">
-                                <a class="menu-link px-5 active" href="SAM_Report_batmon_20260502_index.html">
+                                <a class="menu-link px-5 active" href="SAM_Report_batmon_20260503_index.html">
                                     <span class="menu-title text-gray-800">Overview</span>
                                 </a>
                             </div>
@@ -68,7 +68,7 @@
                         <div class="d-flex align-items-center pt-1">
                             <ul class="breadcrumb breadcrumb-separatorless fw-semibold">
                                 <li class="breadcrumb-item text-white fw-bold lh-1">
-                                    <a href="SAM_Report_batmon_20260502_index.html" class="text-white text-hover-primary">
+                                    <a href="SAM_Report_batmon_20260503_index.html" class="text-white text-hover-primary">
                                         <i class="ki-outline ki-home text-white fs-3"></i>
                                     </a>
                                 </li>
@@ -76,14 +76,14 @@
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
                                 <li class="breadcrumb-item text-white fw-bold lh-1">
-                                    <a href="SAM_Report_batmon_20260502_index.html" class="text-white text-hover-primary">
+                                    <a href="SAM_Report_batmon_20260503_index.html" class="text-white text-hover-primary">
                                         Overview
                                     </a>
                                 </li>
                                 <li class="breadcrumb-item">
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
-                                <li class="breadcrumb-item text-white fw-bold lh-1">LOC</li>
+                                <li class="breadcrumb-item text-white fw-bold lh-1">NCS</li>
                             </ul>
                         </div>
 
@@ -104,15 +104,15 @@
                                                 <div class="col-sm-6">
 
                                                     <div class="fs-3 fw-semibold text-gray-400">Metric Name</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Lines Of Code of class</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Nested Control Statements</div>
                                                 </div>
                                                 <div class="col-sm-3">
                                                     <div class="fs-3 fw-semibold text-gray-400">Violations</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">1</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                                 <div class="col-sm-3">
-                                                    <div class="fs-3 fw-semibold text-gray-400">Max Line of Class</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">722</div>
+                                                    <div class="fs-3 fw-semibold text-gray-400">NCS Average</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0.0</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -121,9 +121,9 @@
                                 <div class="col-sm-4 align-items-stretch mb-8">
                                     <div class="card card-stretch">
                                         <div class="card-body p-0">
-                                            <div class="border border-dashed border-success text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
-                                                <span class="fs-2hx fw-semibold text-primary d-block">LOC Score</span>
-                                                <span class="fs-2hx fw-bold text-success">4.5 <span class="fs-3 text-gray-400">/ 5</span></span>
+                                            <div class="border border-dashed border-inverse text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
+                                                <span class="fs-2hx fw-semibold text-primary d-block">NCS Score</span>
+                                                <span class="fs-2hx fw-bold text-inverse">-1 <span class="fs-3 text-gray-400">/ 5</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -136,7 +136,7 @@
                                     <div class="card card-flush mt-6 mt-xl-9" style="min-height:60rem;max-height:60rem">
                                         <div class="card-header mt-5">
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">LOC list</h3>
+                                                <h3 class="fw-bold mb-1">NCS list</h3>
                                                 <div class="fs-6 text-gray-400">File Tree</div>
                                             </div>
                                         </div>
@@ -159,7 +159,7 @@
                                                     <thead class="fs-7 text-gray-400 text-uppercase">
                                                     <tr>
                                                         <th>Location</th>
-                                                        <th>loc</th>
+                                                        <th>Nested control Statements</th>
                                                         <th>Score Penalty</th>
                                                     </tr>
                                                     </thead>
@@ -195,12 +195,12 @@
 
 </body>
 <script>
-    let violations = [{"entity_name": "com.android.synclab.glimpse.presentation", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "file_name": "MainActivity.kt", "line_number": "0", "value": "722", "score_penalty": 0.5}];
+    let violations = [];
     const drawTree = () => {
         var $tree = $('#file-tree');
         $tree.jstree({
             core: {
-                data: {"text": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt (1)", "fullpath": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "filename": "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "type": "file", "state": {"opened": true}, "children": []},
+                data: {"text": " (0)", "fullpath": null, "filename": "", "type": "file", "state": {"opened": true}, "children": []},
                 themes: {
                     responsive: false
                 }

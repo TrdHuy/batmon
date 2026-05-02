@@ -2,7 +2,7 @@
 
 <html>
 <head>
-    <title>SAM Report - MCD</title>
+    <title>SAM Report - DEP</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta property="og:locale" content="en_US"/>
@@ -40,10 +40,6 @@
         th {
             vertical-align: middle;
         }
-
-        .dataTables_wrapper {
-            width: 98%;
-        }
     </style>
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" class="app-default">
@@ -65,7 +61,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0 me-lg-15">
-                    <a href="SAM_Report_batmon_20260502_index.html">
+                    <a href="SAM_Report_batmon_20260503_index.html">
                         <h1>SAM Report</h1>
                     </a>
                 </div>
@@ -81,7 +77,7 @@
                     <div class="app-navbar flex-shrink-0 align-self-center">
                         <div class="app-content-menu menu menu-rounded menu-gray-800 menu-state-bg flex-wrap fs-5 fw-semibold">
                             <div class="menu-item pe-2">
-                                <a class="menu-link px-5 active" href="SAM_Report_batmon_20260502_index.html">
+                                <a class="menu-link px-5 active" href="SAM_Report_batmon_20260503_index.html">
                                     <span class="menu-title text-gray-800">Overview</span>
                                 </a>
                             </div>
@@ -97,7 +93,7 @@
                         <div class="d-flex align-items-center pt-1">
                             <ul class="breadcrumb breadcrumb-separatorless fw-semibold">
                                 <li class="breadcrumb-item text-white fw-bold lh-1">
-                                    <a href="SAM_Report_batmon_20260502_index.html" class="text-white text-hover-primary">
+                                    <a href="SAM_Report_batmon_20260503_index.html" class="text-white text-hover-primary">
                                         <i class="ki-outline ki-home text-white fs-3"></i>
                                     </a>
                                 </li>
@@ -105,14 +101,14 @@
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
                                 <li class="breadcrumb-item text-white fw-bold lh-1">
-                                    <a href="SAM_Report_batmon_20260502_index.html" class="text-white text-hover-primary">
+                                    <a href="SAM_Report_batmon_20260503_index.html" class="text-white text-hover-primary">
                                         Overview
                                     </a>
                                 </li>
                                 <li class="breadcrumb-item">
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
-                                <li class="breadcrumb-item text-white fw-bold lh-1">MCD</li>
+                                <li class="breadcrumb-item text-white fw-bold lh-1">DEP</li>
                             </ul>
                         </div>
 
@@ -133,14 +129,14 @@
                                                 <div class="col-sm-6">
 
                                                     <div class="fs-3 fw-semibold text-gray-400">Metric Name</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Module Circular Dependency</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Dependency Complexity</div>
                                                 </div>
                                                 <div class="col-sm-3">
                                                     <div class="fs-3 fw-semibold text-gray-400">Violations</div>
                                                     <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                                 <div class="col-sm-3">
-                                                    <div class="fs-3 fw-semibold text-gray-400">Max Cycle Count</div>
+                                                    <div class="fs-3 fw-semibold text-gray-400">Max Fanout</div>
                                                     <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                             </div>
@@ -150,9 +146,9 @@
                                 <div class="col-sm-4 align-items-stretch mb-8">
                                     <div class="card card-stretch">
                                         <div class="card-body p-0">
-                                            <div class="border border-dashed border-primary text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
-                                                <span class="fs-2hx fw-semibold text-primary d-block">MCD Score</span>
-                                                <span class="fs-2hx fw-bold text-primary">5.0 <span class="fs-3 text-gray-400">/ 5</span></span>
+                                            <div class="border border-dashed border-inverse text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
+                                                <span class="fs-2hx fw-semibold text-primary d-block">DEP Score</span>
+                                                <span class="fs-2hx fw-bold text-inverse">-1 <span class="fs-3 text-gray-400">/ 5</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -165,7 +161,7 @@
                                     <div class="card card-flush mt-6 mt-xl-9" style="min-height:60rem;max-height:60rem">
                                         <div class="card-header mt-5">
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">MCD list</h3>
+                                                <h3 class="fw-bold mb-1">DEP list</h3>
                                                 <div class="fs-6 text-gray-400">File Tree</div>
                                             </div>
                                         </div>
@@ -188,9 +184,10 @@
                                                     <table id="table-metric-violations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
                                                         <thead class="fs-7 text-gray-400 text-uppercase">
                                                         <tr>
-                                                            <th>Cycle Index</th>
-                                                            <th>Module</th>
-                                                            <th>Relation Count</th>
+                                                            <th>#</th>
+                                                            <th>Module Name</th>
+                                                            <th>Dependency Complexity</th>
+                                                            <th>Max Fanout</th>
                                                             <th>Score Penalty</th>
                                                             <th></th>
                                                         </tr>
@@ -201,30 +198,16 @@
                                             </div>
                                         </div>
                                         <div class="card-back overflow-y-scroll">
-                                                <div class="card-header m-0 px-0">
-                                                    <div class="card-title flex-column">
-                                                        <h3 class="fw-bold mb-1 d-flex align-items-center">
-                                                            <i name="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i>
-                                                            Starting Node: <span id="span-module" class="ms-2"></span>
-                                                        </h3>
-                                                    </div>
+                                            <div class="card-header m-0 px-0">
+                                                <div class="card-title flex-column">
+                                                    <h3 class="fw-bold mb-1 d-flex align-items-center">
+                                                        <i id="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i>
+                                                        <span id="span-module"></span>
+                                                    </h3>
                                                 </div>
-                                                <div id="div-graph" class="card-body p-0 h-400px">
-                                                </div>
-                                                <hr/>
-                                                <table id="table-relations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold w-100">
-                                                    <thead class="fs-7 text-gray-400 text-uppercase">
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Relation Type</th>
-                                                        <th>File From</th>
-                                                        <th>Entity From</th>
-                                                        <th>File To</th>
-                                                        <th>Entity To</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody class="fs-5"></tbody>
-                                                </table>
+                                            </div>
+                                            <div id="div-graph" class="card-body p-0 h-700px">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -235,7 +218,7 @@
                     <div id="kt_app_footer"
                          class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
                         <div class="text-dark order-2 order-md-1">
-                            <span class="text-muted fw-semibold me-1">2024&copy;</span>
+                            <span class="text-muted fw-semibold me-1">2023&copy;</span>
                             <span class="text-gray-800">SAM</span>
                         </div>
                     </div>
@@ -255,16 +238,11 @@
 
 </body>
 <script>
-    let sourcePath = '/home/huy/Desktop/workspace/gitprojects/batmon/';
-
     let violations = [];
 
     let graphData = {};
 
-    let mfsData = {};
-
     let graph = null;
-    let $tableRelation = null;
 
     const drawTree = () => {
         var $tree = $('#file-tree');
@@ -300,10 +278,15 @@
     const addTreeClickEvent = (tree, table) => {
         tree.on('changed.jstree', function (e, data) {
             $('#card-table').toggleClass('flipped', false);
-            const selectedNode = data.node.original.fullpath
-            const filteredList = violations.filter(
-                item => (sourcePath + item.fullpath).replace('//', '/').includes(selectedNode)
-            )
+            if (graph != null) {
+                graph.destroy();
+            }
+            let selectedNode = data.node.original.fullpath
+            if (selectedNode.startsWith('/')) {
+                selectedNode = selectedNode.substring(1)
+            }
+
+            const filteredList = violations.filter(item => item.module.includes(selectedNode))
             table.clear().rows.add(filteredList).draw();
         });
     }
@@ -313,15 +296,19 @@
             'data': violations,
             'columns': [{
                 render: function (data, type, row) {
-                    return `<div class="text-dark fw-bold">${row.cycle_index}</div>`;
+                    return `<div class="text-dark fw-bold">${row.index}</div>`;
                 }
             }, {
                 render: function (data, type, row) {
-                    return `<div class="text-dark fw-bold">${row.fullpath}</div>`;
+                    return `<div class="text-dark fw-bold">${row.module}</div>`;
                 }
             }, {
                 render: function (data, type, row) {
-                    return `<div class="text-dark fw-bold">${row.relation_count}</div>`;
+                    return `<div class="text-dark fw-bold">${row.complexity}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="text-danger fw-bold">${row.fanout}</div>`;
                 }
             }, {
                 render: function (data, type, row) {
@@ -329,10 +316,10 @@
                                 <div class="d-flex">
                                     <span class="badge badge-light-danger me-4 align-self-center align-middle">${row.score_penalty}</span>
                                 </div>
-                                <div class="d-flex flex-grow-1">
-                                    <span onclick="drawMCDGraph('${row.cycle_index}','${row.fullpath}')"
-                                        class="btn btn-sm btn-outline btn-outline-dark btn-icon-primary btn-text-dark float-end p-2">
-                                        <i class="ki-outline ki-chart-pie-4 fs-1 p-0"></i>
+                                <div class="flex-grow-1">
+                                    <span onclick="drawDEPGraph('${row.module}')" class="btn btn-sm btn-outline btn-outline-dark btn-icon-primary btn-text-dark float-end">
+                                         <i class="ki-outline ki-chart-pie-4 fs-1"></i>
+                                         See Diagram
                                     </span>
                                 </div>
                             </div>`;
@@ -342,114 +329,21 @@
     }
 
     const addBackButtonEvent = () => {
-        $('[name="button-back"]').on('click', () => {
+        $('#button-back').on('click', () => {
             $('#card-table').toggleClass('flipped', false);
         });
     }
 
-    const drawMCDGraph = (cycleIndex, moduleName) => {
+    const drawDEPGraph = (moduleName) => {
         if (graph != null) {
             graph.destroy();
         }
 
         $('#span-module').text(moduleName);
         $('#card-table').toggleClass('flipped', true);
-        let data = graphData[cycleIndex]
+        let data = graphData[moduleName]
         graph = new Graph("div-graph", data.nodes, data.edges);
         graph.draw();
-
-        drawMCDRelation(cycleIndex)
-    }
-
-    function getCommonParentPath(filePaths) {
-        const components = filePaths.map(filePath => filePath.split(/[\\/]/));
-        const minLength = Math.min(...components.map(componentArray => componentArray.length));
-        const commonComponents = [];
-        for (let i = 0; i < minLength; i++) {
-            const currentComponent = components[0][i];
-            if (components.every(componentArray => componentArray[i] === currentComponent)) {
-                commonComponents.push(currentComponent);
-            } else {
-                break;
-            }
-        }
-
-        return commonComponents.join('/');
-    }
-
-
-    const drawMCDRelation = (cycleIndex) => {
-        if ($tableRelation != null) {
-            $tableRelation.destroy();
-        }
-
-        let filepaths = []
-        Object.keys(mfsData[cycleIndex]).forEach((key) => {
-            filepaths.push(key.split('>')[0])
-            filepaths.push(key.split('>')[1])
-        })
-        let commonPath = getCommonParentPath(filepaths)
-
-        let relations = []
-        let index = 0;
-        Object.keys(mfsData[cycleIndex]).forEach((key) => {
-            let mfs = mfsData[cycleIndex][key];
-            let fileFrom = mfs['file_from'].replace(commonPath, '');
-            let fileTo = mfs['file_to'].replace(commonPath, '');
-            mfs.relations.forEach((relation) => {
-                relations.push({
-                    index: ++index,
-                    relationType: relation['type'],
-                    fileFrom: fileFrom,
-                    fileTo: fileTo,
-                    lineFrom: relation['line_from'],
-                    lineTo: relation['line_to'],
-                    fromEntity: relation['entity_from'],
-                    toEntity: relation['entity_to'],
-                })
-            })
-        })
-
-        $('#span-cycle').text(cycleIndex);
-
-        $tableRelation = $(document.querySelector('#table-relations')).DataTable({
-            'data': relations,
-            "dom":
-                `<'row mb-2'
-                <'col-sm-6 d-flex align-items-center justify-conten-start dt-toolbar'l>
-                <'col-sm-6 d-flex align-items-center justify-content-end dt-toolbar'f>
-                >
-		        <'table-responsive'tr>
-		        <'row'
-		        <'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>
-		        <'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>
-		        >`,
-            'columns': [{
-                render: function (data, type, row) {
-                    return `<div >${row.index}</div>`;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="fw-bold">${row.relationType}</div>`;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="fs-7">${row.fileFrom}:${row.lineFrom}</div>`;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="fs-7">${row.fromEntity}</div>`;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="fs-7">${row.fileTo}:${row.lineTo}</div>`;
-                }
-            }, {
-                render: function (data, type, row) {
-                    return `<div class="fs-7">${row.toEntity}</div>`;
-                }
-            }]
-        });
     }
 
     addBackButtonEvent();
