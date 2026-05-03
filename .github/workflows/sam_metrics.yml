@@ -7,7 +7,6 @@ on:
       - 'feature/**'
       - 'fix/**'
       - 'infra/**'
-      - 'docs/**'
   pull_request:
     types: [closed]
     branches:
@@ -15,13 +14,12 @@ on:
       - 'feature/**'
       - 'fix/**'
       - 'infra/**'
-      - 'docs/**'
   workflow_dispatch:
     inputs:
       dry_run:
         description: 'Run in dry-run mode (no push/comment)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 jobs:
