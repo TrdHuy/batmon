@@ -28,6 +28,9 @@ jobs:
   sam-metrics:
     name: Run SAM Agent Metrics
     runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
     # Only run on push or manual dispatch. 
     # For pull_request closed, we use a separate job or handle logic within the script.
     # To keep it simple, we run the same script which has pruning logic.

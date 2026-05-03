@@ -307,6 +307,16 @@ def main():
     
     run_command(["git", "-C", GH_PAGES_WORKTREE, "commit", "-m", commit_msg], env=env, check=False)
     
+    # Authenticate push URL for self-hosted runners
+    repo_url_result = run_command(["git", "remote", "get-url", "origin"], env=env)
+    repo_url = repo_url_result.stdout.strip()
+    match = re.search(r"github\.com[:/](.+)\.git", repo_url)
+    owner_repo = match.group(1) if match else "TrdHuy/batmon"
+    
+    if github_token:
+        auth_url = f"https://x-access-token:{github_token}@github.com/{owner_repo}.git"
+        run_command(["git", "-C", GH_PAGES_WORKTREE, "remote", "set-url", "origin", auth_url], env=env, log_cmd=False)
+
     push_cmd = ["git", "-C", GH_PAGES_WORKTREE, "push", "origin", "HEAD:gh-pages"]
     run_command(push_cmd, env=env, dry_run=args.dry_run)
     timer.stop("PUSH_PAGES")
