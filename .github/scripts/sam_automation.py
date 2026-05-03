@@ -14,8 +14,7 @@ AI_BRANCH_PATTERNS = [
     r'^feat/.*',
     r'^feature/.*',
     r'^fix/.*',
-    r'^infra/.*',
-    r'^docs/.*'
+    r'^infra/.*'
 ]
 GH_PAGES_WORKTREE = "/tmp/batmon-gh-pages"
 SAM_OUT_DIR = "/tmp/sam-agent-runs"
