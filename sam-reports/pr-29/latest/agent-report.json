@@ -64,64 +64,64 @@
         "candidate_count": 208,
         "sample": [
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerInfo.kt",
             "line": null,
-            "symbol": "ChargingIconView",
+            "symbol": "component6",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/SettingItemUiModel.kt",
             "line": null,
-            "symbol": "invoke",
+            "symbol": "component2",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/BatteryChargeStatus.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerInfo.kt",
             "line": null,
-            "symbol": "$ENTRIES",
-            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/SettingItemAdapter.kt",
-            "line": null,
-            "symbol": "onBindViewHolder",
+            "symbol": "component5",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
             "line": null,
-            "symbol": "$VALUES",
-            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
-            "line": null,
-            "symbol": "receiver",
-            "type": "UNUSED_CLASS_DATA_MEMBER"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/BatteryProgressView.kt",
-            "line": 75,
-            "symbol": "$i$a$-apply-BatteryProgressView$trackPaint$1",
-            "type": "UNUSED_LOCAL_VARIABLE"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerInfo.kt",
-            "line": null,
-            "symbol": "component4",
+            "symbol": "component5",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
-            "line": 30,
-            "symbol": "it",
+            "line": null,
+            "symbol": "APPLY_THROTTLE_MS",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/SettingsPanelView.kt",
+            "line": null,
+            "symbol": "SettingsPanelView",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": null,
+            "symbol": "$constructor_marker",
             "type": "UNUSED_FUNCTION_PARAMETER"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerLightCommandResult.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/SettingItemUiModel.kt",
             "line": null,
-            "symbol": "valueOf",
+            "symbol": "component1",
             "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": null,
+            "symbol": "SERVICE_ACTION_STATE_SYNC_DELAY_MS",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
+            "line": 21,
+            "symbol": "$marker",
+            "type": "UNUSED_FUNCTION_PARAMETER"
           }
         ]
       },
@@ -139,15 +139,15 @@
   ],
   "mode": "svace",
   "outputs": {
-    "agent_json": "/tmp/sam-agent-runs/batmon-20260503-221347/agent-report.json",
-    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260503-221347/agent-report.md",
-    "dev_html": "/tmp/sam-agent-runs/batmon-20260503-221347/dev-report.html",
-    "log": "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace/log/sam.log_20260503",
-    "raw_sam": "/tmp/sam-agent-runs/batmon-20260503-221347/raw-sam",
-    "run_dir": "/tmp/sam-agent-runs/batmon-20260503-221347",
-    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace/sam-result/html/SAM_Report_batmon_20260503_index.html",
-    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace/sam-result/report.json",
-    "score_csv": "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace/sam-result/SAM_total_score.csv"
+    "agent_json": "/tmp/sam-agent-runs/batmon-20260503-222011/agent-report.json",
+    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260503-222011/agent-report.md",
+    "dev_html": "/tmp/sam-agent-runs/batmon-20260503-222011/dev-report.html",
+    "log": "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace/log/sam.log_20260503",
+    "raw_sam": "/tmp/sam-agent-runs/batmon-20260503-222011/raw-sam",
+    "run_dir": "/tmp/sam-agent-runs/batmon-20260503-222011",
+    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace/sam-result/html/SAM_Report_batmon_20260503_index.html",
+    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace/sam-result/report.json",
+    "score_csv": "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace/sam-result/SAM_total_score.csv"
   },
   "project": {
     "detected": {
@@ -162,7 +162,7 @@
     "type": "OO"
   },
   "project_metrics": {
-    "analysis_time": "2026-05-03 22:14",
+    "analysis_time": "2026-05-03 22:20",
     "class_count": 92,
     "code_loc": 3200,
     "file_count": 29,
@@ -177,7 +177,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "init",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace"
+          "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace"
         ],
         "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
@@ -188,7 +188,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "scan",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
@@ -210,7 +210,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "analyze",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
@@ -225,7 +225,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "calculate",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260503-221347/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260503-222011/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
