@@ -1,0 +1,54 @@
+name: SAM Agent Metrics
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+      - 'feature/**'
+      - 'fix/**'
+      - 'infra/**'
+      - 'docs/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - 'feat/**'
+      - 'feature/**'
+      - 'fix/**'
+      - 'infra/**'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no push/comment)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sam-metrics:
+    name: Run SAM Agent Metrics
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+    # Only run on push or manual dispatch. 
+    # For pull_request closed, we use a separate job or handle logic within the script.
+    # To keep it simple, we run the same script which has pruning logic.
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run SAM Automation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.head.ref) || github.ref }}
+          GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          FLAGS=""
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            FLAGS="--dry-run"
+          fi
+          python3 .github/scripts/sam_automation.py $FLAGS
