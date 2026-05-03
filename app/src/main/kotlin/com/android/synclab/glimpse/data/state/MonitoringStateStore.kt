@@ -1,15 +1,17 @@
 package com.android.synclab.glimpse.data.state
 
-object MonitoringStateStore {
+import com.android.synclab.glimpse.base.contracts.MonitoringStateProvider
+
+object MonitoringStateStore : MonitoringStateProvider {
     @Volatile
-    var isServiceRunning: Boolean = false
+    override var isServiceRunning: Boolean = false
 
     @Volatile
-    var isMonitoringEnabled: Boolean = false
+    override var isMonitoringEnabled: Boolean = false
 
     @Volatile
-    var isOverlayVisible: Boolean = false
+    override var isOverlayVisible: Boolean = false
 
     @Volatile
-    var lastStatusText: String = ""
+    override var lastStatusText: String = ""
 }

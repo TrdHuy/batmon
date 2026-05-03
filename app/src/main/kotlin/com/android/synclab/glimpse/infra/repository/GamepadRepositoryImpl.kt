@@ -40,6 +40,7 @@ class GamepadRepositoryImpl(
     private var cachedLightTarget: CachedLightTarget? = null
 
     private data class CachedLightTarget(
+        val controllerIdentifier: String?,
         val deviceId: Int,
         val lightId: Int,
         val lightName: String?
@@ -58,6 +59,7 @@ class GamepadRepositoryImpl(
                     name = device.name ?: defaultDeviceName,
                     vendorId = device.vendorId,
                     productId = device.productId,
+                    descriptor = device.descriptor,
                     batteryPercent = batteryInfo.first,
                     batteryStatus = batteryInfo.second
                 )
@@ -92,17 +94,22 @@ class GamepadRepositoryImpl(
     }
 
     @Synchronized
-    override fun setPs4ControllerLightColor(color: Int): ControllerLightCommandResult {
+    override fun setPs4ControllerLightColor(
+        color: Int,
+        controllerIdentifier: String?
+    ): ControllerLightCommandResult {
         val requestId = lightCommandRequestSequence.incrementAndGet()
         val startedAtMs = SystemClock.elapsedRealtime()
         val colorHex = String.format("#%06X", 0xFFFFFF and color)
         val red = Color.red(color)
         val green = Color.green(color)
         val blue = Color.blue(color)
+        val normalizedControllerIdentifier = normalizeControllerIdentifier(controllerIdentifier)
 
         logDiagnosticDebug {
             "$LOG_PREFIX requestId=$requestId phase=start " +
                     "sdk=${Build.VERSION.SDK_INT} color=$colorHex rgb=($red,$green,$blue) " +
+                    "controllerIdentifier=${normalizedControllerIdentifier ?: "n/a"} " +
                     "thread=${Thread.currentThread().name}"
         }
 
@@ -123,7 +130,8 @@ class GamepadRepositoryImpl(
             requestId = requestId,
             startedAtMs = startedAtMs,
             color = color,
-            colorHex = colorHex
+            colorHex = colorHex,
+            controllerIdentifier = normalizedControllerIdentifier
         )?.let { fastResult ->
             return fastResult
         }
@@ -153,9 +161,28 @@ class GamepadRepositoryImpl(
             }
         }
 
+        val identifierMatchedDevice = normalizedControllerIdentifier?.let { identifier ->
+            devices.firstOrNull { buildControllerLookupKey(it) == identifier }
+        }
+        if (normalizedControllerIdentifier != null && identifierMatchedDevice == null) {
+            cachedLightTarget = null
+            val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
+            LogCompat.w(
+                "$LOG_PREFIX requestId=$requestId phase=result " +
+                        "status=${ControllerLightCommandStatus.NO_CONTROLLER} " +
+                        "reason=identifier_miss controllerIdentifier=$normalizedControllerIdentifier " +
+                        "elapsedMs=$elapsedMs"
+            )
+            return ControllerLightCommandResult(
+                status = ControllerLightCommandStatus.NO_CONTROLLER,
+                colorHex = colorHex,
+                detail = "controllerIdentifier_miss"
+            )
+        }
         val preferredPs4Device = devices.firstOrNull(::isLikelyPs4ControllerForLightCommand)
-        val targetDevice = preferredPs4Device ?: devices.firstOrNull(::isGamepad)
+        val targetDevice = identifierMatchedDevice ?: preferredPs4Device ?: devices.firstOrNull(::isGamepad)
         val selectionReason = when {
+            identifierMatchedDevice != null -> "identifier_match"
             preferredPs4Device != null -> "ps4_match"
             targetDevice != null -> "first_gamepad_fallback"
             else -> "none"
@@ -163,7 +190,8 @@ class GamepadRepositoryImpl(
 
         logDiagnosticDebug {
             "$LOG_PREFIX requestId=$requestId phase=select_device " +
-                    "reason=$selectionReason selectedDeviceId=${targetDevice?.id}"
+                    "reason=$selectionReason selectedDeviceId=${targetDevice?.id} " +
+                    "controllerIdentifier=${normalizedControllerIdentifier ?: "n/a"}"
         }
 
         if (targetDevice == null) {
@@ -223,6 +251,7 @@ class GamepadRepositoryImpl(
                 )
             } else {
                 cachedLightTarget = CachedLightTarget(
+                    controllerIdentifier = normalizedControllerIdentifier ?: buildControllerLookupKey(targetDevice),
                     deviceId = targetDevice.id,
                     lightId = targetLight.id,
                     lightName = targetLight.name
@@ -236,7 +265,8 @@ class GamepadRepositoryImpl(
                     requestId = requestId,
                     startedAtMs = startedAtMs,
                     phaseLabel = "apply_request",
-                    includeStateAfter = true
+                    includeStateAfter = true,
+                    controllerIdentifier = normalizedControllerIdentifier
                 )
             }
         }.getOrElse { throwable ->
@@ -287,9 +317,18 @@ class GamepadRepositoryImpl(
         requestId: Int,
         startedAtMs: Long,
         color: Int,
-        colorHex: String
+        colorHex: String,
+        controllerIdentifier: String?
     ): ControllerLightCommandResult? {
         val target = cachedLightTarget ?: return null
+        if (controllerIdentifier != null && target.controllerIdentifier != controllerIdentifier) {
+            logDiagnosticDebug {
+                "$LOG_PREFIX requestId=$requestId phase=fast_path_miss " +
+                        "reason=controller_mismatch cachedControllerIdentifier=${target.controllerIdentifier} " +
+                        "requestedControllerIdentifier=$controllerIdentifier"
+            }
+            return null
+        }
         val cachedDevice = InputDevice.getDevice(target.deviceId)
         if (cachedDevice == null || !isGamepad(cachedDevice)) {
             cachedLightTarget = null
@@ -321,7 +360,8 @@ class GamepadRepositoryImpl(
                 requestId = requestId,
                 startedAtMs = startedAtMs,
                 phaseLabel = "fast_apply",
-                includeStateAfter = false
+                includeStateAfter = false,
+                controllerIdentifier = controllerIdentifier
             )
         } catch (throwable: Throwable) {
             val errorDetail = "${throwable.javaClass.simpleName}:${throwable.message.orEmpty()}"
@@ -348,7 +388,8 @@ class GamepadRepositoryImpl(
         requestId: Int,
         startedAtMs: Long,
         phaseLabel: String,
-        includeStateAfter: Boolean
+        includeStateAfter: Boolean,
+        controllerIdentifier: String?
     ): ControllerLightCommandResult {
         val request = LightsRequest.Builder()
             .addLight(
@@ -364,6 +405,7 @@ class GamepadRepositoryImpl(
             "$LOG_PREFIX requestId=$requestId phase=$phaseLabel " +
                     "deviceId=${targetDevice.id} lightId=${targetLight.id} " +
                     "lightName=${targetLight.name} color=$colorHex " +
+                    "controllerIdentifier=${controllerIdentifier ?: "n/a"} " +
                     "sessionDeviceId=$lightBarSessionDeviceId"
         }
         session.requestLights(request)
@@ -395,6 +437,18 @@ class GamepadRepositoryImpl(
             colorHex = colorHex,
             detail = stateAfter
         )
+    }
+
+    private fun buildControllerLookupKey(device: InputDevice): String {
+        val descriptor = device.descriptor?.trim().orEmpty()
+        if (descriptor.isNotEmpty()) {
+            return descriptor
+        }
+        return "VID:${device.vendorId}_PID:${device.productId}_DID:${device.id}"
+    }
+
+    private fun normalizeControllerIdentifier(controllerIdentifier: String?): String? {
+        return controllerIdentifier?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     @Synchronized
