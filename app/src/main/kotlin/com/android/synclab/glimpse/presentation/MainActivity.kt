@@ -769,27 +769,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleControllerProfileState(state: MainUiState) {
+        val selectedUniqueId = state.selectedControllerUniqueId?.takeIf { it.isNotBlank() }
         val descriptor = state.controllerDescriptor?.takeIf { it.isNotBlank() }
-        val previousDescriptor = activeControllerDescriptor
-        if (descriptor != previousDescriptor) {
+        val previousSelectedUniqueId = activeControllerUniqueId
+        if (selectedUniqueId != previousSelectedUniqueId) {
             controllerProfileGeneration++
             LogCompat.d(
                 "ControllerProfile active controller changed " +
-                        "from=${previousDescriptor?.let(::maskIdentifier)} " +
-                        "to=${descriptor?.let(::maskIdentifier)} " +
+                        "from=${previousSelectedUniqueId?.let(::maskIdentifier)} " +
+                        "to=${selectedUniqueId?.let(::maskIdentifier)} " +
                         "connectionState=${state.connectionState}"
             )
         }
         activeControllerDescriptor = descriptor
-        activeControllerUniqueId = state.selectedControllerUniqueId?.takeIf { it.isNotBlank() }
+        activeControllerUniqueId = selectedUniqueId
         activeControllerName = state.controllerName?.takeIf { it.isNotBlank() }
 
-        if (descriptor == null) {
+        if (selectedUniqueId == null) {
             lastLoadedProfileDescriptor = null
-            if (previousDescriptor != null) {
+            if (previousSelectedUniqueId != null) {
                 selectedVibeColor = DEFAULT_VIBE_COLOR
                 LogCompat.d("ControllerProfile reset to default color because controller disconnected")
             }
+            return
+        }
+
+        if (selectedUniqueId != previousSelectedUniqueId) {
+            selectedVibeColor = DEFAULT_VIBE_COLOR
+            lastLoadedProfileDescriptor = null
+        }
+
+        if (descriptor == null) {
+            LogCompat.d(
+                "ControllerProfile ui-only controller selected id=${maskIdentifier(selectedUniqueId)} " +
+                        "reason=missing_descriptor defaultColor=${toHexColor(selectedVibeColor)}"
+            )
             return
         }
 
@@ -800,7 +814,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        selectedVibeColor = DEFAULT_VIBE_COLOR
         lastLoadedProfileDescriptor = descriptor
         LogCompat.d(
             "ControllerProfile load scheduled id=${maskIdentifier(descriptor)} " +
@@ -879,7 +892,10 @@ class MainActivity : AppCompatActivity() {
     private fun persistControllerProfile(lightbarColor: Int) {
         val descriptor = activeControllerDescriptor
         if (descriptor.isNullOrBlank()) {
-            LogCompat.d("ControllerProfile save skipped: missing descriptor")
+            LogCompat.d(
+                "ControllerProfile save skipped: missing descriptor " +
+                        "activeUniqueId=${activeControllerUniqueId?.let(::maskIdentifier)}"
+            )
             return
         }
         val deviceName = activeControllerName?.takeIf { it.isNotBlank() }
@@ -891,6 +907,7 @@ class MainActivity : AppCompatActivity() {
         )
         LogCompat.d(
             "ControllerProfile save queued id=${maskIdentifier(descriptor)} " +
+                    "activeUniqueId=${activeControllerUniqueId?.let(::maskIdentifier)} " +
                     "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
         )
         profileIoExecutor.execute {

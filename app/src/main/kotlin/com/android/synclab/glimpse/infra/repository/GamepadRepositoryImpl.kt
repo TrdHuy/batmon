@@ -164,11 +164,25 @@ class GamepadRepositoryImpl(
         val identifierMatchedDevice = normalizedControllerIdentifier?.let { identifier ->
             devices.firstOrNull { buildControllerLookupKey(it) == identifier }
         }
+        if (normalizedControllerIdentifier != null && identifierMatchedDevice == null) {
+            cachedLightTarget = null
+            val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
+            LogCompat.w(
+                "$LOG_PREFIX requestId=$requestId phase=result " +
+                        "status=${ControllerLightCommandStatus.NO_CONTROLLER} " +
+                        "reason=identifier_miss controllerIdentifier=$normalizedControllerIdentifier " +
+                        "elapsedMs=$elapsedMs"
+            )
+            return ControllerLightCommandResult(
+                status = ControllerLightCommandStatus.NO_CONTROLLER,
+                colorHex = colorHex,
+                detail = "controllerIdentifier_miss"
+            )
+        }
         val preferredPs4Device = devices.firstOrNull(::isLikelyPs4ControllerForLightCommand)
         val targetDevice = identifierMatchedDevice ?: preferredPs4Device ?: devices.firstOrNull(::isGamepad)
         val selectionReason = when {
             identifierMatchedDevice != null -> "identifier_match"
-            normalizedControllerIdentifier != null -> "identifier_miss_fallback"
             preferredPs4Device != null -> "ps4_match"
             targetDevice != null -> "first_gamepad_fallback"
             else -> "none"
