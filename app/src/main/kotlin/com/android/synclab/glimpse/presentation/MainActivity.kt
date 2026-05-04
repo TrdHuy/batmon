@@ -367,9 +367,9 @@ class MainActivity : AppCompatActivity() {
             LogCompat.d("CustomizeVibeDialog already visible")
             return
         }
+        val targetId = viewModel.currentUiState().controllerPersistentId
         LogCompat.d(
-            "CustomizeVibeDialog open " +
-                    "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)} " +
+            "CustomizeVibeDialog open targetId=${targetId?.let(::maskIdentifier)} " +
                     "selectedColor=${toHexColor(selectedVibeColor)}"
         )
 
@@ -377,14 +377,14 @@ class MainActivity : AppCompatActivity() {
             context = this,
             initialColor = selectedVibeColor,
             setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
-            controllerIdentifier = activeControllerDescriptor ?: activeControllerUniqueId,
+            controllerIdentifier = targetId,
             onColorApplied = { color ->
                 selectedVibeColor = color
                 LogCompat.d(
                     "CustomizeVibeDialog onColorApplied color=${toHexColor(color)} " +
-                            "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)}"
+                            "targetId=${targetId?.let(::maskIdentifier)}"
                 )
-                persistControllerProfile(color)
+                persistControllerProfile(color, targetId)
             },
             onDismiss = {
                 customizeVibeDialog = null
@@ -785,7 +785,9 @@ class MainActivity : AppCompatActivity() {
         activeControllerUniqueId = selectedUniqueId
         activeControllerName = state.controllerName?.takeIf { it.isNotBlank() }
 
-        if (selectedUniqueId == null) {
+        val persistentId = state.controllerPersistentId
+
+        if (persistentId == null) {
             lastLoadedProfileDescriptor = null
             if (previousSelectedUniqueId != null) {
                 selectedVibeColor = DEFAULT_VIBE_COLOR
@@ -799,60 +801,55 @@ class MainActivity : AppCompatActivity() {
             lastLoadedProfileDescriptor = null
         }
 
-        if (descriptor == null) {
+        if (persistentId == lastLoadedProfileDescriptor) {
             LogCompat.d(
-                "ControllerProfile ui-only controller selected id=${maskIdentifier(selectedUniqueId)} " +
-                        "reason=missing_descriptor defaultColor=${toHexColor(selectedVibeColor)}"
+                "ControllerProfile load skipped id=${maskIdentifier(persistentId)} reason=already_loaded"
             )
             return
         }
 
-        if (descriptor == lastLoadedProfileDescriptor) {
-            LogCompat.d(
-                "ControllerProfile load skipped id=${maskIdentifier(descriptor)} reason=already_loaded"
-            )
-            return
-        }
-
-        lastLoadedProfileDescriptor = descriptor
+        lastLoadedProfileDescriptor = persistentId
         LogCompat.d(
-            "ControllerProfile load scheduled id=${maskIdentifier(descriptor)} " +
+            "ControllerProfile load scheduled id=${maskIdentifier(persistentId)} " +
                     "activeName=${activeControllerName ?: "n/a"}"
         )
-        loadControllerProfile(descriptor)
+        loadControllerProfile(persistentId)
     }
 
-    private fun loadControllerProfile(descriptor: String) {
-        LogCompat.d("ControllerProfile load queued id=${maskIdentifier(descriptor)}")
+    private fun loadControllerProfile(persistentId: String) {
+        LogCompat.d("ControllerProfile load queued id=${maskIdentifier(persistentId)}")
         val requestGeneration = controllerProfileGeneration
         profileIoExecutor.execute {
-            LogCompat.d("ControllerProfile load started id=${maskIdentifier(descriptor)}")
+            LogCompat.d("ControllerProfile load started id=${maskIdentifier(persistentId)}")
             val profile = runCatching {
-                getControllerProfileUseCase(descriptor)
+                getControllerProfileUseCase(persistentId)
             }.onFailure { throwable ->
-                LogCompat.e("ControllerProfile load failed id=${maskIdentifier(descriptor)}", throwable)
+                LogCompat.e("ControllerProfile load failed id=${maskIdentifier(persistentId)}", throwable)
             }.getOrNull()
+
+            var restoreStatus: com.android.synclab.glimpse.data.model.ControllerLightCommandStatus? = null
 
             if (profile != null) {
                 if (requestGeneration != controllerProfileGeneration) {
                     LogCompat.d(
-                        "ControllerProfile auto-restore skipped id=${maskIdentifier(descriptor)} " +
+                        "ControllerProfile auto-restore skipped id=${maskIdentifier(persistentId)} " +
                                 "reason=stale_request currentGeneration=$controllerProfileGeneration " +
                                 "requestGeneration=$requestGeneration"
                     )
                 } else {
                     LogCompat.i(
-                        "ControllerProfile auto-restoring vibe id=${maskIdentifier(descriptor)} " +
+                        "ControllerProfile auto-restoring vibe id=${maskIdentifier(persistentId)} " +
                                 "color=${toHexColor(profile.lightbarColor)}"
                     )
                     runCatching {
-                        setPs4ControllerLightColorUseCase(
+                        val result = setPs4ControllerLightColorUseCase(
                             profile.lightbarColor,
-                            controllerIdentifier = descriptor
+                            controllerIdentifier = persistentId
                         )
+                        restoreStatus = result.status
                     }.onFailure { throwable ->
                         LogCompat.e(
-                            "ControllerProfile auto-restore failed id=${maskIdentifier(descriptor)}",
+                            "ControllerProfile auto-restore failed id=${maskIdentifier(persistentId)}",
                             throwable
                         )
                     }
@@ -862,52 +859,62 @@ class MainActivity : AppCompatActivity() {
             mainHandler.post {
                 if (isDestroyed) {
                     LogCompat.d(
-                        "ControllerProfile load ignored id=${maskIdentifier(descriptor)} reason=activity_destroyed"
+                        "ControllerProfile load ignored id=${maskIdentifier(persistentId)} reason=activity_destroyed"
                     )
                     return@post
                 }
-                if (activeControllerDescriptor != descriptor) {
+                val currentPersistentId = viewModel.currentUiState().controllerPersistentId
+                if (currentPersistentId != persistentId) {
                     LogCompat.d(
-                        "ControllerProfile load ignored id=${maskIdentifier(descriptor)} " +
-                                "reason=active_controller_switched current=${activeControllerDescriptor?.let(::maskIdentifier)}"
+                        "ControllerProfile load ignored id=${maskIdentifier(persistentId)} " +
+                                "reason=active_controller_switched current=${currentPersistentId?.let(::maskIdentifier)}"
                     )
                     return@post
                 }
                 if (profile == null) {
-                    LogCompat.d("ControllerProfile missing id=${maskIdentifier(descriptor)}")
+                    LogCompat.d("ControllerProfile missing id=${maskIdentifier(persistentId)}")
                     return@post
                 }
-                selectedVibeColor = profile.lightbarColor
+                
+                // Only update internal color state if the hardware application was actually successful
+                if (restoreStatus == com.android.synclab.glimpse.data.model.ControllerLightCommandStatus.SUCCESS) {
+                    selectedVibeColor = profile.lightbarColor
+                } else {
+                    LogCompat.w(
+                        "ControllerProfile color state not updated because hardware restore failed " +
+                                "status=${restoreStatus ?: "error"}"
+                    )
+                }
+
                 if (activeControllerName.isNullOrBlank()) {
                     activeControllerName = profile.deviceName
                 }
                 LogCompat.d(
-                    "ControllerProfile loaded id=${maskIdentifier(descriptor)} " +
-                            "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)}"
+                    "ControllerProfile loaded id=${maskIdentifier(persistentId)} " +
+                            "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)} " +
+                            "restoreStatus=${restoreStatus ?: "n/a"}"
                 )
             }
         }
     }
 
-    private fun persistControllerProfile(lightbarColor: Int) {
-        val descriptor = activeControllerDescriptor
-        if (descriptor.isNullOrBlank()) {
+    private fun persistControllerProfile(lightbarColor: Int, targetId: String? = null) {
+        val persistentId = targetId ?: viewModel.currentUiState().controllerPersistentId
+        if (persistentId.isNullOrBlank()) {
             LogCompat.d(
-                "ControllerProfile save skipped: missing descriptor " +
-                        "activeUniqueId=${activeControllerUniqueId?.let(::maskIdentifier)}"
+                "ControllerProfile save skipped: missing persistent identifier"
             )
             return
         }
         val deviceName = activeControllerName?.takeIf { it.isNotBlank() }
             ?: getString(R.string.unknown_device_name)
         val profile = ControllerProfile(
-            id = descriptor,
+            id = persistentId,
             deviceName = deviceName,
             lightbarColor = lightbarColor
         )
         LogCompat.d(
-            "ControllerProfile save queued id=${maskIdentifier(descriptor)} " +
-                    "activeUniqueId=${activeControllerUniqueId?.let(::maskIdentifier)} " +
+            "ControllerProfile save queued id=${maskIdentifier(persistentId)} " +
                     "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
         )
         profileIoExecutor.execute {
@@ -915,11 +922,11 @@ class MainActivity : AppCompatActivity() {
                 upsertControllerProfileUseCase(profile)
             }.onSuccess {
                 LogCompat.d(
-                    "ControllerProfile saved id=${maskIdentifier(descriptor)} " +
+                    "ControllerProfile saved id=${maskIdentifier(persistentId)} " +
                             "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
                 )
             }.onFailure { throwable ->
-                LogCompat.e("ControllerProfile save failed id=${maskIdentifier(descriptor)}", throwable)
+                LogCompat.e("ControllerProfile save failed id=${maskIdentifier(persistentId)}", throwable)
             }
         }
     }

@@ -7,6 +7,7 @@ data class MainUiState(
     val batteryPercent: Int? = null,
     val batteryStatus: BatteryChargeStatus = BatteryChargeStatus.UNKNOWN,
     val controllerUniqueId: String? = null,
+    val controllerPersistentId: String? = null,
     val controllerDescriptor: String? = null,
     val controllerName: String? = null,
     val controllerPages: List<ControllerPageUiModel> = emptyList(),

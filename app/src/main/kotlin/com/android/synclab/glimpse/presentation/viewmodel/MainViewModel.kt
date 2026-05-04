@@ -75,6 +75,7 @@ class MainViewModel(
                 batteryPercent = selectedMockPage.batteryPercent,
                 batteryStatus = selectedMockPage.batteryStatus,
                 controllerUniqueId = selectedMockPage.uniqueId,
+                controllerPersistentId = selectedMockPage.persistentId,
                 controllerDescriptor = selectedMockPage.descriptor,
                 controllerName = selectedMockPage.name
             )
@@ -100,6 +101,7 @@ class MainViewModel(
                     batteryPercent = null,
                     batteryStatus = BatteryChargeStatus.UNKNOWN,
                     controllerUniqueId = null,
+                    controllerPersistentId = null,
                     controllerDescriptor = null,
                     controllerName = null
                 ),
@@ -118,6 +120,7 @@ class MainViewModel(
             val uniqueId = buildControllerUniqueId(controller)
             controller.toControllerPage(
                 uniqueId = uniqueId,
+                persistentId = buildControllerPersistentId(controller),
                 isSelected = uniqueId == selectedUniqueId
             )
         }
@@ -130,6 +133,7 @@ class MainViewModel(
                 batteryPercent = null,
                 batteryStatus = BatteryChargeStatus.UNKNOWN,
                 controllerUniqueId = null,
+                controllerPersistentId = null,
                 controllerDescriptor = null,
                 controllerName = null
             )
@@ -141,6 +145,7 @@ class MainViewModel(
                 batteryPercent = selectedController.batteryPercent,
                 batteryStatus = selectedController.batteryStatus ?: BatteryChargeStatus.UNKNOWN,
                 controllerUniqueId = buildControllerUniqueId(selectedController),
+                controllerPersistentId = buildControllerPersistentId(selectedController),
                 controllerDescriptor = selectedController.descriptor?.trim()?.takeIf { it.isNotEmpty() },
                 controllerName = selectedController.name
             )
@@ -193,6 +198,7 @@ class MainViewModel(
                 batteryPercent = target.batteryPercent,
                 batteryStatus = target.batteryStatus,
                 controllerUniqueId = target.uniqueId,
+                controllerPersistentId = target.persistentId,
                 controllerDescriptor = target.descriptor,
                 controllerName = target.name
             ),
@@ -214,10 +220,12 @@ class MainViewModel(
 
     private fun ControllerInfo.toControllerPage(
         uniqueId: String,
+        persistentId: String,
         isSelected: Boolean
     ): ControllerPageUiModel {
         return ControllerPageUiModel(
             uniqueId = uniqueId,
+            persistentId = persistentId,
             descriptor = descriptor?.trim()?.takeIf { it.isNotEmpty() },
             deviceId = deviceId,
             name = name,
@@ -235,6 +243,14 @@ class MainViewModel(
             return descriptor
         }
         return "VID:${controller.vendorId}_PID:${controller.productId}_DID:${controller.deviceId}"
+    }
+
+    private fun buildControllerPersistentId(controller: ControllerInfo): String {
+        val descriptor = controller.descriptor?.trim().orEmpty()
+        if (descriptor.isNotEmpty()) {
+            return descriptor
+        }
+        return "MODEL:VID:${controller.vendorId}_PID:${controller.productId}_NAME:${controller.name}"
     }
 
     fun syncServiceState(

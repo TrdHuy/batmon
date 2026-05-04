@@ -9,16 +9,8 @@ class DeveloperOptionManager(
         source.isDebuggableApp
     }
 
-    private val mockControllerPagesEnabled: Boolean by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        developerModeEnabled && source.getSystemProperty(MOCK_CONTROLLER_PAGES_PROPERTY) == "1"
-    }
-
-    fun isDeveloperModeEnabled(): Boolean {
-        return developerModeEnabled
-    }
-
     fun isMockControllerPagesEnabled(): Boolean {
-        return mockControllerPagesEnabled
+        return developerModeEnabled && source.getSystemProperty(MOCK_CONTROLLER_PAGES_PROPERTY) == "1"
     }
 
     companion object {

@@ -4,6 +4,7 @@ import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 
 data class ControllerPageUiModel(
     val uniqueId: String,
+    val persistentId: String,
     val descriptor: String?,
     val deviceId: Int?,
     val name: String,

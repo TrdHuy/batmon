@@ -8,6 +8,7 @@ object DebugControllerPageFactory {
         val basePages = listOf(
             ControllerPageUiModel(
                 uniqueId = "debug-controller-alpha",
+                persistentId = "debug-controller-alpha",
                 descriptor = null,
                 deviceId = null,
                 name = "Debug Controller Alpha",
@@ -20,6 +21,7 @@ object DebugControllerPageFactory {
             ),
             ControllerPageUiModel(
                 uniqueId = "debug-controller-bravo",
+                persistentId = "debug-controller-bravo",
                 descriptor = null,
                 deviceId = null,
                 name = "Debug Controller Bravo",
@@ -32,6 +34,7 @@ object DebugControllerPageFactory {
             ),
             ControllerPageUiModel(
                 uniqueId = "debug-controller-charlie",
+                persistentId = "debug-controller-charlie",
                 descriptor = null,
                 deviceId = null,
                 name = "Debug Controller Charlie",

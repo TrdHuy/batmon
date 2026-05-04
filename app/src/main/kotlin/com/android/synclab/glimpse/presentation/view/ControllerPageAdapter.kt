@@ -75,8 +75,10 @@ class ControllerPageAdapter(
             MainUiState.ConnectionState.DISCONNECTED -> "no-controller"
             MainUiState.ConnectionState.CONNECTED -> state.controllerUniqueId ?: "selected-controller"
         }
+        val id = "__placeholder__:$label"
         return ControllerPageUiModel(
-            uniqueId = "__placeholder__:$label",
+            uniqueId = id,
+            persistentId = id,
             descriptor = null,
             deviceId = null,
             name = label,
@@ -149,6 +151,7 @@ class ControllerPageAdapter(
             val isCharging = page.batteryStatus == BatteryChargeStatus.CHARGING
             batteryCircle.setChargingAnimationEnabled(isCharging)
             batteryStateText.text = batteryStatusLabel(page.batteryStatus)
+            batteryStateText.visibility = View.VISIBLE
 
             chargingIconView.setGlowStyle(
                 color = CHARGING_GLOW_COLOR,
