@@ -49,9 +49,9 @@ SAM Score: 4.76 / 5
 
 ## Outputs
 
-- Agent JSON: /tmp/sam-agent-runs/batmon-20260509-173113/agent-report.json
-- Developer HTML: /tmp/sam-agent-runs/batmon-20260509-173113/dev-report.html
-- SAM HTML index: /tmp/sam-agent-runs/batmon-20260509-173113/attempts/svace/sam-result/html/SAM_Report_batmon_20260509_index.html
-- SAM report JSON: /tmp/sam-agent-runs/batmon-20260509-173113/attempts/svace/sam-result/report.json
-- Score CSV: /tmp/sam-agent-runs/batmon-20260509-173113/attempts/svace/sam-result/SAM_total_score.csv
-- Log: /tmp/sam-agent-runs/batmon-20260509-173113/attempts/svace/log/sam.log_20260509
+- Agent JSON: /tmp/sam-agent-runs/batmon-20260509-173149/agent-report.json
+- Developer HTML: /tmp/sam-agent-runs/batmon-20260509-173149/dev-report.html
+- SAM HTML index: /tmp/sam-agent-runs/batmon-20260509-173149/attempts/svace/sam-result/html/SAM_Report_batmon_20260509_index.html
+- SAM report JSON: /tmp/sam-agent-runs/batmon-20260509-173149/attempts/svace/sam-result/report.json
+- Score CSV: /tmp/sam-agent-runs/batmon-20260509-173149/attempts/svace/sam-result/SAM_total_score.csv
+- Log: /tmp/sam-agent-runs/batmon-20260509-173149/attempts/svace/log/sam.log_20260509
