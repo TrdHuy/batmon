@@ -32,11 +32,13 @@ import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
 import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
 import com.android.synclab.glimpse.presentation.view.ControllerPageAdapter
+import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.InputDeviceLogUtils
@@ -60,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: Toolbar
     private lateinit var controllerPager: ViewPager2
     private lateinit var controllerPageAdapter: ControllerPageAdapter
+    private lateinit var utilSettingsPanel: SettingsPanelView
+    private lateinit var otherSettingsPanel: SettingsPanelView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase
@@ -77,6 +81,7 @@ class MainActivity : AppCompatActivity() {
     private var activeControllerName: String? = null
     private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
+    private var hasLoggedFixedSettingsLayout = false
     @Volatile
     private var controllerProfileGeneration: Long = 0L
 
@@ -133,17 +138,13 @@ class MainActivity : AppCompatActivity() {
 
         toolbar = findViewById(R.id.topToolbar)
         controllerPager = findViewById(R.id.controllerPager)
-        controllerPageAdapter = ControllerPageAdapter(
-            onToggleChanged = { page, itemId, checked ->
-                onControllerPageToggleChanged(page.uniqueId, itemId, checked)
-            },
-            onItemClicked = { page, itemId ->
-                onControllerPageItemClicked(page.uniqueId, itemId)
-            }
-        )
+        utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
+        otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
+        controllerPageAdapter = ControllerPageAdapter()
 
         setupToolbarMenu()
         setupControllerPager()
+        setupFixedSettingsPanels()
         bindViewModelObserver()
 
         renderUiState(viewModel.currentUiState())
@@ -249,38 +250,100 @@ class MainActivity : AppCompatActivity() {
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     val page = controllerPageAdapter.getPageAt(position) ?: return
+                    LogCompat.d(
+                        "UI_VERIFY ControllerPager statusOnly onPageSelected " +
+                                "position=$position uniqueId=${maskIdentifier(page.uniqueId)} " +
+                                "placeholder=${page.isPlaceholder}"
+                    )
                     if (page.isPlaceholder) {
                         return
                     }
                     if (viewModel.currentUiState().selectedControllerUniqueId == page.uniqueId) {
                         return
                     }
-                    LogCompat.d(
-                        "ControllerPager onPageSelected position=$position uniqueId=${maskIdentifier(page.uniqueId)}"
-                    )
-                    viewModel.selectController(
-                        uniqueId = page.uniqueId,
-                        source = EventChangeParam.Source.VIEW
-                    )
+                    controllerPager.post {
+                        val currentPage = controllerPageAdapter.getPageAt(controllerPager.currentItem)
+                            ?: return@post
+                        if (controllerPager.currentItem != position ||
+                            currentPage.uniqueId != page.uniqueId ||
+                            viewModel.currentUiState().selectedControllerUniqueId == currentPage.uniqueId
+                        ) {
+                            return@post
+                        }
+                        LogCompat.d(
+                            "ControllerPager onPageSelected position=$position uniqueId=${maskIdentifier(page.uniqueId)}"
+                        )
+                        viewModel.selectController(
+                            uniqueId = currentPage.uniqueId,
+                            source = EventChangeParam.Source.VIEW
+                        )
+                    }
                 }
             }
         )
     }
 
-    private fun onControllerPageToggleChanged(
-        uniqueId: String,
+    private fun setupFixedSettingsPanels() {
+        utilSettingsPanel.setInteractionHandlers(
+            onToggleChanged = { itemId, checked ->
+                onFixedSettingToggleChanged(itemId, checked)
+            },
+            onItemClicked = { itemId ->
+                onFixedSettingItemClicked(itemId)
+            }
+        )
+        otherSettingsPanel.setInteractionHandlers(
+            onToggleChanged = { itemId, checked ->
+                onFixedSettingToggleChanged(itemId, checked)
+            },
+            onItemClicked = { itemId ->
+                onFixedSettingItemClicked(itemId)
+            }
+        )
+        controllerPager.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (!hasLoggedFixedSettingsLayout) {
+                hasLoggedFixedSettingsLayout = true
+                logFixedSettingsLayout("firstLayout")
+            }
+        }
+        mainHandler.post {
+            logFixedSettingsLayout("postSetup")
+        }
+        mainHandler.postDelayed({
+            logFixedSettingsLayout("postLayout")
+        }, 500L)
+    }
+
+    private fun onFixedSettingToggleChanged(
         itemId: SettingItemUiModel.ItemId,
         checked: Boolean
     ) {
-        ensureControllerPageSelected(uniqueId)
+        val page = resolveCurrentControllerPage()
+        LogCompat.d(
+            "UI_VERIFY FixedSettings toggle " +
+                    "item=$itemId checked=$checked currentItem=${controllerPager.currentItem} " +
+                    "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder}"
+        )
+        if (page != null && !page.isPlaceholder) {
+            ensureControllerPageSelected(page.uniqueId)
+        }
         handleSettingToggleChanged(itemId, checked)
     }
 
-    private fun onControllerPageItemClicked(
-        uniqueId: String,
+    private fun onFixedSettingItemClicked(
         itemId: SettingItemUiModel.ItemId
     ) {
-        ensureControllerPageSelected(uniqueId)
+        val page = resolveCurrentControllerPage()
+        LogCompat.d(
+            "UI_VERIFY FixedSettings click " +
+                    "item=$itemId currentItem=${controllerPager.currentItem} " +
+                    "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder}"
+        )
+        if (page != null && !page.isPlaceholder) {
+            ensureControllerPageSelected(page.uniqueId)
+        }
         handleSettingItemClicked(itemId)
     }
 
@@ -740,12 +803,114 @@ class MainActivity : AppCompatActivity() {
         }
 
         handleControllerProfileState(state)
-        controllerPageAdapter.submitState(
-            state = state,
-            selectedVibeColor = selectedVibeColor,
-            protectBatteryEnabled = protectBatteryEnabled
-        )
+        controllerPageAdapter.submitState(state = state)
         syncControllerPagerSelection(state)
+        bindFixedSettingsPanel(state)
+    }
+
+    private fun bindFixedSettingsPanel(state: MainUiState) {
+        if (!::utilSettingsPanel.isInitialized || !::otherSettingsPanel.isInitialized) {
+            return
+        }
+
+        val page = resolveCurrentControllerPage()
+        LogCompat.d(
+            "UI_VERIFY FixedSettings bind " +
+                    "currentItem=${controllerPager.currentItem} " +
+                    "page=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder} " +
+                    "selected=${state.selectedControllerUniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "monitoring=${state.isMonitoringEnabled} " +
+                    "overlay=${state.isOverlayVisible} " +
+                    "protect=$protectBatteryEnabled"
+        )
+        utilSettingsPanel.submitItems(buildUtilSettingItems(state))
+        otherSettingsPanel.submitItems(buildOtherSettingItems())
+    }
+
+    private fun buildUtilSettingItems(state: MainUiState): List<SettingItemUiModel> {
+        return listOf(
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
+                iconRes = R.drawable.ic_ui_monitor,
+                iconWidthDp = 26f,
+                iconHeightDp = 14f,
+                title = getString(R.string.settings_background_monitoring),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = state.isMonitoringEnabled
+                )
+            ),
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
+                iconRes = R.drawable.ic_ui_overlay,
+                iconWidthDp = 25f,
+                iconHeightDp = 25f,
+                title = getString(R.string.settings_live_overlay),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = state.isOverlayVisible
+                )
+            ),
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
+                iconRes = R.drawable.ic_ui_vibe,
+                iconWidthDp = 26f,
+                iconHeightDp = 26f,
+                title = getString(R.string.settings_customize_vibe),
+                control = SettingItemUiModel.Control.None
+            )
+        )
+    }
+
+    private fun buildOtherSettingItems(): List<SettingItemUiModel> {
+        return listOf(
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
+                iconRes = R.drawable.ic_ui_protect_battery,
+                iconWidthDp = 22f,
+                iconHeightDp = 26f,
+                title = getString(R.string.settings_protect_battery),
+                subtitle = getString(R.string.settings_limit_charging_subtitle),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = protectBatteryEnabled
+                )
+            )
+        )
+    }
+
+    private fun resolveCurrentControllerPage(): ControllerPageUiModel? {
+        if (!::controllerPageAdapter.isInitialized || !::controllerPager.isInitialized) {
+            return null
+        }
+
+        val currentPage = controllerPageAdapter.getPageAt(controllerPager.currentItem)
+        if (currentPage != null) {
+            return currentPage
+        }
+
+        val selectedUniqueId = viewModel.currentUiState().selectedControllerUniqueId
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        return (0 until controllerPageAdapter.itemCount).firstNotNullOfOrNull { position ->
+            controllerPageAdapter.getPageAt(position)
+                ?.takeIf { page -> page.uniqueId == selectedUniqueId }
+        }
+    }
+
+    private fun logFixedSettingsLayout(reason: String) {
+        if (!::controllerPager.isInitialized ||
+            !::utilSettingsPanel.isInitialized ||
+            !::otherSettingsPanel.isInitialized
+        ) {
+            return
+        }
+
+        LogCompat.d(
+            "UI_VERIFY FixedSettings layout " +
+                    "reason=$reason " +
+                    "pagerTop=${controllerPager.top} pagerBottom=${controllerPager.bottom} " +
+                    "utilTop=${utilSettingsPanel.top} utilBottom=${utilSettingsPanel.bottom} " +
+                    "otherTop=${otherSettingsPanel.top} otherBottom=${otherSettingsPanel.bottom}"
+        )
     }
 
     private fun syncControllerPagerSelection(state: MainUiState) {

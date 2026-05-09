@@ -1,6 +1,5 @@
 package com.android.synclab.glimpse.presentation.view
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,31 +11,20 @@ import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.MainUiState
-import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
 import com.android.synclab.glimpse.utils.LogCompat
 
-class ControllerPageAdapter(
-    private val onToggleChanged: (ControllerPageUiModel, SettingItemUiModel.ItemId, Boolean) -> Unit,
-    private val onItemClicked: (ControllerPageUiModel, SettingItemUiModel.ItemId) -> Unit
-) : RecyclerView.Adapter<ControllerPageAdapter.ControllerPageViewHolder>() {
+class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.ControllerPageViewHolder>() {
 
     private var pages: List<ControllerPageUiModel> = emptyList()
     private var uiState: MainUiState = MainUiState()
-    private var selectedVibeColor: Int = DEFAULT_SELECTED_VIBE_COLOR
-    private var protectBatteryEnabled: Boolean = false
 
     init {
         setHasStableIds(true)
     }
 
-    fun submitState(
-        state: MainUiState,
-        selectedVibeColor: Int,
-        protectBatteryEnabled: Boolean
-    ) {
+    fun submitState(state: MainUiState) {
         val oldPages = pages
         val oldState = uiState
-        val oldProtectBatteryEnabled = this.protectBatteryEnabled
         val newPages = if (state.controllerPages.isNotEmpty()) {
             state.controllerPages
         } else {
@@ -50,12 +38,10 @@ class ControllerPageAdapter(
         )
         val globalPayload = buildGlobalPayload(
             oldState = oldState,
-            newState = state,
-            oldProtectBatteryEnabled = oldProtectBatteryEnabled,
-            newProtectBatteryEnabled = protectBatteryEnabled
+            newState = state
         )
         LogCompat.d(
-            "UI_VERIFY ControllerPageAdapter submit " +
+            "UI_VERIFY ControllerPageAdapter statusSubmit " +
                     "oldCount=${oldPages.size} newCount=${newPages.size} " +
                     "pagesChanged=${oldPages != newPages} " +
                     "globalPayload=$globalPayload " +
@@ -63,8 +49,6 @@ class ControllerPageAdapter(
         )
 
         uiState = state
-        this.selectedVibeColor = selectedVibeColor
-        this.protectBatteryEnabled = protectBatteryEnabled
         pages = newPages
 
         diffResult.dispatchUpdatesTo(this)
@@ -91,15 +75,13 @@ class ControllerPageAdapter(
 
     override fun onBindViewHolder(holder: ControllerPageViewHolder, position: Int) {
         LogCompat.d(
-            "UI_VERIFY ControllerPageAdapter fullBind " +
+            "UI_VERIFY ControllerPageAdapter statusFullBind " +
                     "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
                     "selected=${pages[position].isSelected}"
         )
         holder.bind(
             page = pages[position],
-            state = uiState,
-            selectedVibeColor = selectedVibeColor,
-            protectBatteryEnabled = protectBatteryEnabled
+            state = uiState
         )
     }
 
@@ -117,14 +99,13 @@ class ControllerPageAdapter(
         }
 
         LogCompat.d(
-            "UI_VERIFY ControllerPageAdapter payloadBind " +
+            "UI_VERIFY ControllerPageAdapter statusPayloadBind " +
                     "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
                     "payload=$payload"
         )
         holder.bindPayload(
             page = pages[position],
             state = uiState,
-            protectBatteryEnabled = protectBatteryEnabled,
             payload = payload
         )
     }
@@ -155,15 +136,10 @@ class ControllerPageAdapter(
 
     private fun buildGlobalPayload(
         oldState: MainUiState,
-        newState: MainUiState,
-        oldProtectBatteryEnabled: Boolean,
-        newProtectBatteryEnabled: Boolean
+        newState: MainUiState
     ): ControllerPagePayload {
         return ControllerPagePayload(
-            deviceInfoChanged = oldState.connectionState != newState.connectionState,
-            settingsChanged = oldState.isMonitoringEnabled != newState.isMonitoringEnabled ||
-                    oldState.isOverlayVisible != newState.isOverlayVisible ||
-                    oldProtectBatteryEnabled != newProtectBatteryEnabled
+            deviceInfoChanged = oldState.connectionState != newState.connectionState
         )
     }
 
@@ -174,8 +150,6 @@ class ControllerPageAdapter(
         private val batteryUniqueIdText: TextView = view.findViewById(R.id.batteryUniqueIdText)
         private val batteryCircle: BatteryProgressView = view.findViewById(R.id.batteryCircle)
         private val chargingIconView: ChargingIconView = view.findViewById(R.id.chargingIcon)
-        private val utilSettingsPanel: SettingsPanelView = view.findViewById(R.id.utilSettingsPanel)
-        private val otherSettingsPanel: SettingsPanelView = view.findViewById(R.id.otherSettingsPanel)
 
         init {
             batteryCircle.max = 100
@@ -183,20 +157,16 @@ class ControllerPageAdapter(
 
         fun bind(
             page: ControllerPageUiModel,
-            state: MainUiState,
-            selectedVibeColor: Int,
-            protectBatteryEnabled: Boolean
+            state: MainUiState
         ) {
             bindDeviceInfo(page, state)
             bindBattery(page)
-            bindSettings(page, state, protectBatteryEnabled)
             bindSelection(page)
         }
 
         internal fun bindPayload(
             page: ControllerPageUiModel,
             state: MainUiState,
-            protectBatteryEnabled: Boolean,
             payload: ControllerPagePayload
         ) {
             if (payload.deviceInfoChanged) {
@@ -204,9 +174,6 @@ class ControllerPageAdapter(
             }
             if (payload.batteryChanged) {
                 bindBattery(page)
-            }
-            if (payload.settingsChanged) {
-                bindSettings(page, state, protectBatteryEnabled)
             }
             if (payload.selectionChanged) {
                 bindSelection(page)
@@ -267,78 +234,6 @@ class ControllerPageAdapter(
             chargingIconView.setGlowEnabled(isCharging)
         }
 
-        private fun bindSettings(
-            page: ControllerPageUiModel,
-            state: MainUiState,
-            protectBatteryEnabled: Boolean
-        ) {
-            utilSettingsPanel.setInteractionHandlers(
-                onToggleChanged = { itemId, checked ->
-                    onToggleChanged(page, itemId, checked)
-                },
-                onItemClicked = { itemId ->
-                    onItemClicked(page, itemId)
-                }
-            )
-            otherSettingsPanel.setInteractionHandlers(
-                onToggleChanged = { itemId, checked ->
-                    onToggleChanged(page, itemId, checked)
-                },
-                onItemClicked = { itemId ->
-                    onItemClicked(page, itemId)
-                }
-            )
-
-            utilSettingsPanel.submitItems(
-                listOf(
-                    SettingItemUiModel(
-                        id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
-                        iconRes = R.drawable.ic_ui_monitor,
-                        iconWidthDp = 26f,
-                        iconHeightDp = 14f,
-                        title = itemView.context.getString(R.string.settings_background_monitoring),
-                        control = SettingItemUiModel.Control.Toggle(
-                            checked = state.isMonitoringEnabled
-                        )
-                    ),
-                    SettingItemUiModel(
-                        id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
-                        iconRes = R.drawable.ic_ui_overlay,
-                        iconWidthDp = 25f,
-                        iconHeightDp = 25f,
-                        title = itemView.context.getString(R.string.settings_live_overlay),
-                        control = SettingItemUiModel.Control.Toggle(
-                            checked = state.isOverlayVisible
-                        )
-                    ),
-                    SettingItemUiModel(
-                        id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
-                        iconRes = R.drawable.ic_ui_vibe,
-                        iconWidthDp = 26f,
-                        iconHeightDp = 26f,
-                        title = itemView.context.getString(R.string.settings_customize_vibe),
-                        control = SettingItemUiModel.Control.None
-                    )
-                )
-            )
-
-            otherSettingsPanel.submitItems(
-                listOf(
-                    SettingItemUiModel(
-                        id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
-                        iconRes = R.drawable.ic_ui_protect_battery,
-                        iconWidthDp = 22f,
-                        iconHeightDp = 26f,
-                        title = itemView.context.getString(R.string.settings_protect_battery),
-                        subtitle = itemView.context.getString(R.string.settings_limit_charging_subtitle),
-                        control = SettingItemUiModel.Control.Toggle(
-                            checked = protectBatteryEnabled
-                        )
-                    )
-                )
-            )
-        }
-
         private fun bindSelection(page: ControllerPageUiModel) {
             itemView.isActivated = page.isSelected
         }
@@ -357,18 +252,16 @@ class ControllerPageAdapter(
     internal data class ControllerPagePayload(
         val deviceInfoChanged: Boolean = false,
         val batteryChanged: Boolean = false,
-        val settingsChanged: Boolean = false,
         val selectionChanged: Boolean = false
     ) {
         fun hasChanges(): Boolean {
-            return deviceInfoChanged || batteryChanged || settingsChanged || selectionChanged
+            return deviceInfoChanged || batteryChanged || selectionChanged
         }
 
         fun merge(other: ControllerPagePayload): ControllerPagePayload {
             return ControllerPagePayload(
                 deviceInfoChanged = deviceInfoChanged || other.deviceInfoChanged,
                 batteryChanged = batteryChanged || other.batteryChanged,
-                settingsChanged = settingsChanged || other.settingsChanged,
                 selectionChanged = selectionChanged || other.selectionChanged
             )
         }
@@ -410,7 +303,6 @@ class ControllerPageAdapter(
     }
 
     companion object {
-        private const val DEFAULT_SELECTED_VIBE_COLOR = Color.BLUE
         private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
     }
 }

@@ -61,17 +61,62 @@
             android:clipChildren="false"
             android:clipToPadding="false">
 
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/controllerPager"
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/phoneCardRoot"
                 android:layout_width="@dimen/ui_phone_card_width"
                 android:layout_height="@dimen/ui_phone_card_height"
+                android:background="@drawable/bg_ui_phone_shell"
                 android:clipChildren="false"
                 android:clipToPadding="false"
-                android:overScrollMode="never"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/controllerPager"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/ui_status_pager_height"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.android.synclab.glimpse.presentation.view.SettingsPanelView
+                    android:id="@+id/utilSettingsPanel"
+                    android:layout_width="@dimen/ui_settings_panel_width"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ui_util_panel_top_margin"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/controllerPager"
+                    app:panelCardBackground="@drawable/bg_ui_settings_card"
+                    app:panelCardHeight="@dimen/ui_panel_card_height_util"
+                    app:panelTitle="@string/panel_util_category" />
+
+                <com.android.synclab.glimpse.presentation.view.SettingsPanelView
+                    android:id="@+id/otherSettingsPanel"
+                    android:layout_width="@dimen/ui_settings_panel_width"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ui_other_panel_top_margin"
+                    app:layout_constraintEnd_toEndOf="@id/utilSettingsPanel"
+                    app:layout_constraintStart_toStartOf="@id/utilSettingsPanel"
+                    app:layout_constraintTop_toBottomOf="@id/utilSettingsPanel"
+                    app:panelCardBackground="@drawable/bg_ui_limit_card"
+                    app:panelCardHeight="@dimen/ui_panel_card_height_other"
+                    app:panelTitle="@string/panel_other_category" />
+
+                <View
+                    android:id="@+id/phoneCardBottomSpacer"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/otherSettingsPanel" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
