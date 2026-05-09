@@ -6,12 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
+import com.android.synclab.glimpse.utils.LogCompat
 
 class ControllerPageAdapter(
     private val onToggleChanged: (ControllerPageUiModel, SettingItemUiModel.ItemId, Boolean) -> Unit,
@@ -32,15 +34,43 @@ class ControllerPageAdapter(
         selectedVibeColor: Int,
         protectBatteryEnabled: Boolean
     ) {
-        uiState = state
-        this.selectedVibeColor = selectedVibeColor
-        this.protectBatteryEnabled = protectBatteryEnabled
-        pages = if (state.controllerPages.isNotEmpty()) {
+        val oldPages = pages
+        val oldState = uiState
+        val oldProtectBatteryEnabled = this.protectBatteryEnabled
+        val newPages = if (state.controllerPages.isNotEmpty()) {
             state.controllerPages
         } else {
             listOf(buildPlaceholderPage(state))
         }
-        notifyDataSetChanged()
+        val diffResult = DiffUtil.calculateDiff(
+            ControllerPageDiffCallback(
+                oldPages = oldPages,
+                newPages = newPages
+            )
+        )
+        val globalPayload = buildGlobalPayload(
+            oldState = oldState,
+            newState = state,
+            oldProtectBatteryEnabled = oldProtectBatteryEnabled,
+            newProtectBatteryEnabled = protectBatteryEnabled
+        )
+        LogCompat.d(
+            "UI_VERIFY ControllerPageAdapter submit " +
+                    "oldCount=${oldPages.size} newCount=${newPages.size} " +
+                    "pagesChanged=${oldPages != newPages} " +
+                    "globalPayload=$globalPayload " +
+                    "selected=${state.selectedControllerUniqueId?.let(::maskControllerPageId) ?: "n/a"}"
+        )
+
+        uiState = state
+        this.selectedVibeColor = selectedVibeColor
+        this.protectBatteryEnabled = protectBatteryEnabled
+        pages = newPages
+
+        diffResult.dispatchUpdatesTo(this)
+        if (globalPayload.hasChanges() && pages.isNotEmpty()) {
+            notifyItemRangeChanged(0, pages.size, globalPayload)
+        }
     }
 
     fun getPageAt(position: Int): ControllerPageUiModel? {
@@ -60,11 +90,42 @@ class ControllerPageAdapter(
     }
 
     override fun onBindViewHolder(holder: ControllerPageViewHolder, position: Int) {
+        LogCompat.d(
+            "UI_VERIFY ControllerPageAdapter fullBind " +
+                    "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
+                    "selected=${pages[position].isSelected}"
+        )
         holder.bind(
             page = pages[position],
             state = uiState,
             selectedVibeColor = selectedVibeColor,
             protectBatteryEnabled = protectBatteryEnabled
+        )
+    }
+
+    override fun onBindViewHolder(
+        holder: ControllerPageViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        val payload = payloads
+            .filterIsInstance<ControllerPagePayload>()
+            .fold(ControllerPagePayload()) { current, next -> current.merge(next) }
+        if (!payload.hasChanges()) {
+            onBindViewHolder(holder, position)
+            return
+        }
+
+        LogCompat.d(
+            "UI_VERIFY ControllerPageAdapter payloadBind " +
+                    "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
+                    "payload=$payload"
+        )
+        holder.bindPayload(
+            page = pages[position],
+            state = uiState,
+            protectBatteryEnabled = protectBatteryEnabled,
+            payload = payload
         )
     }
 
@@ -92,6 +153,20 @@ class ControllerPageAdapter(
         )
     }
 
+    private fun buildGlobalPayload(
+        oldState: MainUiState,
+        newState: MainUiState,
+        oldProtectBatteryEnabled: Boolean,
+        newProtectBatteryEnabled: Boolean
+    ): ControllerPagePayload {
+        return ControllerPagePayload(
+            deviceInfoChanged = oldState.connectionState != newState.connectionState,
+            settingsChanged = oldState.isMonitoringEnabled != newState.isMonitoringEnabled ||
+                    oldState.isOverlayVisible != newState.isOverlayVisible ||
+                    oldProtectBatteryEnabled != newProtectBatteryEnabled
+        )
+    }
+
     inner class ControllerPageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val deviceInfoView: TextView = view.findViewById(R.id.deviceInfoView)
         private val batteryPercentText: TextView = view.findViewById(R.id.batteryPercentText)
@@ -111,6 +186,36 @@ class ControllerPageAdapter(
             state: MainUiState,
             selectedVibeColor: Int,
             protectBatteryEnabled: Boolean
+        ) {
+            bindDeviceInfo(page, state)
+            bindBattery(page)
+            bindSettings(page, state, protectBatteryEnabled)
+            bindSelection(page)
+        }
+
+        internal fun bindPayload(
+            page: ControllerPageUiModel,
+            state: MainUiState,
+            protectBatteryEnabled: Boolean,
+            payload: ControllerPagePayload
+        ) {
+            if (payload.deviceInfoChanged) {
+                bindDeviceInfo(page, state)
+            }
+            if (payload.batteryChanged) {
+                bindBattery(page)
+            }
+            if (payload.settingsChanged) {
+                bindSettings(page, state, protectBatteryEnabled)
+            }
+            if (payload.selectionChanged) {
+                bindSelection(page)
+            }
+        }
+
+        private fun bindDeviceInfo(
+            page: ControllerPageUiModel,
+            state: MainUiState
         ) {
             val isPlaceholder = page.isPlaceholder
             val statusLabelRes = when (state.connectionState) {
@@ -134,7 +239,9 @@ class ControllerPageAdapter(
                     displayId
                 )
             }
+        }
 
+        private fun bindBattery(page: ControllerPageUiModel) {
             val batteryPercent = page.batteryPercent
             if (batteryPercent == null) {
                 batteryPercentText.setText(R.string.status_card_battery_unknown)
@@ -158,7 +265,13 @@ class ControllerPageAdapter(
                 radiusPx = 11f * itemView.resources.displayMetrics.density
             )
             chargingIconView.setGlowEnabled(isCharging)
+        }
 
+        private fun bindSettings(
+            page: ControllerPageUiModel,
+            state: MainUiState,
+            protectBatteryEnabled: Boolean
+        ) {
             utilSettingsPanel.setInteractionHandlers(
                 onToggleChanged = { itemId, checked ->
                     onToggleChanged(page, itemId, checked)
@@ -224,7 +337,9 @@ class ControllerPageAdapter(
                     )
                 )
             )
+        }
 
+        private fun bindSelection(page: ControllerPageUiModel) {
             itemView.isActivated = page.isSelected
         }
 
@@ -239,8 +354,67 @@ class ControllerPageAdapter(
         }
     }
 
+    internal data class ControllerPagePayload(
+        val deviceInfoChanged: Boolean = false,
+        val batteryChanged: Boolean = false,
+        val settingsChanged: Boolean = false,
+        val selectionChanged: Boolean = false
+    ) {
+        fun hasChanges(): Boolean {
+            return deviceInfoChanged || batteryChanged || settingsChanged || selectionChanged
+        }
+
+        fun merge(other: ControllerPagePayload): ControllerPagePayload {
+            return ControllerPagePayload(
+                deviceInfoChanged = deviceInfoChanged || other.deviceInfoChanged,
+                batteryChanged = batteryChanged || other.batteryChanged,
+                settingsChanged = settingsChanged || other.settingsChanged,
+                selectionChanged = selectionChanged || other.selectionChanged
+            )
+        }
+    }
+
+    private class ControllerPageDiffCallback(
+        private val oldPages: List<ControllerPageUiModel>,
+        private val newPages: List<ControllerPageUiModel>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldPages.size
+
+        override fun getNewListSize(): Int = newPages.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldPages[oldItemPosition].uniqueId == newPages[newItemPosition].uniqueId
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldPages[oldItemPosition] == newPages[newItemPosition]
+        }
+
+        override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any {
+            val oldPage = oldPages[oldItemPosition]
+            val newPage = newPages[newItemPosition]
+            val payload = ControllerPagePayload(
+                deviceInfoChanged = oldPage.descriptor != newPage.descriptor ||
+                        oldPage.name != newPage.name ||
+                        oldPage.isPlaceholder != newPage.isPlaceholder,
+                batteryChanged = oldPage.batteryPercent != newPage.batteryPercent ||
+                        oldPage.batteryStatus != newPage.batteryStatus,
+                selectionChanged = oldPage.isSelected != newPage.isSelected
+            )
+            LogCompat.d(
+                "UI_VERIFY ControllerPageAdapter diffPayload " +
+                        "id=${maskControllerPageId(newPage.uniqueId)} payload=$payload"
+            )
+            return payload
+        }
+    }
+
     companion object {
         private const val DEFAULT_SELECTED_VIBE_COLOR = Color.BLUE
         private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
     }
+}
+
+private fun maskControllerPageId(raw: String): String {
+    return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
 }

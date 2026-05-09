@@ -250,6 +250,8 @@ class MainViewModel(
         if (descriptor.isNotEmpty()) {
             return descriptor
         }
+        // TODO(PR-23): Descriptor-less profile IDs can collide across identical controllers
+        // and do not currently match the runtime light-command lookup key.
         return "MODEL:VID:${controller.vendorId}_PID:${controller.productId}_NAME:${controller.name}"
     }
 

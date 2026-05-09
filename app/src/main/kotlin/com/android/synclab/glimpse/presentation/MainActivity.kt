@@ -367,6 +367,8 @@ class MainActivity : AppCompatActivity() {
             LogCompat.d("CustomizeVibeDialog already visible")
             return
         }
+        // TODO(PR-23): Gate dialog opening on the target controller profile load so the
+        // initial color cannot come from the previously selected page.
         val targetId = viewModel.currentUiState().controllerPersistentId
         LogCompat.d(
             "CustomizeVibeDialog open targetId=${targetId?.let(::maskIdentifier)} " +
@@ -602,6 +604,8 @@ class MainActivity : AppCompatActivity() {
     private fun dispatchServiceAction(action: String, foreground: Boolean): Boolean {
         val intent = Intent(this, BatteryOverlayService::class.java).apply {
             this.action = action
+            // TODO(PR-23): Pass the selected controller identifier so monitoring and
+            // overlay updates follow the active pager page instead of the primary gamepad.
         }
 
         val result = runCatching {
