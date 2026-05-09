@@ -6,6 +6,32 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Đọc các runtime switch chỉ dùng cho developer.
+ *
+ * Bật mock controller pages trên device đang kết nối bằng:
+ *
+ * ```
+ * adb shell setprop debug.glimpse.mock_controllers 1
+ * ```
+ *
+ * Tắt mock controller pages bằng:
+ *
+ * ```
+ * adb shell setprop debug.glimpse.mock_controllers 0
+ * ```
+ *
+ * Nếu cần target một device cụ thể, truyền thêm serial, ví dụ:
+ *
+ * ```
+ * adb -s 192.168.1.9:5555 shell setprop debug.glimpse.mock_controllers 1
+ * ```
+ *
+ * Việc đọc system property chạy bất đồng bộ để UI refresh không bị block bởi
+ * `getprop`/`waitFor()`. `isMockControllerPagesEnabled()` trả về giá trị cache
+ * gần nhất rồi schedule refresh; sau khi `setprop`, lần đọc đầu tiên vẫn có thể
+ * trả về giá trị cũ cho đến khi background refresh hoàn tất.
+ */
 class DeveloperOptionManager(
     private val source: DeveloperOptionSource,
     private val propertyExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
@@ -19,8 +45,10 @@ class DeveloperOptionManager(
     }
 
     @Volatile
+    // Cache dùng giữa các thread cho debug.glimpse.mock_controllers == "1".
     private var mockControllerPagesEnabled: Boolean = false
 
+    // Chỉ cho phép một async getprop refresh chạy tại một thời điểm.
     private val mockControllerRefreshInFlight = AtomicBoolean(false)
 
     init {
