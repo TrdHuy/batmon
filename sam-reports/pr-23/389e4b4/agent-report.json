@@ -116,40 +116,10 @@
         "candidate_count": 280,
         "sample": [
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/di/AppContainer.kt",
             "line": null,
-            "symbol": "getVendorId",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerInfo.kt",
-            "line": null,
-            "symbol": "component7",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
-            "line": null,
-            "symbol": "component2",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerInfo.kt",
-            "line": null,
-            "symbol": "component2",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerLightCommandResult.kt",
-            "line": null,
-            "symbol": "component2",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
-            "line": null,
-            "symbol": "this$0",
-            "type": "UNUSED_CLASS_DATA_MEMBER"
+            "symbol": "instance",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
@@ -158,21 +128,51 @@
             "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line": null,
-            "symbol": "$greenSeekBar",
-            "type": "UNUSED_CLASS_DATA_MEMBER"
+            "symbol": "onInputDeviceChanged",
+            "type": "UNUSED_CLASS_METHOD"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
             "line": null,
-            "symbol": "onStartTrackingTouch",
+            "symbol": "values",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ControllerPageAdapter.kt",
+            "line": null,
+            "symbol": "component1",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": 524,
+            "symbol": "$i$a$-onFailure-MainActivity$requestOverlayPermission$2",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/utils/LogCompat.kt",
+            "line": null,
+            "symbol": "TAG",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/BatteryProgressView.kt",
+            "line": null,
+            "symbol": "BatteryProgressView",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
+            "line": 694,
+            "symbol": "$i$f$firstOrNull",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
             "line": null,
-            "symbol": "logDiagnosticDebug",
+            "symbol": "component9",
             "type": "UNUSED_CLASS_METHOD"
           }
         ]
@@ -191,15 +191,15 @@
   ],
   "mode": "svace",
   "outputs": {
-    "agent_json": "/tmp/sam-agent-runs/batmon-20260509-160714/agent-report.json",
-    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260509-160714/agent-report.md",
-    "dev_html": "/tmp/sam-agent-runs/batmon-20260509-160714/dev-report.html",
-    "log": "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace/log/sam.log_20260509",
-    "raw_sam": "/tmp/sam-agent-runs/batmon-20260509-160714/raw-sam",
-    "run_dir": "/tmp/sam-agent-runs/batmon-20260509-160714",
-    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace/sam-result/html/SAM_Report_batmon_20260509_index.html",
-    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace/sam-result/report.json",
-    "score_csv": "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace/sam-result/SAM_total_score.csv"
+    "agent_json": "/tmp/sam-agent-runs/batmon-20260509-160754/agent-report.json",
+    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260509-160754/agent-report.md",
+    "dev_html": "/tmp/sam-agent-runs/batmon-20260509-160754/dev-report.html",
+    "log": "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace/log/sam.log_20260509",
+    "raw_sam": "/tmp/sam-agent-runs/batmon-20260509-160754/raw-sam",
+    "run_dir": "/tmp/sam-agent-runs/batmon-20260509-160754",
+    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace/sam-result/html/SAM_Report_batmon_20260509_index.html",
+    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace/sam-result/report.json",
+    "score_csv": "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace/sam-result/SAM_total_score.csv"
   },
   "project": {
     "detected": {
@@ -210,7 +210,7 @@
     },
     "language": "kotlin",
     "name": "batmon",
-    "path": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+    "path": "/home/huy/Desktop/workspace/gitprojects/batmon",
     "type": "OO"
   },
   "project_metrics": {
@@ -229,9 +229,9 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "init",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace"
+          "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace"
         ],
-        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
         "exit_code": 0,
         "step": "init"
       },
@@ -240,11 +240,11 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "scan",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+          "/home/huy/Desktop/workspace/gitprojects/batmon",
           "--pmd-heap-size",
           "2g",
           "--sequential",
@@ -253,7 +253,7 @@
           "clean",
           ":app:assembleDebug"
         ],
-        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
         "exit_code": 0,
         "step": "scan"
       },
@@ -262,13 +262,13 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "analyze",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon"
+          "/home/huy/Desktop/workspace/gitprojects/batmon"
         ],
-        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
         "exit_code": 0,
         "step": "analyze"
       },
@@ -277,21 +277,21 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "calculate",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-160714/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260509-160754/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+          "/home/huy/Desktop/workspace/gitprojects/batmon",
           "--project-name",
           "batmon",
           "--include",
-          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin",
+          "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin",
           "--metrics",
           "cc,dc,mcd,cbo,loc,dep,gm,uc,ncs",
           "--scoring-metrics",
           "cc,dc,mcd,cbo,loc,dep,gm"
         ],
-        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
         "exit_code": 0,
         "step": "calculate"
       }
