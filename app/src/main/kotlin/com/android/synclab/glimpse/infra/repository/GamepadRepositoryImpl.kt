@@ -28,6 +28,7 @@ class GamepadRepositoryImpl(
     companion object {
         private const val SONY_VENDOR_ID = 0x054C
         private const val LOG_PREFIX = "ControllerLight"
+        private const val FALLBACK_LIGHT_TARGET_CACHE_KEY = "__fallback__"
         private val lightCommandRequestSequence = AtomicInteger(0)
         private val DUALSHOCK4_PRODUCT_IDS = intArrayOf(
             0x05C4,
@@ -35,9 +36,8 @@ class GamepadRepositoryImpl(
         )
     }
 
-    private var lightBarSession: LightsManager.LightsSession? = null
-    private var lightBarSessionDeviceId: Int? = null
-    private var cachedLightTarget: CachedLightTarget? = null
+    private val lightBarSessionsByDeviceId = mutableMapOf<Int, LightsManager.LightsSession>()
+    private val cachedLightTargetsByKey = mutableMapOf<String, CachedLightTarget>()
 
     private data class CachedLightTarget(
         val controllerIdentifier: String?,
@@ -105,11 +105,13 @@ class GamepadRepositoryImpl(
         val green = Color.green(color)
         val blue = Color.blue(color)
         val normalizedControllerIdentifier = normalizeControllerIdentifier(controllerIdentifier)
+        val lightTargetCacheKey = buildLightTargetCacheKey(normalizedControllerIdentifier)
 
         logDiagnosticDebug {
             "$LOG_PREFIX requestId=$requestId phase=start " +
                     "sdk=${Build.VERSION.SDK_INT} color=$colorHex rgb=($red,$green,$blue) " +
                     "controllerIdentifier=${normalizedControllerIdentifier ?: "n/a"} " +
+                    "cacheKey=$lightTargetCacheKey " +
                     "thread=${Thread.currentThread().name}"
         }
 
@@ -131,7 +133,8 @@ class GamepadRepositoryImpl(
             startedAtMs = startedAtMs,
             color = color,
             colorHex = colorHex,
-            controllerIdentifier = normalizedControllerIdentifier
+            controllerIdentifier = normalizedControllerIdentifier,
+            cacheKey = lightTargetCacheKey
         )?.let { fastResult ->
             return fastResult
         }
@@ -165,7 +168,10 @@ class GamepadRepositoryImpl(
             devices.firstOrNull { buildControllerLookupKey(it) == identifier }
         }
         if (normalizedControllerIdentifier != null && identifierMatchedDevice == null) {
-            cachedLightTarget = null
+            clearCachedLightTargets(
+                cacheKey = lightTargetCacheKey,
+                targetDeviceId = null
+            )
             val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
             LogCompat.w(
                 "$LOG_PREFIX requestId=$requestId phase=result " +
@@ -195,7 +201,10 @@ class GamepadRepositoryImpl(
         }
 
         if (targetDevice == null) {
-            cachedLightTarget = null
+            clearCachedLightTargets(
+                cacheKey = lightTargetCacheKey,
+                targetDeviceId = null
+            )
             val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
             LogCompat.w(
                 "$LOG_PREFIX requestId=$requestId phase=result status=${ControllerLightCommandStatus.NO_CONTROLLER} " +
@@ -238,7 +247,10 @@ class GamepadRepositoryImpl(
             }
 
             if (targetLight == null) {
-                cachedLightTarget = null
+                clearCachedLightTargets(
+                    cacheKey = lightTargetCacheKey,
+                    targetDeviceId = targetDevice.id
+                )
                 val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
                 LogCompat.w(
                     "$LOG_PREFIX requestId=$requestId phase=result status=${ControllerLightCommandStatus.NO_LIGHT} " +
@@ -250,7 +262,7 @@ class GamepadRepositoryImpl(
                     colorHex = colorHex
                 )
             } else {
-                cachedLightTarget = CachedLightTarget(
+                cachedLightTargetsByKey[lightTargetCacheKey] = CachedLightTarget(
                     controllerIdentifier = normalizedControllerIdentifier ?: buildControllerLookupKey(targetDevice),
                     deviceId = targetDevice.id,
                     lightId = targetLight.id,
@@ -266,14 +278,17 @@ class GamepadRepositoryImpl(
                     startedAtMs = startedAtMs,
                     phaseLabel = "apply_request",
                     includeStateAfter = true,
-                    controllerIdentifier = normalizedControllerIdentifier
+                    controllerIdentifier = normalizedControllerIdentifier,
+                    cacheKey = lightTargetCacheKey
                 )
             }
         }.getOrElse { throwable ->
             closeControllerLightSessionInternal(
                 reason = "requestFailure:${throwable.javaClass.simpleName}",
                 requestId = requestId,
-                clearTargetCache = true
+                clearTargetCache = true,
+                targetDeviceId = targetDevice.id,
+                targetCacheKey = lightTargetCacheKey
             )
             val elapsedMs = SystemClock.elapsedRealtime() - startedAtMs
             val errorDetail = "${throwable.javaClass.simpleName}:${throwable.message.orEmpty()}"
@@ -318,23 +333,31 @@ class GamepadRepositoryImpl(
         startedAtMs: Long,
         color: Int,
         colorHex: String,
-        controllerIdentifier: String?
+        controllerIdentifier: String?,
+        cacheKey: String
     ): ControllerLightCommandResult? {
-        val target = cachedLightTarget ?: return null
+        val target = cachedLightTargetsByKey[cacheKey] ?: return null
         if (controllerIdentifier != null && target.controllerIdentifier != controllerIdentifier) {
+            clearCachedLightTargets(
+                cacheKey = cacheKey,
+                targetDeviceId = null
+            )
             logDiagnosticDebug {
                 "$LOG_PREFIX requestId=$requestId phase=fast_path_miss " +
                         "reason=controller_mismatch cachedControllerIdentifier=${target.controllerIdentifier} " +
-                        "requestedControllerIdentifier=$controllerIdentifier"
+                        "requestedControllerIdentifier=$controllerIdentifier cacheKey=$cacheKey"
             }
             return null
         }
         val cachedDevice = InputDevice.getDevice(target.deviceId)
         if (cachedDevice == null || !isGamepad(cachedDevice)) {
-            cachedLightTarget = null
+            clearCachedLightTargets(
+                cacheKey = cacheKey,
+                targetDeviceId = target.deviceId
+            )
             logDiagnosticDebug {
                 "$LOG_PREFIX requestId=$requestId phase=fast_path_miss " +
-                        "reason=device_unavailable cachedDeviceId=${target.deviceId}"
+                        "reason=device_unavailable cachedDeviceId=${target.deviceId} cacheKey=$cacheKey"
             }
             return null
         }
@@ -343,11 +366,14 @@ class GamepadRepositoryImpl(
             val lightsManager = cachedDevice.lightsManager
             val cachedLight = lightsManager.lights.firstOrNull { it.id == target.lightId }
             if (cachedLight == null) {
-                cachedLightTarget = null
+                clearCachedLightTargets(
+                    cacheKey = cacheKey,
+                    targetDeviceId = target.deviceId
+                )
                 logDiagnosticDebug {
                     "$LOG_PREFIX requestId=$requestId phase=fast_path_miss " +
                             "reason=light_unavailable cachedDeviceId=${target.deviceId} " +
-                            "cachedLightId=${target.lightId}"
+                            "cachedLightId=${target.lightId} cacheKey=$cacheKey"
                 }
                 return null
             }
@@ -361,7 +387,8 @@ class GamepadRepositoryImpl(
                 startedAtMs = startedAtMs,
                 phaseLabel = "fast_apply",
                 includeStateAfter = false,
-                controllerIdentifier = controllerIdentifier
+                controllerIdentifier = controllerIdentifier,
+                cacheKey = cacheKey
             )
         } catch (throwable: Throwable) {
             val errorDetail = "${throwable.javaClass.simpleName}:${throwable.message.orEmpty()}"
@@ -373,7 +400,9 @@ class GamepadRepositoryImpl(
             closeControllerLightSessionInternal(
                 reason = "fastPathFailure:${throwable.javaClass.simpleName}",
                 requestId = requestId,
-                clearTargetCache = true
+                clearTargetCache = true,
+                targetDeviceId = target.deviceId,
+                targetCacheKey = cacheKey
             )
             null
         }
@@ -389,7 +418,8 @@ class GamepadRepositoryImpl(
         startedAtMs: Long,
         phaseLabel: String,
         includeStateAfter: Boolean,
-        controllerIdentifier: String?
+        controllerIdentifier: String?,
+        cacheKey: String
     ): ControllerLightCommandResult {
         val request = LightsRequest.Builder()
             .addLight(
@@ -406,7 +436,7 @@ class GamepadRepositoryImpl(
                     "deviceId=${targetDevice.id} lightId=${targetLight.id} " +
                     "lightName=${targetLight.name} color=$colorHex " +
                     "controllerIdentifier=${controllerIdentifier ?: "n/a"} " +
-                    "sessionDeviceId=$lightBarSessionDeviceId"
+                    "cacheKey=$cacheKey activeSessions=${lightBarSessionsByDeviceId.size}"
         }
         session.requestLights(request)
 
@@ -451,19 +481,27 @@ class GamepadRepositoryImpl(
         return controllerIdentifier?.trim()?.takeIf { it.isNotEmpty() }
     }
 
+    private fun buildLightTargetCacheKey(controllerIdentifier: String?): String {
+        return controllerIdentifier ?: FALLBACK_LIGHT_TARGET_CACHE_KEY
+    }
+
     @Synchronized
     override fun closeControllerLightSession(reason: String) {
         closeControllerLightSessionInternal(
             reason = reason,
             requestId = null,
-            clearTargetCache = false
+            clearTargetCache = false,
+            targetDeviceId = null,
+            targetCacheKey = null
         )
     }
 
     private fun closeControllerLightSessionInternal(
         reason: String,
         requestId: Int?,
-        clearTargetCache: Boolean
+        clearTargetCache: Boolean,
+        targetDeviceId: Int?,
+        targetCacheKey: String?
     ) {
         val logContext = if (requestId != null) {
             "$LOG_PREFIX requestId=$requestId"
@@ -471,32 +509,65 @@ class GamepadRepositoryImpl(
             LOG_PREFIX
         }
         if (clearTargetCache) {
-            cachedLightTarget = null
-        }
-
-        val session = lightBarSession ?: run {
-            logDiagnosticDebug {
-                "$logContext phase=session_close skipped=true reason=$reason " +
-                        "noActiveSession=true cacheCleared=$clearTargetCache"
-            }
-            return
-        }
-
-        runCatching {
-            session.close()
-        }.onFailure { throwable ->
-            LogCompat.w(
-                "$logContext phase=session_close failed=true reason=$reason " +
-                        "cacheCleared=$clearTargetCache",
-                throwable
+            clearCachedLightTargets(
+                cacheKey = targetCacheKey,
+                targetDeviceId = targetDeviceId
             )
         }
-        logDiagnosticDebug {
-            "$logContext phase=session_close failed=false reason=$reason " +
-                    "deviceId=$lightBarSessionDeviceId cacheCleared=$clearTargetCache"
+
+        val sessionsToClose = if (targetDeviceId != null) {
+            val session = lightBarSessionsByDeviceId.remove(targetDeviceId)
+            if (session == null) {
+                logDiagnosticDebug {
+                    "$logContext phase=session_close skipped=true reason=$reason " +
+                            "deviceId=$targetDeviceId noActiveSession=true " +
+                            "cacheCleared=$clearTargetCache activeSessions=${lightBarSessionsByDeviceId.size}"
+                }
+                return
+            }
+            listOf(targetDeviceId to session)
+        } else {
+            if (lightBarSessionsByDeviceId.isEmpty()) {
+                logDiagnosticDebug {
+                    "$logContext phase=session_close skipped=true reason=$reason " +
+                            "noActiveSession=true cacheCleared=$clearTargetCache"
+                }
+                return
+            }
+            lightBarSessionsByDeviceId.entries.map { it.key to it.value }.also {
+                lightBarSessionsByDeviceId.clear()
+            }
         }
-        lightBarSession = null
-        lightBarSessionDeviceId = null
+
+        sessionsToClose.forEach { (deviceId, session) ->
+            runCatching {
+                session.close()
+            }.onFailure { throwable ->
+                LogCompat.w(
+                    "$logContext phase=session_close failed=true reason=$reason " +
+                            "deviceId=$deviceId cacheCleared=$clearTargetCache " +
+                            "activeSessions=${lightBarSessionsByDeviceId.size}",
+                    throwable
+                )
+            }
+            logDiagnosticDebug {
+                "$logContext phase=session_close failed=false reason=$reason " +
+                        "deviceId=$deviceId cacheCleared=$clearTargetCache " +
+                        "activeSessions=${lightBarSessionsByDeviceId.size}"
+            }
+        }
+    }
+
+    private fun clearCachedLightTargets(cacheKey: String?, targetDeviceId: Int?) {
+        when {
+            cacheKey != null -> cachedLightTargetsByKey.remove(cacheKey)
+            targetDeviceId != null -> cachedLightTargetsByKey
+                .filterValues { target -> target.deviceId == targetDeviceId }
+                .keys
+                .toList()
+                .forEach(cachedLightTargetsByKey::remove)
+            else -> cachedLightTargetsByKey.clear()
+        }
     }
 
     private fun isGamepad(device: InputDevice): Boolean {
@@ -571,38 +642,20 @@ class GamepadRepositoryImpl(
         targetDevice: InputDevice,
         requestId: Int
     ): LightsManager.LightsSession {
-        val existingSession = lightBarSession
-        if (existingSession != null && lightBarSessionDeviceId == targetDevice.id) {
+        val existingSession = lightBarSessionsByDeviceId[targetDevice.id]
+        if (existingSession != null) {
             logDiagnosticDebug {
                 "$LOG_PREFIX requestId=$requestId phase=session_reuse " +
-                        "deviceId=${targetDevice.id}"
+                        "deviceId=${targetDevice.id} activeSessions=${lightBarSessionsByDeviceId.size}"
             }
             return existingSession
         }
 
-        if (existingSession != null) {
-            logDiagnosticDebug {
-                "$LOG_PREFIX requestId=$requestId phase=session_switch " +
-                        "oldDeviceId=$lightBarSessionDeviceId newDeviceId=${targetDevice.id}"
-            }
-            runCatching {
-                existingSession.close()
-            }.onFailure { throwable ->
-                LogCompat.w(
-                    "$LOG_PREFIX requestId=$requestId phase=session_switch_close_failed",
-                    throwable
-                )
-            }
-            lightBarSession = null
-            lightBarSessionDeviceId = null
-        }
-
         val newSession = targetDevice.lightsManager.openSession()
-        lightBarSession = newSession
-        lightBarSessionDeviceId = targetDevice.id
+        lightBarSessionsByDeviceId[targetDevice.id] = newSession
         logDiagnosticDebug {
             "$LOG_PREFIX requestId=$requestId phase=session_open " +
-                    "deviceId=${targetDevice.id}"
+                    "deviceId=${targetDevice.id} activeSessions=${lightBarSessionsByDeviceId.size}"
         }
         return newSession
     }
