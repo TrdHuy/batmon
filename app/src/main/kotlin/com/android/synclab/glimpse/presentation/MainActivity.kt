@@ -22,23 +22,30 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
+import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
-import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerProfile
 import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
+import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
+import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
-import com.android.synclab.glimpse.presentation.view.BatteryProgressView
-import com.android.synclab.glimpse.presentation.view.ChargingIconView
 import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
+import com.android.synclab.glimpse.presentation.view.ControllerPageAdapter
 import com.android.synclab.glimpse.presentation.view.SettingsPanelView
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModel
 import com.android.synclab.glimpse.presentation.viewmodel.MainViewModelFactory
 import com.android.synclab.glimpse.utils.InputDeviceLogUtils
 import com.android.synclab.glimpse.utils.LogCompat
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -46,32 +53,37 @@ class MainActivity : AppCompatActivity() {
         private const val SERVICE_ACTION_STATE_SYNC_DELAY_MS = 350L
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
-        private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
-        private const val CHARGING_GLOW_RADIUS_DP = 11f
+        private val DEFAULT_VIBE_COLOR = Color.rgb(44, 100, 255)
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val profileIoExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private lateinit var toolbar: Toolbar
-    private lateinit var deviceInfoView: TextView
-    private lateinit var batteryPercentText: TextView
-    private lateinit var batteryStateText: TextView
-    private lateinit var batteryCircle: BatteryProgressView
-    private lateinit var chargingIconView: ChargingIconView
+    private lateinit var controllerPager: ViewPager2
+    private lateinit var controllerPageAdapter: ControllerPageAdapter
     private lateinit var utilSettingsPanel: SettingsPanelView
     private lateinit var otherSettingsPanel: SettingsPanelView
 
     private lateinit var inputDeviceGateway: InputDeviceGateway
     private lateinit var setPs4ControllerLightColorUseCase: SetPs4ControllerLightColorUseCase
     private lateinit var closePs4ControllerLightSessionUseCase: ClosePs4ControllerLightSessionUseCase
+    private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
+    private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
     private lateinit var viewModel: MainViewModel
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
-    private var lastChargingGlowState: Boolean? = null
-    private var selectedVibeColor: Int = Color.rgb(44, 100, 255)
+    private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
+    private var activeControllerDescriptor: String? = null
+    private var activeControllerUniqueId: String? = null
+    private var activeControllerName: String? = null
+    private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
+    private var hasLoggedFixedSettingsLayout = false
+    @Volatile
+    private var controllerProfileGeneration: Long = 0L
 
     private val periodicRefresh = object : Runnable {
         override fun run() {
@@ -112,38 +124,27 @@ class MainActivity : AppCompatActivity() {
         setPs4ControllerLightColorUseCase = appContainer.provideSetPs4ControllerLightColorUseCase()
         closePs4ControllerLightSessionUseCase =
             appContainer.provideClosePs4ControllerLightSessionUseCase()
+        getControllerProfileUseCase = appContainer.provideGetControllerProfileUseCase()
+        upsertControllerProfileUseCase = appContainer.provideUpsertControllerProfileUseCase()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
                 inputDeviceGateway = inputDeviceGateway,
-                getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase()
+                getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase(),
+                monitoringStateProvider = appContainer.provideMonitoringStateProvider(),
+                developerOptionManager = appContainer.provideDeveloperOptionManager()
             )
         ).get(MainViewModel::class.java)
 
         toolbar = findViewById(R.id.topToolbar)
-        deviceInfoView = findViewById(R.id.deviceInfoView)
-        batteryPercentText = findViewById(R.id.batteryPercentText)
-        batteryStateText = findViewById(R.id.batteryStateText)
-        batteryCircle = findViewById(R.id.batteryCircle)
-        chargingIconView = findViewById(R.id.chargingIcon)
-        batteryCircle.max = 100
-        applyChargingIconGlow(false)
-        val batteryCluster: View = findViewById(R.id.batteryCluster)
-        batteryCircle.post {
-            LogCompat.e(
-                "batteryCluster=${batteryCluster.width}x${batteryCluster.height} " +
-                        "batteryCircle=${batteryCircle.width}x${batteryCircle.height} " +
-                        "clusterPos=(${batteryCluster.x},${batteryCluster.y}) " +
-                        "circlePos=(${batteryCircle.x},${batteryCircle.y}) " +
-                        "circleLeftTop=(${batteryCircle.left},${batteryCircle.top}) " +
-                        "circleTranslation=(${batteryCircle.translationX},${batteryCircle.translationY})"
-            )
-        }
+        controllerPager = findViewById(R.id.controllerPager)
         utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
         otherSettingsPanel = findViewById(R.id.otherSettingsPanel)
+        controllerPageAdapter = ControllerPageAdapter()
 
         setupToolbarMenu()
-        setupSettingsLists()
+        setupControllerPager()
+        setupFixedSettingsPanels()
         bindViewModelObserver()
 
         renderUiState(viewModel.currentUiState())
@@ -182,6 +183,7 @@ class MainActivity : AppCompatActivity() {
         if (::viewModel.isInitialized) {
             viewModel.clearOnViewModelChange()
         }
+        profileIoExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -242,14 +244,135 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSettingsLists() {
+    private fun setupControllerPager() {
+        controllerPager.adapter = controllerPageAdapter
+        controllerPager.registerOnPageChangeCallback(
+            object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    val page = controllerPageAdapter.getPageAt(position) ?: return
+                    LogCompat.dDebug {
+                        "UI_VERIFY ControllerPager statusOnly onPageSelected " +
+                                "position=$position uniqueId=${maskIdentifier(page.uniqueId)} " +
+                                "placeholder=${page.isPlaceholder}"
+                    }
+                    controllerPager.post {
+                        logControllerPagerBounds("onPageSelected:$position")
+                    }
+                    if (page.isPlaceholder) {
+                        return
+                    }
+                    if (viewModel.currentUiState().selectedControllerUniqueId == page.uniqueId) {
+                        return
+                    }
+                    controllerPager.post {
+                        val currentPage = controllerPageAdapter.getPageAt(controllerPager.currentItem)
+                            ?: return@post
+                        if (controllerPager.currentItem != position ||
+                            currentPage.uniqueId != page.uniqueId ||
+                            viewModel.currentUiState().selectedControllerUniqueId == currentPage.uniqueId
+                        ) {
+                            return@post
+                        }
+                        LogCompat.dDebug {
+                            "ControllerPager onPageSelected position=$position uniqueId=${maskIdentifier(page.uniqueId)}"
+                        }
+                        viewModel.selectController(
+                            uniqueId = currentPage.uniqueId,
+                            source = EventChangeParam.Source.VIEW
+                        )
+                    }
+                }
+
+                override fun onPageScrollStateChanged(state: Int) {
+                    if (state != ViewPager2.SCROLL_STATE_IDLE) {
+                        return
+                    }
+                    controllerPager.post {
+                        logControllerPagerBounds("scrollIdle:${controllerPager.currentItem}")
+                    }
+                }
+            }
+        )
+    }
+
+    private fun setupFixedSettingsPanels() {
         utilSettingsPanel.setInteractionHandlers(
-            onToggleChanged = ::handleSettingToggleChanged,
-            onItemClicked = ::handleSettingItemClicked
+            onToggleChanged = { itemId, checked ->
+                onFixedSettingToggleChanged(itemId, checked)
+            },
+            onItemClicked = { itemId ->
+                onFixedSettingItemClicked(itemId)
+            }
         )
         otherSettingsPanel.setInteractionHandlers(
-            onToggleChanged = ::handleSettingToggleChanged,
-            onItemClicked = ::handleSettingItemClicked
+            onToggleChanged = { itemId, checked ->
+                onFixedSettingToggleChanged(itemId, checked)
+            },
+            onItemClicked = { itemId ->
+                onFixedSettingItemClicked(itemId)
+            }
+        )
+        controllerPager.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (!hasLoggedFixedSettingsLayout) {
+                hasLoggedFixedSettingsLayout = true
+                logFixedSettingsLayout("firstLayout")
+                logControllerPagerBounds("firstLayout")
+            }
+        }
+        mainHandler.post {
+            logFixedSettingsLayout("postSetup")
+            logControllerPagerBounds("postSetup")
+        }
+        mainHandler.postDelayed({
+            logFixedSettingsLayout("postLayout")
+            logControllerPagerBounds("postLayout")
+        }, 500L)
+    }
+
+    private fun onFixedSettingToggleChanged(
+        itemId: SettingItemUiModel.ItemId,
+        checked: Boolean
+    ) {
+        val page = resolveCurrentControllerPage()
+        LogCompat.dDebug {
+            "UI_VERIFY FixedSettings toggle " +
+                    "item=$itemId checked=$checked currentItem=${controllerPager.currentItem} " +
+                    "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder}"
+        }
+        if (page != null && !page.isPlaceholder) {
+            ensureControllerPageSelected(page.uniqueId)
+        }
+        handleSettingToggleChanged(itemId, checked)
+    }
+
+    private fun onFixedSettingItemClicked(
+        itemId: SettingItemUiModel.ItemId
+    ) {
+        val page = resolveCurrentControllerPage()
+        LogCompat.dDebug {
+            "UI_VERIFY FixedSettings click " +
+                    "item=$itemId currentItem=${controllerPager.currentItem} " +
+                    "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder}"
+        }
+        if (page != null && !page.isPlaceholder) {
+            ensureControllerPageSelected(page.uniqueId)
+        }
+        handleSettingItemClicked(itemId)
+    }
+
+    private fun ensureControllerPageSelected(uniqueId: String) {
+        val currentState = viewModel.currentUiState()
+        if (currentState.selectedControllerUniqueId == uniqueId) {
+            return
+        }
+        LogCompat.dDebug {
+            "ControllerPager ensureSelected uniqueId=${maskIdentifier(uniqueId)}"
+        }
+        viewModel.selectController(
+            uniqueId = uniqueId,
+            source = EventChangeParam.Source.VIEW
         )
     }
 
@@ -257,7 +380,7 @@ class MainActivity : AppCompatActivity() {
         itemId: SettingItemUiModel.ItemId,
         checked: Boolean
     ) {
-        LogCompat.d("settingToggleChanged id=$itemId checked=$checked")
+        LogCompat.dDebug { "settingToggleChanged id=$itemId checked=$checked" }
         when (itemId) {
             SettingItemUiModel.ItemId.BACKGROUND_MONITORING -> {
                 if (checked) {
@@ -302,7 +425,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleSettingItemClicked(itemId: SettingItemUiModel.ItemId) {
-        LogCompat.d("settingItemClicked id=$itemId")
+        LogCompat.dDebug { "settingItemClicked id=$itemId" }
         when (itemId) {
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
                 showCustomizeVibeDialog()
@@ -319,16 +442,31 @@ class MainActivity : AppCompatActivity() {
     private fun showCustomizeVibeDialog() {
         val activeDialog = customizeVibeDialog
         if (activeDialog?.isShowing == true) {
-            LogCompat.d("CustomizeVibeDialog already visible")
+            LogCompat.dDebug { "CustomizeVibeDialog already visible" }
             return
+        }
+        // TODO(PR-23): Gate dialog opening on the target controller profile load so the
+        // initial color cannot come from the previously selected page.
+        // TODO(PR-23): Use the selected page's runtime controllerUniqueId for lightbar
+        // commands, and keep controllerPersistentId only as the profile storage key.
+        val targetId = viewModel.currentUiState().controllerPersistentId
+        LogCompat.dDebug {
+            "CustomizeVibeDialog open targetId=${targetId?.let(::maskIdentifier)} " +
+                    "selectedColor=${toHexColor(selectedVibeColor)}"
         }
 
         val dialog = CustomizeVibeDialog(
             context = this,
             initialColor = selectedVibeColor,
             setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
+            controllerIdentifier = targetId,
             onColorApplied = { color ->
                 selectedVibeColor = color
+                LogCompat.dDebug {
+                    "CustomizeVibeDialog onColorApplied color=${toHexColor(color)} " +
+                            "targetId=${targetId?.let(::maskIdentifier)}"
+                }
+                persistControllerProfile(color, targetId)
             },
             onDismiss = {
                 customizeVibeDialog = null
@@ -546,6 +684,8 @@ class MainActivity : AppCompatActivity() {
     private fun dispatchServiceAction(action: String, foreground: Boolean): Boolean {
         val intent = Intent(this, BatteryOverlayService::class.java).apply {
             this.action = action
+            // TODO(PR-23): Pass the selected controller identifier so monitoring and
+            // overlay updates follow the active pager page instead of the primary gamepad.
         }
 
         val result = runCatching {
@@ -580,6 +720,11 @@ class MainActivity : AppCompatActivity() {
         if (!::viewModel.isInitialized) {
             return
         }
+        LogCompat.d(
+            "requestControllerRefresh source=$source " +
+                    "activeDescriptor=${activeControllerDescriptor?.let(::maskIdentifier)} " +
+                    "loadedDescriptor=${lastLoadedProfileDescriptor?.let(::maskIdentifier)}"
+        )
         viewModel.refreshControllerInfo(
             unknownDeviceName = getString(R.string.unknown_device_name),
             source = source
@@ -659,148 +804,353 @@ class MainActivity : AppCompatActivity() {
     private fun bindViewModelObserver() {
         viewModel.setOnViewModelChange { changeParam ->
             renderUiState(changeParam.state)
-            LogCompat.d(
+            LogCompat.dDebug {
                 "onViewModelChange event=${changeParam.eventType} " +
                         "source=${changeParam.source} note=${changeParam.note} " +
                         "serviceRunning=${changeParam.state.isServiceRunning} " +
                         "monitoring=${changeParam.state.isMonitoringEnabled} " +
                         "overlayVisible=${changeParam.state.isOverlayVisible}"
-            )
+            }
         }
     }
 
     private fun renderUiState(state: MainUiState) {
-        if (!::deviceInfoView.isInitialized || !::batteryCircle.isInitialized) {
+        if (!::controllerPageAdapter.isInitialized || !::controllerPager.isInitialized) {
             return
         }
 
-        when (state.connectionState) {
-            MainUiState.ConnectionState.LOADING -> {
-                deviceInfoView.setText(R.string.loading_controller_info)
-            }
-
-            MainUiState.ConnectionState.INPUT_MANAGER_UNAVAILABLE -> {
-                deviceInfoView.setText(R.string.input_manager_unavailable)
-            }
-
-            MainUiState.ConnectionState.DISCONNECTED -> {
-                deviceInfoView.setText(R.string.status_card_controller_disconnected)
-            }
-
-            MainUiState.ConnectionState.CONNECTED -> {
-                deviceInfoView.setText(R.string.status_card_controller_connected)
-            }
-        }
-
-        updateBatteryUi(state.batteryPercent, state.batteryStatus)
-        renderSettingItems(state)
+        handleControllerProfileState(state)
+        controllerPageAdapter.submitState(state = state)
+        syncControllerPagerSelection(state)
+        bindFixedSettingsPanel(state)
     }
 
-    private fun renderSettingItems(state: MainUiState) {
+    private fun bindFixedSettingsPanel(state: MainUiState) {
         if (!::utilSettingsPanel.isInitialized || !::otherSettingsPanel.isInitialized) {
             return
         }
 
-        utilSettingsPanel.submitItems(
-            listOf(
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
-                    iconRes = R.drawable.ic_ui_monitor,
-                    iconWidthDp = 26f,
-                    iconHeightDp = 14f,
-                    title = getString(R.string.settings_background_monitoring),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = state.isMonitoringEnabled
-                    )
-                ),
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
-                    iconRes = R.drawable.ic_ui_overlay,
-                    iconWidthDp = 25f,
-                    iconHeightDp = 25f,
-                    title = getString(R.string.settings_live_overlay),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = state.isOverlayVisible
-                    )
-                ),
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
-                    iconRes = R.drawable.ic_ui_vibe,
-                    iconWidthDp = 26f,
-                    iconHeightDp = 26f,
-                    title = getString(R.string.settings_customize_vibe),
-                    control = SettingItemUiModel.Control.None
+        val page = resolveCurrentControllerPage()
+        LogCompat.dDebug {
+            "UI_VERIFY FixedSettings bind " +
+                    "currentItem=${controllerPager.currentItem} " +
+                    "page=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "placeholder=${page?.isPlaceholder} " +
+                    "selected=${state.selectedControllerUniqueId?.let(::maskIdentifier) ?: "none"} " +
+                    "monitoring=${state.isMonitoringEnabled} " +
+                    "overlay=${state.isOverlayVisible} " +
+                    "protect=$protectBatteryEnabled"
+        }
+        utilSettingsPanel.submitItems(buildUtilSettingItems(state))
+        otherSettingsPanel.submitItems(buildOtherSettingItems())
+    }
+
+    private fun buildUtilSettingItems(state: MainUiState): List<SettingItemUiModel> {
+        return listOf(
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
+                iconRes = R.drawable.ic_ui_monitor,
+                iconWidthDp = 26f,
+                iconHeightDp = 14f,
+                title = getString(R.string.settings_background_monitoring),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = state.isMonitoringEnabled
                 )
+            ),
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
+                iconRes = R.drawable.ic_ui_overlay,
+                iconWidthDp = 25f,
+                iconHeightDp = 25f,
+                title = getString(R.string.settings_live_overlay),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = state.isOverlayVisible
+                )
+            ),
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.CUSTOMIZE_VIBE,
+                iconRes = R.drawable.ic_ui_vibe,
+                iconWidthDp = 26f,
+                iconHeightDp = 26f,
+                title = getString(R.string.settings_customize_vibe),
+                control = SettingItemUiModel.Control.None
             )
         )
+    }
 
-        otherSettingsPanel.submitItems(
-            listOf(
-                SettingItemUiModel(
-                    id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
-                    iconRes = R.drawable.ic_ui_protect_battery,
-                    iconWidthDp = 22f,
-                    iconHeightDp = 26f,
-                    title = getString(R.string.settings_protect_battery),
-                    subtitle = getString(R.string.settings_limit_charging_subtitle),
-                    control = SettingItemUiModel.Control.Toggle(
-                        checked = protectBatteryEnabled
-                    )
+    private fun buildOtherSettingItems(): List<SettingItemUiModel> {
+        return listOf(
+            SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
+                iconRes = R.drawable.ic_ui_protect_battery,
+                iconWidthDp = 22f,
+                iconHeightDp = 26f,
+                title = getString(R.string.settings_protect_battery),
+                subtitle = getString(R.string.settings_limit_charging_subtitle),
+                control = SettingItemUiModel.Control.Toggle(
+                    checked = protectBatteryEnabled
                 )
             )
         )
     }
 
-    private fun updateBatteryUi(percent: Int?, status: BatteryChargeStatus) {
-        val displayPercent = percent
+    private fun resolveCurrentControllerPage(): ControllerPageUiModel? {
+        if (!::controllerPageAdapter.isInitialized || !::controllerPager.isInitialized) {
+            return null
+        }
 
-        if (displayPercent == null) {
-            batteryPercentText.setText(R.string.status_card_battery_unknown)
-            batteryCircle.setProgressCompat(0, false)
+        val currentPage = controllerPageAdapter.getPageAt(controllerPager.currentItem)
+        if (currentPage != null) {
+            return currentPage
+        }
+
+        val selectedUniqueId = viewModel.currentUiState().selectedControllerUniqueId
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        return (0 until controllerPageAdapter.itemCount).firstNotNullOfOrNull { position ->
+            controllerPageAdapter.getPageAt(position)
+                ?.takeIf { page -> page.uniqueId == selectedUniqueId }
+        }
+    }
+
+    private fun logFixedSettingsLayout(reason: String) {
+        if (!::controllerPager.isInitialized ||
+            !::utilSettingsPanel.isInitialized ||
+            !::otherSettingsPanel.isInitialized
+        ) {
+            return
+        }
+
+        LogCompat.dDebug {
+            "UI_VERIFY FixedSettings layout " +
+                    "reason=$reason " +
+                    "pagerTop=${controllerPager.top} pagerBottom=${controllerPager.bottom} " +
+                    "pagerLeft=${controllerPager.left} pagerRight=${controllerPager.right} " +
+                    "utilTop=${utilSettingsPanel.top} utilBottom=${utilSettingsPanel.bottom} " +
+                    "otherTop=${otherSettingsPanel.top} otherBottom=${otherSettingsPanel.bottom}"
+        }
+    }
+
+    private fun logControllerPagerBounds(reason: String) {
+        if (!::controllerPager.isInitialized || !::controllerPageAdapter.isInitialized) {
+            return
+        }
+
+        val recyclerView = controllerPager.getChildAt(0) as? RecyclerView
+        val childBounds = recyclerView?.let { rv ->
+            (0 until rv.childCount).joinToString(separator = ";") { index ->
+                val child = rv.getChildAt(index)
+                val adapterPosition = rv.getChildAdapterPosition(child)
+                "adapter=$adapterPosition,left=${child.left},right=${child.right},width=${child.width}"
+            }
+        } ?: "none"
+        LogCompat.dDebug {
+            "UI_VERIFY ControllerPager bounds " +
+                    "reason=$reason current=${controllerPager.currentItem} " +
+                    "itemCount=${controllerPageAdapter.itemCount} " +
+                    "pagerLeft=${controllerPager.left} pagerRight=${controllerPager.right} " +
+                    "pagerWidth=${controllerPager.width} " +
+                    "rvWidth=${recyclerView?.width} rvScrollX=${recyclerView?.scrollX} " +
+                    "children=[$childBounds]"
+        }
+    }
+
+    private fun syncControllerPagerSelection(state: MainUiState) {
+        val selectedUniqueId = state.selectedControllerUniqueId
+        val selectedIndex = if (selectedUniqueId.isNullOrBlank()) {
+            if (controllerPageAdapter.itemCount > 0) 0 else RecyclerView.NO_POSITION
         } else {
-            val clampedPercent = displayPercent.coerceIn(0, 100)
-            batteryPercentText.text =
-                getString(R.string.status_card_battery_percent, clampedPercent)
-            batteryCircle.setProgressCompat(clampedPercent, false)
+            (0 until controllerPageAdapter.itemCount).firstOrNull { position ->
+                controllerPageAdapter.getPageAt(position)?.uniqueId == selectedUniqueId
+            } ?: RecyclerView.NO_POSITION
         }
-        val isCharging = status == BatteryChargeStatus.CHARGING
-        batteryCircle.setChargingAnimationEnabled(isCharging)
-        applyChargingIconGlow(isCharging)
-        batteryStateText.text = batteryStatusLabel(status)
+
+        if (selectedIndex == RecyclerView.NO_POSITION) {
+            return
+        }
+
+        if (controllerPager.currentItem == selectedIndex) {
+            return
+        }
+
+        LogCompat.dDebug {
+            "ControllerPager syncSelection current=${controllerPager.currentItem} target=$selectedIndex selectedUniqueId=${selectedUniqueId?.let(::maskIdentifier)}"
+        }
+        controllerPager.setCurrentItem(selectedIndex, false)
     }
 
-    private fun applyChargingIconGlow(isCharging: Boolean) {
-        if (lastChargingGlowState == isCharging) {
+    private fun handleControllerProfileState(state: MainUiState) {
+        val selectedUniqueId = state.selectedControllerUniqueId?.takeIf { it.isNotBlank() }
+        val descriptor = state.controllerDescriptor?.takeIf { it.isNotBlank() }
+        val previousSelectedUniqueId = activeControllerUniqueId
+        if (selectedUniqueId != previousSelectedUniqueId) {
+            controllerProfileGeneration++
+            LogCompat.d(
+                "ControllerProfile active controller changed " +
+                        "from=${previousSelectedUniqueId?.let(::maskIdentifier)} " +
+                        "to=${selectedUniqueId?.let(::maskIdentifier)} " +
+                        "connectionState=${state.connectionState}"
+            )
+        }
+        activeControllerDescriptor = descriptor
+        activeControllerUniqueId = selectedUniqueId
+        activeControllerName = state.controllerName?.takeIf { it.isNotBlank() }
+
+        val persistentId = state.controllerPersistentId
+
+        if (persistentId == null) {
+            lastLoadedProfileDescriptor = null
+            if (previousSelectedUniqueId != null) {
+                selectedVibeColor = DEFAULT_VIBE_COLOR
+                LogCompat.d("ControllerProfile reset to default color because controller disconnected")
+            }
             return
         }
-        lastChargingGlowState = isCharging
 
-        if (!::chargingIconView.isInitialized) {
+        if (selectedUniqueId != previousSelectedUniqueId) {
+            selectedVibeColor = DEFAULT_VIBE_COLOR
+            lastLoadedProfileDescriptor = null
+        }
+
+        if (persistentId == lastLoadedProfileDescriptor) {
+            LogCompat.d(
+                "ControllerProfile load skipped id=${maskIdentifier(persistentId)} reason=already_loaded"
+            )
             return
         }
 
-        if (!isCharging) {
-            chargingIconView.setGlowEnabled(false)
-            return
-        }
-
-        chargingIconView.setGlowStyle(
-            color = CHARGING_GLOW_COLOR,
-            radiusPx = dpToPx(CHARGING_GLOW_RADIUS_DP)
+        lastLoadedProfileDescriptor = persistentId
+        LogCompat.d(
+            "ControllerProfile load scheduled id=${maskIdentifier(persistentId)} " +
+                    "activeName=${activeControllerName ?: "n/a"}"
         )
-        chargingIconView.setGlowEnabled(true)
+        loadControllerProfile(persistentId)
     }
 
-    private fun dpToPx(dp: Float): Float = dp * resources.displayMetrics.density
+    private fun loadControllerProfile(persistentId: String) {
+        LogCompat.d("ControllerProfile load queued id=${maskIdentifier(persistentId)}")
+        val requestGeneration = controllerProfileGeneration
+        profileIoExecutor.execute {
+            LogCompat.d("ControllerProfile load started id=${maskIdentifier(persistentId)}")
+            val profile = runCatching {
+                getControllerProfileUseCase(persistentId)
+            }.onFailure { throwable ->
+                LogCompat.e("ControllerProfile load failed id=${maskIdentifier(persistentId)}", throwable)
+            }.getOrNull()
 
-    private fun batteryStatusLabel(status: BatteryChargeStatus): String {
-        return when (status) {
-            BatteryChargeStatus.CHARGING -> getString(R.string.battery_status_charging)
-            BatteryChargeStatus.DISCHARGING -> getString(R.string.battery_status_discharging)
-            BatteryChargeStatus.FULL -> getString(R.string.battery_status_full)
-            BatteryChargeStatus.NOT_CHARGING -> getString(R.string.battery_status_not_charging)
-            BatteryChargeStatus.UNKNOWN -> getString(R.string.battery_status_unknown)
+            var restoreStatus: com.android.synclab.glimpse.data.model.ControllerLightCommandStatus? = null
+
+            if (profile != null) {
+                if (requestGeneration != controllerProfileGeneration) {
+                    LogCompat.d(
+                        "ControllerProfile auto-restore skipped id=${maskIdentifier(persistentId)} " +
+                                "reason=stale_request currentGeneration=$controllerProfileGeneration " +
+                                "requestGeneration=$requestGeneration"
+                    )
+                } else {
+                    LogCompat.i(
+                        "ControllerProfile auto-restoring vibe id=${maskIdentifier(persistentId)} " +
+                                "color=${toHexColor(profile.lightbarColor)}"
+                    )
+                    runCatching {
+                        // TODO(PR-23): Resolve and pass the active runtime controllerUniqueId
+                        // for lightbar commands; persistentId should remain only the Room
+                        // profile key and may not identify descriptor-less controllers.
+                        val result = setPs4ControllerLightColorUseCase(
+                            profile.lightbarColor,
+                            controllerIdentifier = persistentId
+                        )
+                        restoreStatus = result.status
+                    }.onFailure { throwable ->
+                        LogCompat.e(
+                            "ControllerProfile auto-restore failed id=${maskIdentifier(persistentId)}",
+                            throwable
+                        )
+                    }
+                }
+            }
+
+            mainHandler.post {
+                if (isDestroyed) {
+                    LogCompat.d(
+                        "ControllerProfile load ignored id=${maskIdentifier(persistentId)} reason=activity_destroyed"
+                    )
+                    return@post
+                }
+                val currentPersistentId = viewModel.currentUiState().controllerPersistentId
+                if (currentPersistentId != persistentId) {
+                    LogCompat.d(
+                        "ControllerProfile load ignored id=${maskIdentifier(persistentId)} " +
+                                "reason=active_controller_switched current=${currentPersistentId?.let(::maskIdentifier)}"
+                    )
+                    return@post
+                }
+                if (profile == null) {
+                    LogCompat.d("ControllerProfile missing id=${maskIdentifier(persistentId)}")
+                    return@post
+                }
+                
+                // Only update internal color state if the hardware application was actually successful
+                if (restoreStatus == com.android.synclab.glimpse.data.model.ControllerLightCommandStatus.SUCCESS) {
+                    selectedVibeColor = profile.lightbarColor
+                } else {
+                    LogCompat.w(
+                        "ControllerProfile color state not updated because hardware restore failed " +
+                                "status=${restoreStatus ?: "error"}"
+                    )
+                }
+
+                if (activeControllerName.isNullOrBlank()) {
+                    activeControllerName = profile.deviceName
+                }
+                LogCompat.d(
+                    "ControllerProfile loaded id=${maskIdentifier(persistentId)} " +
+                            "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)} " +
+                            "restoreStatus=${restoreStatus ?: "n/a"}"
+                )
+            }
         }
+    }
+
+    private fun persistControllerProfile(lightbarColor: Int, targetId: String? = null) {
+        val persistentId = targetId ?: viewModel.currentUiState().controllerPersistentId
+        if (persistentId.isNullOrBlank()) {
+            LogCompat.d(
+                "ControllerProfile save skipped: missing persistent identifier"
+            )
+            return
+        }
+        val deviceName = activeControllerName?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.unknown_device_name)
+        val profile = ControllerProfile(
+            id = persistentId,
+            deviceName = deviceName,
+            lightbarColor = lightbarColor
+        )
+        LogCompat.d(
+            "ControllerProfile save queued id=${maskIdentifier(persistentId)} " +
+                    "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+        )
+        profileIoExecutor.execute {
+            runCatching {
+                upsertControllerProfileUseCase(profile)
+            }.onSuccess {
+                LogCompat.d(
+                    "ControllerProfile saved id=${maskIdentifier(persistentId)} " +
+                            "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+                )
+            }.onFailure { throwable ->
+                LogCompat.e("ControllerProfile save failed id=${maskIdentifier(persistentId)}", throwable)
+            }
+        }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
+    }
+
+    private fun toHexColor(color: Int): String {
+        return String.format(Locale.US, "#%06X", 0xFFFFFF and color)
     }
 
     private fun showToast(messageRes: Int) {

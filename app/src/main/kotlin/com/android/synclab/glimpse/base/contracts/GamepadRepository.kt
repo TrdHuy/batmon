@@ -9,7 +9,10 @@ interface GamepadRepository {
 
     fun getPrimaryGamepadBatterySnapshot(defaultControllerName: String): GamepadBatterySnapshot
 
-    fun setPs4ControllerLightColor(color: Int): ControllerLightCommandResult
+    fun setPs4ControllerLightColor(
+        color: Int,
+        controllerIdentifier: String? = null
+    ): ControllerLightCommandResult
 
     fun closeControllerLightSession(reason: String)
 }

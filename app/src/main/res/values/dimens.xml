@@ -2,6 +2,7 @@
 <resources>
     <dimen name="ui_phone_card_width">384dp</dimen>
     <dimen name="ui_phone_card_height">832dp</dimen>
+    <dimen name="ui_status_pager_height">395dp</dimen>
     <dimen name="ui_status_panel_top_margin">128dp</dimen>
     <dimen name="ui_status_panel_width">325dp</dimen>
     <dimen name="ui_status_panel_height">267dp</dimen>
