@@ -280,7 +280,7 @@ class MainViewModel(
     ) {
         val oldState = uiState
         uiState = newState
-        LogCompat.d(
+        LogCompat.dDebug {
             "MainViewModel updateState event=$eventType source=$source emitChange=$emitChange " +
                     "connection=${oldState.connectionState}->${newState.connectionState} " +
                     "battery=${oldState.batteryPercent}->${newState.batteryPercent} " +
@@ -289,7 +289,7 @@ class MainViewModel(
                     "service=${oldState.isServiceRunning}->${newState.isServiceRunning} " +
                     "monitoring=${oldState.isMonitoringEnabled}->${newState.isMonitoringEnabled} " +
                     "overlay=${oldState.isOverlayVisible}->${newState.isOverlayVisible}"
-        )
+        }
         if (emitChange) {
             onViewModelChange?.invoke(
                 EventChangeParam(

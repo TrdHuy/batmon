@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/controllerPageRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -42,12 +43,12 @@
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="2"
-            android:text="PlayStation 4 Controller Connected"
             android:textColor="#D8DCE2"
             android:textSize="14sp"
             app:layout_constraintBottom_toTopOf="@id/batteryUniqueIdText"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            tools:text="PlayStation 4 Controller Connected" />
 
         <TextView
             android:id="@+id/batteryUniqueIdText"
@@ -94,27 +95,27 @@
             android:id="@+id/batteryPercentText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="78%"
             android:textColor="#FFFFFF"
             android:textSize="28sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="@id/batteryCircle"
             app:layout_constraintEnd_toEndOf="@id/batteryCircle"
             app:layout_constraintStart_toStartOf="@id/batteryCircle"
-            app:layout_constraintTop_toTopOf="@id/batteryCircle" />
+            app:layout_constraintTop_toTopOf="@id/batteryCircle"
+            tools:text="78%" />
 
         <TextView
             android:id="@+id/batteryStateText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Charging"
             android:textColor="#6FD5FF"
             android:textSize="9sp"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="@id/batteryCircle"
             app:layout_constraintStart_toStartOf="@id/batteryCircle"
-            app:layout_constraintTop_toBottomOf="@id/batteryPercentText" />
+            app:layout_constraintTop_toBottomOf="@id/batteryPercentText"
+            tools:text="Charging" />
 
         <com.android.synclab.glimpse.presentation.view.ChargingIconView
             android:id="@+id/chargingIcon"

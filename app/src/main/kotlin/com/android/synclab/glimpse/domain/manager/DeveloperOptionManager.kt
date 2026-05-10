@@ -58,12 +58,12 @@ class DeveloperOptionManager(
     fun isMockControllerPagesEnabled(): Boolean {
         refreshMockControllerPagesEnabledAsync()
         val enabled = developerModeEnabled && mockControllerPagesEnabled
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY DevOptions mock cache read " +
                     "enabled=$enabled cached=$mockControllerPagesEnabled " +
                     "inFlight=${mockControllerRefreshInFlight.get()} " +
                     "thread=${Thread.currentThread().name}"
-        )
+        }
         return enabled
     }
 
@@ -79,31 +79,33 @@ class DeveloperOptionManager(
         runCatching {
             propertyExecutor.execute {
                 val startedAtNanos = System.nanoTime()
-                LogCompat.d(
+                LogCompat.dDebug {
                     "UI_VERIFY DevOptions getprop start " +
                             "property=$MOCK_CONTROLLER_PAGES_PROPERTY " +
                             "thread=${Thread.currentThread().name}"
-                )
+                }
                 try {
                     val propertyValue = runCatching {
                         source.getSystemProperty(MOCK_CONTROLLER_PAGES_PROPERTY)
                     }.getOrNull()
                     mockControllerPagesEnabled = propertyValue == "1"
                     val elapsedMs = (System.nanoTime() - startedAtNanos) / NANOS_PER_MILLISECOND
-                    LogCompat.d(
+                    LogCompat.dDebug {
                         "UI_VERIFY DevOptions getprop done " +
                                 "value=${propertyValue ?: "null"} " +
                                 "enabled=$mockControllerPagesEnabled " +
                                 "elapsedMs=$elapsedMs " +
                                 "thread=${Thread.currentThread().name}"
-                    )
+                    }
                 } finally {
                     mockControllerRefreshInFlight.set(false)
                 }
             }
         }.onFailure { throwable ->
             mockControllerRefreshInFlight.set(false)
-            LogCompat.w("UI_VERIFY DevOptions getprop schedule failed", throwable)
+            LogCompat.wDebug(throwable) {
+                "UI_VERIFY DevOptions getprop schedule failed"
+            }
         }
     }
 

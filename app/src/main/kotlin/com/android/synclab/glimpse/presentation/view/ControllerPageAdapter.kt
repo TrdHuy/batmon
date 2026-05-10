@@ -40,13 +40,13 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
             oldState = oldState,
             newState = state
         )
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY ControllerPageAdapter statusSubmit " +
                     "oldCount=${oldPages.size} newCount=${newPages.size} " +
                     "pagesChanged=${oldPages != newPages} " +
                     "globalPayload=$globalPayload " +
                     "selected=${state.selectedControllerUniqueId?.let(::maskControllerPageId) ?: "n/a"}"
-        )
+        }
 
         uiState = state
         pages = newPages
@@ -74,11 +74,11 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
     }
 
     override fun onBindViewHolder(holder: ControllerPageViewHolder, position: Int) {
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY ControllerPageAdapter statusFullBind " +
                     "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
                     "selected=${pages[position].isSelected}"
-        )
+        }
         holder.bind(
             page = pages[position],
             state = uiState
@@ -98,11 +98,11 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
             return
         }
 
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY ControllerPageAdapter statusPayloadBind " +
                     "position=$position id=${maskControllerPageId(pages[position].uniqueId)} " +
                     "payload=$payload"
-        )
+        }
         holder.bindPayload(
             page = pages[position],
             state = uiState,
@@ -294,10 +294,10 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
                         oldPage.batteryStatus != newPage.batteryStatus,
                 selectionChanged = oldPage.isSelected != newPage.isSelected
             )
-            LogCompat.d(
+            LogCompat.dDebug {
                 "UI_VERIFY ControllerPageAdapter diffPayload " +
                         "id=${maskControllerPageId(newPage.uniqueId)} payload=$payload"
-            )
+            }
             return payload
         }
     }

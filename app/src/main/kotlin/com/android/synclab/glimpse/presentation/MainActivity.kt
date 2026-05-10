@@ -250,11 +250,11 @@ class MainActivity : AppCompatActivity() {
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     val page = controllerPageAdapter.getPageAt(position) ?: return
-                    LogCompat.d(
+                    LogCompat.dDebug {
                         "UI_VERIFY ControllerPager statusOnly onPageSelected " +
                                 "position=$position uniqueId=${maskIdentifier(page.uniqueId)} " +
                                 "placeholder=${page.isPlaceholder}"
-                    )
+                    }
                     if (page.isPlaceholder) {
                         return
                     }
@@ -270,9 +270,9 @@ class MainActivity : AppCompatActivity() {
                         ) {
                             return@post
                         }
-                        LogCompat.d(
+                        LogCompat.dDebug {
                             "ControllerPager onPageSelected position=$position uniqueId=${maskIdentifier(page.uniqueId)}"
-                        )
+                        }
                         viewModel.selectController(
                             uniqueId = currentPage.uniqueId,
                             source = EventChangeParam.Source.VIEW
@@ -319,12 +319,12 @@ class MainActivity : AppCompatActivity() {
         checked: Boolean
     ) {
         val page = resolveCurrentControllerPage()
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY FixedSettings toggle " +
                     "item=$itemId checked=$checked currentItem=${controllerPager.currentItem} " +
                     "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
                     "placeholder=${page?.isPlaceholder}"
-        )
+        }
         if (page != null && !page.isPlaceholder) {
             ensureControllerPageSelected(page.uniqueId)
         }
@@ -335,12 +335,12 @@ class MainActivity : AppCompatActivity() {
         itemId: SettingItemUiModel.ItemId
     ) {
         val page = resolveCurrentControllerPage()
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY FixedSettings click " +
                     "item=$itemId currentItem=${controllerPager.currentItem} " +
                     "resolvedPage=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
                     "placeholder=${page?.isPlaceholder}"
-        )
+        }
         if (page != null && !page.isPlaceholder) {
             ensureControllerPageSelected(page.uniqueId)
         }
@@ -352,9 +352,9 @@ class MainActivity : AppCompatActivity() {
         if (currentState.selectedControllerUniqueId == uniqueId) {
             return
         }
-        LogCompat.d(
+        LogCompat.dDebug {
             "ControllerPager ensureSelected uniqueId=${maskIdentifier(uniqueId)}"
-        )
+        }
         viewModel.selectController(
             uniqueId = uniqueId,
             source = EventChangeParam.Source.VIEW
@@ -365,7 +365,7 @@ class MainActivity : AppCompatActivity() {
         itemId: SettingItemUiModel.ItemId,
         checked: Boolean
     ) {
-        LogCompat.d("settingToggleChanged id=$itemId checked=$checked")
+        LogCompat.dDebug { "settingToggleChanged id=$itemId checked=$checked" }
         when (itemId) {
             SettingItemUiModel.ItemId.BACKGROUND_MONITORING -> {
                 if (checked) {
@@ -410,7 +410,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleSettingItemClicked(itemId: SettingItemUiModel.ItemId) {
-        LogCompat.d("settingItemClicked id=$itemId")
+        LogCompat.dDebug { "settingItemClicked id=$itemId" }
         when (itemId) {
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
                 showCustomizeVibeDialog()
@@ -427,16 +427,18 @@ class MainActivity : AppCompatActivity() {
     private fun showCustomizeVibeDialog() {
         val activeDialog = customizeVibeDialog
         if (activeDialog?.isShowing == true) {
-            LogCompat.d("CustomizeVibeDialog already visible")
+            LogCompat.dDebug { "CustomizeVibeDialog already visible" }
             return
         }
         // TODO(PR-23): Gate dialog opening on the target controller profile load so the
         // initial color cannot come from the previously selected page.
+        // TODO(PR-23): Use the selected page's runtime controllerUniqueId for lightbar
+        // commands, and keep controllerPersistentId only as the profile storage key.
         val targetId = viewModel.currentUiState().controllerPersistentId
-        LogCompat.d(
+        LogCompat.dDebug {
             "CustomizeVibeDialog open targetId=${targetId?.let(::maskIdentifier)} " +
                     "selectedColor=${toHexColor(selectedVibeColor)}"
-        )
+        }
 
         val dialog = CustomizeVibeDialog(
             context = this,
@@ -445,10 +447,10 @@ class MainActivity : AppCompatActivity() {
             controllerIdentifier = targetId,
             onColorApplied = { color ->
                 selectedVibeColor = color
-                LogCompat.d(
+                LogCompat.dDebug {
                     "CustomizeVibeDialog onColorApplied color=${toHexColor(color)} " +
                             "targetId=${targetId?.let(::maskIdentifier)}"
-                )
+                }
                 persistControllerProfile(color, targetId)
             },
             onDismiss = {
@@ -787,13 +789,13 @@ class MainActivity : AppCompatActivity() {
     private fun bindViewModelObserver() {
         viewModel.setOnViewModelChange { changeParam ->
             renderUiState(changeParam.state)
-            LogCompat.d(
+            LogCompat.dDebug {
                 "onViewModelChange event=${changeParam.eventType} " +
                         "source=${changeParam.source} note=${changeParam.note} " +
                         "serviceRunning=${changeParam.state.isServiceRunning} " +
                         "monitoring=${changeParam.state.isMonitoringEnabled} " +
                         "overlayVisible=${changeParam.state.isOverlayVisible}"
-            )
+            }
         }
     }
 
@@ -814,7 +816,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val page = resolveCurrentControllerPage()
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY FixedSettings bind " +
                     "currentItem=${controllerPager.currentItem} " +
                     "page=${page?.uniqueId?.let(::maskIdentifier) ?: "none"} " +
@@ -823,7 +825,7 @@ class MainActivity : AppCompatActivity() {
                     "monitoring=${state.isMonitoringEnabled} " +
                     "overlay=${state.isOverlayVisible} " +
                     "protect=$protectBatteryEnabled"
-        )
+        }
         utilSettingsPanel.submitItems(buildUtilSettingItems(state))
         otherSettingsPanel.submitItems(buildOtherSettingItems())
     }
@@ -904,13 +906,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        LogCompat.d(
+        LogCompat.dDebug {
             "UI_VERIFY FixedSettings layout " +
                     "reason=$reason " +
                     "pagerTop=${controllerPager.top} pagerBottom=${controllerPager.bottom} " +
                     "utilTop=${utilSettingsPanel.top} utilBottom=${utilSettingsPanel.bottom} " +
                     "otherTop=${otherSettingsPanel.top} otherBottom=${otherSettingsPanel.bottom}"
-        )
+        }
     }
 
     private fun syncControllerPagerSelection(state: MainUiState) {
@@ -931,9 +933,9 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        LogCompat.d(
+        LogCompat.dDebug {
             "ControllerPager syncSelection current=${controllerPager.currentItem} target=$selectedIndex selectedUniqueId=${selectedUniqueId?.let(::maskIdentifier)}"
-        )
+        }
         controllerPager.setCurrentItem(selectedIndex, false)
     }
 
@@ -1011,6 +1013,9 @@ class MainActivity : AppCompatActivity() {
                                 "color=${toHexColor(profile.lightbarColor)}"
                     )
                     runCatching {
+                        // TODO(PR-23): Resolve and pass the active runtime controllerUniqueId
+                        // for lightbar commands; persistentId should remain only the Room
+                        // profile key and may not identify descriptor-less controllers.
                         val result = setPs4ControllerLightColorUseCase(
                             profile.lightbarColor,
                             controllerIdentifier = persistentId
