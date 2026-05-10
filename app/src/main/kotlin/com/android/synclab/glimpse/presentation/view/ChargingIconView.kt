@@ -97,9 +97,15 @@ class ChargingIconView @JvmOverloads constructor(
 
         fun setGlowEnabled(enabled: Boolean) {
             if (glowEnabled == enabled) {
+                if (enabled) {
+                    ensureBitmapsReady(reason = "enable-noop")
+                }
                 return
             }
             glowEnabled = enabled
+            if (enabled) {
+                ensureBitmapsReady(reason = "enable")
+            }
             LogCompat.dDebug { "UI_VERIFY ChargingIcon glowEnabled=$enabled" }
             invalidate()
         }
@@ -131,11 +137,18 @@ class ChargingIconView @JvmOverloads constructor(
             rebuildBitmaps()
         }
 
+        override fun onAttachedToWindow() {
+            super.onAttachedToWindow()
+            ensureBitmapsReady(reason = "attach")
+        }
+
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
             if (!glowEnabled) {
                 return
             }
+
+            ensureBitmapsReady(reason = "draw")
 
             if (glowRadiusPx <= 0f || glowColor == 0) {
                 return
@@ -155,7 +168,31 @@ class ChargingIconView @JvmOverloads constructor(
 
         override fun onDetachedFromWindow() {
             super.onDetachedFromWindow()
+            LogCompat.dDebug {
+                "UI_VERIFY ChargingIcon detach recycle glowEnabled=$glowEnabled"
+            }
             recycleBitmaps()
+        }
+
+        private fun ensureBitmapsReady(reason: String) {
+            if (width <= 0 || height <= 0 || iconDrawable == null) {
+                return
+            }
+            val sourceReady = sourceBitmap?.isRecycled == false
+            val glowReady = ambientGlowBitmap?.isRecycled == false &&
+                    coreGlowBitmap?.isRecycled == false
+            val shouldBuildGlow = glowEnabled && glowRadiusPx > 0f
+            if (sourceReady && (!shouldBuildGlow || glowReady)) {
+                return
+            }
+
+            rebuildBitmaps()
+            LogCompat.dDebug {
+                "UI_VERIFY ChargingIcon ensureBitmaps reason=$reason " +
+                        "glowEnabled=$glowEnabled sourceReady=${sourceBitmap?.isRecycled == false} " +
+                        "ambientReady=${ambientGlowBitmap?.isRecycled == false} " +
+                        "coreReady=${coreGlowBitmap?.isRecycled == false}"
+            }
         }
 
         private fun rebuildBitmaps() {
