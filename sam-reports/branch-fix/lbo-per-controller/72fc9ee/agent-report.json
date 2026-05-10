@@ -27,7 +27,7 @@
         "line": null,
         "symbol": "com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
         "threshold": 50,
-        "value": 62
+        "value": 65
       },
       "id": "cbo-com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
       "metric": "cbo",
@@ -47,7 +47,7 @@
         "line": null,
         "symbol": "com.android.synclab.glimpse.presentation.MainActivity",
         "threshold": 500,
-        "value": 953
+        "value": 1072
       },
       "id": "loc-com.android.synclab.glimpse.presentation.MainActivity",
       "metric": "loc",
@@ -56,7 +56,7 @@
         "Move repeated rendering, mapping, or setup code into dedicated helpers.",
         "Keep high-level classes as coordination points rather than implementation containers."
       ],
-      "score_impact": "LOC score is 4.08",
+      "score_impact": "LOC score is 3.89",
       "severity": "medium",
       "title": "Oversized class or file detected",
       "why_it_matters": "Large classes increase review cost and make changes riskier."
@@ -67,7 +67,7 @@
         "line": null,
         "symbol": "com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
         "threshold": 500,
-        "value": 595
+        "value": 630
       },
       "id": "loc-com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
       "metric": "loc",
@@ -76,7 +76,7 @@
         "Move repeated rendering, mapping, or setup code into dedicated helpers.",
         "Keep high-level classes as coordination points rather than implementation containers."
       ],
-      "score_impact": "LOC score is 4.08",
+      "score_impact": "LOC score is 3.89",
       "severity": "medium",
       "title": "Oversized class or file detected",
       "why_it_matters": "Large classes increase review cost and make changes riskier."
@@ -88,14 +88,14 @@
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt",
             "line_count": 9,
-            "line_end": 63,
-            "line_start": 55
+            "line_end": 69,
+            "line_start": 61
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line_count": 9,
-            "line_end": 1179,
-            "line_start": 1171
+            "line_end": 1303,
+            "line_start": 1295
           }
         ]
       },
@@ -106,7 +106,7 @@
         "Keep duplication if the code is intentionally independent or framework boilerplate.",
         "Prefer a small named function over copy-pasted condition or mapping logic."
       ],
-      "score_impact": "DC score is 4.94",
+      "score_impact": "DC score is 4.92",
       "severity": "low",
       "title": "Duplicated code block detected",
       "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
@@ -118,14 +118,14 @@
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line_count": 7,
-            "line_end": 345,
-            "line_start": 339
+            "line_end": 346,
+            "line_start": 340
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line_count": 7,
-            "line_end": 361,
-            "line_start": 355
+            "line_end": 362,
+            "line_start": 356
           }
         ]
       },
@@ -136,74 +136,104 @@
         "Keep duplication if the code is intentionally independent or framework boilerplate.",
         "Prefer a small named function over copy-pasted condition or mapping logic."
       ],
-      "score_impact": "DC score is 4.94",
+      "score_impact": "DC score is 4.92",
       "severity": "low",
       "title": "Duplicated code block detected",
       "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
     },
     {
       "evidence": {
-        "candidate_count": 344,
+        "block_key": "3",
+        "locations": [
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
+            "line_count": 6,
+            "line_end": 520,
+            "line_start": 515
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/BatteryOverlayService.kt",
+            "line_count": 7,
+            "line_end": 294,
+            "line_start": 288
+          }
+        ]
+      },
+      "id": "dc-block-3",
+      "metric": "dc",
+      "recommended_actions": [
+        "Extract shared logic when the duplicated block represents the same behavior.",
+        "Keep duplication if the code is intentionally independent or framework boilerplate.",
+        "Prefer a small named function over copy-pasted condition or mapping logic."
+      ],
+      "score_impact": "DC score is 4.92",
+      "severity": "low",
+      "title": "Duplicated code block detected",
+      "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
+    },
+    {
+      "evidence": {
+        "candidate_count": 366,
         "sample": [
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/MainUiState.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line": null,
-            "symbol": "component9",
-            "type": "UNUSED_CLASS_METHOD"
+            "symbol": "$i$a$-takeIf-MainActivity$persistControllerProfile$deviceName$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
-            "line": null,
-            "symbol": "$i$a$-logDiagnosticDebug-GamepadRepositoryImpl$obtainLightBarSession$2",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": 859,
+            "symbol": "$i$a$-forEach-MainActivity$logInputDeviceCallback$2",
             "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
             "line": null,
-            "symbol": "$i$a$-getOrElse-GamepadRepositoryImpl$setPs4ControllerLightColor$6$2$stateInfo$2",
-            "type": "UNUSED_LOCAL_VARIABLE"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
-            "line": 286,
-            "symbol": "$i$f$dDebug",
-            "type": "UNUSED_LOCAL_VARIABLE"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/BatteryChargeStatus.kt",
-            "line": null,
-            "symbol": "getEntries",
+            "symbol": "logDiagnosticInfo",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
-            "line": 31,
-            "symbol": "$i$a$-apply-ChargingIconView$glowLayerView$1",
-            "type": "UNUSED_LOCAL_VARIABLE"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ControllerPageAdapter.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/utils/LogCompat.kt",
             "line": null,
-            "symbol": "onCreateViewHolder",
+            "symbol": "wDebug",
             "type": "UNUSED_CLASS_METHOD"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
-            "line": 1206,
+            "line": null,
+            "symbol": "$i$a$-dDebug-MainActivity$handleSettingItemClicked$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
+            "line": null,
+            "symbol": "values",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/core/ControllerProfileEntity.kt",
+            "line": null,
+            "symbol": "component2",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/viewmodel/MainViewModel.kt",
+            "line": 408,
             "symbol": "$i$f$dDebug",
             "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/MainUiState.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
             "line": null,
-            "symbol": "component4",
-            "type": "UNUSED_CLASS_METHOD"
+            "symbol": "receiver",
+            "type": "UNUSED_CLASS_DATA_MEMBER"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerProfile.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
             "line": null,
-            "symbol": "component2",
-            "type": "UNUSED_CLASS_METHOD"
+            "symbol": "$i$a$-logDiagnosticInfo-GamepadRepositoryImpl$applyColorToTarget$2",
+            "type": "UNUSED_LOCAL_VARIABLE"
           }
         ]
       },
@@ -221,15 +251,15 @@
   ],
   "mode": "svace",
   "outputs": {
-    "agent_json": "/tmp/sam-agent-runs/batmon-20260510-213244/agent-report.json",
-    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260510-213244/agent-report.md",
-    "dev_html": "/tmp/sam-agent-runs/batmon-20260510-213244/dev-report.html",
-    "log": "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace/log/sam.log_20260510",
-    "raw_sam": "/tmp/sam-agent-runs/batmon-20260510-213244/raw-sam",
-    "run_dir": "/tmp/sam-agent-runs/batmon-20260510-213244",
-    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace/sam-result/html/SAM_Report_batmon_20260510_index.html",
-    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace/sam-result/report.json",
-    "score_csv": "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace/sam-result/SAM_total_score.csv"
+    "agent_json": "/tmp/sam-agent-runs/batmon-20260510-222138/agent-report.json",
+    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260510-222138/agent-report.md",
+    "dev_html": "/tmp/sam-agent-runs/batmon-20260510-222138/dev-report.html",
+    "log": "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace/log/sam.log_20260510",
+    "raw_sam": "/tmp/sam-agent-runs/batmon-20260510-222138/raw-sam",
+    "run_dir": "/tmp/sam-agent-runs/batmon-20260510-222138",
+    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace/sam-result/html/SAM_Report_batmon_20260510_index.html",
+    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace/sam-result/report.json",
+    "score_csv": "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace/sam-result/SAM_total_score.csv"
   },
   "project": {
     "detected": {
@@ -244,12 +274,12 @@
     "type": "OO"
   },
   "project_metrics": {
-    "analysis_time": "2026-05-10 21:33",
-    "class_count": 129,
-    "code_loc": 4599,
+    "analysis_time": "2026-05-10 22:22",
+    "class_count": 130,
+    "code_loc": 4815,
     "file_count": 44,
-    "method_count": 490,
-    "physical_loc": 5236,
+    "method_count": 499,
+    "physical_loc": 5463,
     "total_node": 23
   },
   "run": {
@@ -259,7 +289,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "init",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace"
+          "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace"
         ],
         "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
@@ -270,7 +300,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "scan",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
@@ -292,7 +322,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "analyze",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
@@ -307,7 +337,7 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "calculate",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260510-213244/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-222138/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
@@ -345,8 +375,8 @@
         "status": "good"
       },
       "dc": {
-        "raw_score": 4.94,
-        "score": 4.94,
+        "raw_score": 4.92,
+        "score": 4.92,
         "scoring": true,
         "status": "good"
       },
@@ -363,10 +393,10 @@
         "status": "not_applicable"
       },
       "loc": {
-        "raw_score": 4.08,
-        "score": 4.08,
+        "raw_score": 3.89,
+        "score": 3.89,
         "scoring": true,
-        "status": "watch"
+        "status": "needs_attention"
       },
       "mcd": {
         "raw_score": 5.0,
@@ -387,7 +417,7 @@
         "status": "poor"
       }
     },
-    "sam_score": 4.64,
+    "sam_score": 4.59,
     "scale": "0-5",
     "status": "watch"
   },
