@@ -20,7 +20,9 @@ class RoomControllerProfileRepository(
         }
         LogCompat.d(
             "ControllerProfileRepository getById hit id=$maskedId " +
-                    "deviceName=${entity.deviceName} color=${toHexColor(entity.lightbarColor)}"
+                    "deviceName=${entity.deviceName} " +
+                    "color=${toHexColor(entity.lightbarColor)} " +
+                    "lbo=${entity.liveBatteryOverlayEnabled}"
         )
         return entity.toModel()
     }
@@ -28,7 +30,9 @@ class RoomControllerProfileRepository(
     override fun upsert(profile: ControllerProfile) {
         LogCompat.d(
             "ControllerProfileRepository upsert id=${maskIdentifier(profile.id)} " +
-                    "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)}"
+                    "deviceName=${profile.deviceName} " +
+                    "color=${toHexColor(profile.lightbarColor)} " +
+                    "lbo=${profile.liveBatteryOverlayEnabled}"
         )
         controllerProfileDao.upsert(profile.toEntity())
     }
@@ -42,7 +46,8 @@ class RoomControllerProfileRepository(
         return ControllerProfile(
             id = id,
             deviceName = deviceName,
-            lightbarColor = lightbarColor
+            lightbarColor = lightbarColor,
+            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled
         )
     }
 
@@ -50,7 +55,8 @@ class RoomControllerProfileRepository(
         return ControllerProfileEntity(
             id = id,
             deviceName = deviceName,
-            lightbarColor = lightbarColor
+            lightbarColor = lightbarColor,
+            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled
         )
     }
 

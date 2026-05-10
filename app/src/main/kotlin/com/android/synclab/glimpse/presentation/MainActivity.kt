@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingStartAfterBluetoothPermission = false
     private var protectBatteryEnabled = false
     private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
+    private var selectedLiveBatteryOverlayEnabled = false
     private var activeControllerDescriptor: String? = null
     private var activeControllerUniqueId: String? = null
     private var activeControllerName: String? = null
@@ -391,25 +392,14 @@ class MainActivity : AppCompatActivity() {
             }
 
             SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY -> {
-                if (checked) {
-                    if (!Settings.canDrawOverlays(this)) {
-                        requestOverlayPermission()
-                        showToast(R.string.toast_overlay_permission_required)
-                        refreshSettingsStateLater(300L)
-                        return
-                    }
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, false)) {
-                        showToast(R.string.toast_overlay_shown)
-                    }
-                } else {
-                    if (!BatteryOverlayService.isRunning) {
-                        LogCompat.d("Ignore hide overlay because service is not running")
-                        refreshSettingsStateLater(200L)
-                        return
-                    }
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, false)) {
-                        showToast(R.string.toast_overlay_hidden)
-                    }
+                val applied = handleLiveBatteryOverlayToggle(
+                    enabled = checked,
+                    reason = "fixed_settings"
+                )
+                if (applied) {
+                    showToast(
+                        if (checked) R.string.toast_overlay_shown else R.string.toast_overlay_hidden
+                    )
                 }
             }
 
@@ -422,6 +412,89 @@ class MainActivity : AppCompatActivity() {
             }
         }
         refreshSettingsStateLater()
+    }
+
+    private fun handleLiveBatteryOverlayToggle(
+        enabled: Boolean,
+        reason: String
+    ): Boolean {
+        val state = viewModel.currentUiState()
+        val persistentId = state.controllerPersistentId
+        val controllerIdentifier = state.controllerUniqueId
+        LogCompat.dDebug {
+            "UI_VERIFY LBO toggle " +
+                    "reason=$reason enabled=$enabled " +
+                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+        }
+
+        if (enabled && !Settings.canDrawOverlays(this)) {
+            requestOverlayPermission()
+            showToast(R.string.toast_overlay_permission_required)
+            refreshSettingsStateLater(300L)
+            bindFixedSettingsPanel(state)
+            return false
+        }
+
+        selectedLiveBatteryOverlayEnabled = enabled
+        bindFixedSettingsPanel(state)
+        persistControllerProfile(
+            lightbarColor = selectedVibeColor,
+            targetId = persistentId,
+            liveBatteryOverlayEnabled = enabled,
+            reason = "lbo_$reason"
+        )
+
+        val applied = applyLiveBatteryOverlayPreference(
+            enabled = enabled,
+            controllerIdentifier = controllerIdentifier,
+            reason = reason
+        )
+        refreshSettingsStateLater()
+        return applied
+    }
+
+    private fun applyLiveBatteryOverlayPreference(
+        enabled: Boolean,
+        controllerIdentifier: String?,
+        reason: String
+    ): Boolean {
+        LogCompat.dDebug {
+            "UI_VERIFY LBO applySelected " +
+                    "reason=$reason enabled=$enabled " +
+                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"} " +
+                    "serviceRunning=${BatteryOverlayService.isRunning} " +
+                    "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
+        }
+
+        if (enabled) {
+            if (controllerIdentifier.isNullOrBlank()) {
+                LogCompat.d("Live Battery Overlay show skipped: missing controller identifier")
+                return false
+            }
+            if (!Settings.canDrawOverlays(this)) {
+                requestOverlayPermission()
+                showToast(R.string.toast_overlay_permission_required)
+                return false
+            }
+            return dispatchServiceAction(
+                action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
+                foreground = false,
+                controllerIdentifier = controllerIdentifier
+            )
+        }
+
+        if (!BatteryOverlayService.isRunning && !BatteryOverlayService.isOverlayVisible) {
+            LogCompat.dDebug {
+                "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
+            }
+            return true
+        }
+
+        return dispatchServiceAction(
+            action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
+            foreground = false
+        )
     }
 
     private fun handleSettingItemClicked(itemId: SettingItemUiModel.ItemId) {
@@ -506,12 +579,13 @@ class MainActivity : AppCompatActivity() {
                 overlayPermissionCheckBox.isChecked = hasOverlayPermission
                 monitoringCheckBox.isChecked = state.isMonitoringEnabled
                 floatingOverlayCheckBox.isEnabled = hasOverlayPermission
-                floatingOverlayCheckBox.isChecked = state.isOverlayVisible
+                floatingOverlayCheckBox.isChecked = selectedLiveBatteryOverlayEnabled
                 syncing = false
                 LogCompat.d(
                     "Config dialog sync: overlayPermission=$hasOverlayPermission " +
                             "monitoring=${state.isMonitoringEnabled} " +
-                            "overlayVisible=${state.isOverlayVisible}"
+                            "overlayVisible=${state.isOverlayVisible} " +
+                            "lboProfile=$selectedLiveBatteryOverlayEnabled"
                 )
             }
 
@@ -546,27 +620,14 @@ class MainActivity : AppCompatActivity() {
                     return@setOnCheckedChangeListener
                 }
                 LogCompat.i("Config checkbox changed: floatingOverlay=$isChecked")
-                if (isChecked) {
-                    if (!Settings.canDrawOverlays(this)) {
-                        requestOverlayPermission()
-                        showToast(R.string.toast_overlay_permission_required)
-                        mainHandler.postDelayed({ syncState() }, 250L)
-                        return@setOnCheckedChangeListener
-                    }
-
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_SHOW_OVERLAY, false)) {
-                        showToast(R.string.toast_overlay_shown)
-                    }
-                } else {
-                    if (!BatteryOverlayService.isRunning) {
-                        LogCompat.d("Ignore hide overlay because service is not running")
-                        mainHandler.postDelayed({ syncState() }, 250L)
-                        return@setOnCheckedChangeListener
-                    }
-
-                    if (dispatchServiceAction(BatteryOverlayService.ACTION_HIDE_OVERLAY, false)) {
-                        showToast(R.string.toast_overlay_hidden)
-                    }
+                val applied = handleLiveBatteryOverlayToggle(
+                    enabled = isChecked,
+                    reason = "config_dialog"
+                )
+                if (applied) {
+                    showToast(
+                        if (isChecked) R.string.toast_overlay_shown else R.string.toast_overlay_hidden
+                    )
                 }
                 mainHandler.postDelayed({ syncState() }, 350L)
             }
@@ -683,19 +744,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun dispatchServiceAction(action: String, foreground: Boolean): Boolean {
+    private fun dispatchServiceAction(
+        action: String,
+        foreground: Boolean,
+        controllerIdentifier: String? = null
+    ): Boolean {
         val intent = Intent(this, BatteryOverlayService::class.java).apply {
             this.action = action
-            // TODO(PR-23): Pass the selected controller identifier so monitoring and
-            // overlay updates follow the active pager page instead of the primary gamepad.
+            controllerIdentifier?.takeIf { it.isNotBlank() }?.let {
+                putExtra(BatteryOverlayService.EXTRA_CONTROLLER_IDENTIFIER, it)
+            }
         }
 
         val result = runCatching {
             if (foreground && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                LogCompat.i("startForegroundService action=$action")
+                LogCompat.i(
+                    "startForegroundService action=$action " +
+                            "controller=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+                )
                 startForegroundService(intent)
             } else {
-                LogCompat.i("startService action=$action")
+                LogCompat.i(
+                    "startService action=$action " +
+                            "controller=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+                )
                 startService(intent)
             }
         }
@@ -841,6 +913,7 @@ class MainActivity : AppCompatActivity() {
                     "selected=${state.selectedControllerUniqueId?.let(::maskIdentifier) ?: "none"} " +
                     "monitoring=${state.isMonitoringEnabled} " +
                     "overlay=${state.isOverlayVisible} " +
+                    "lboProfile=$selectedLiveBatteryOverlayEnabled " +
                     "protect=$protectBatteryEnabled"
         }
         utilSettingsPanel.submitItems(buildUtilSettingItems(state))
@@ -866,7 +939,7 @@ class MainActivity : AppCompatActivity() {
                 iconHeightDp = 25f,
                 title = getString(R.string.settings_live_overlay),
                 control = SettingItemUiModel.Control.Toggle(
-                    checked = state.isOverlayVisible
+                    checked = selectedLiveBatteryOverlayEnabled
                 )
             ),
             SettingItemUiModel(
@@ -1004,6 +1077,12 @@ class MainActivity : AppCompatActivity() {
             lastLoadedProfileDescriptor = null
             if (previousSelectedUniqueId != null) {
                 selectedVibeColor = DEFAULT_VIBE_COLOR
+                selectedLiveBatteryOverlayEnabled = false
+                applyLiveBatteryOverlayPreference(
+                    enabled = false,
+                    controllerIdentifier = null,
+                    reason = "controller_disconnected"
+                )
                 LogCompat.d("ControllerProfile reset to default color because controller disconnected")
             }
             return
@@ -1011,7 +1090,13 @@ class MainActivity : AppCompatActivity() {
 
         if (selectedUniqueId != previousSelectedUniqueId) {
             selectedVibeColor = DEFAULT_VIBE_COLOR
+            selectedLiveBatteryOverlayEnabled = false
             lastLoadedProfileDescriptor = null
+            applyLiveBatteryOverlayPreference(
+                enabled = false,
+                controllerIdentifier = selectedUniqueId,
+                reason = "controller_changed_default"
+            )
         }
 
         if (persistentId == lastLoadedProfileDescriptor) {
@@ -1111,9 +1196,34 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (profile == null) {
                     LogCompat.d("ControllerProfile missing id=${maskIdentifier(persistentId)}")
+                    selectedLiveBatteryOverlayEnabled = false
+                    LogCompat.dDebug {
+                        "UI_VERIFY LBO profileLoad " +
+                                "id=${maskIdentifier(persistentId)} runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"} " +
+                                "enabled=false missing=true"
+                    }
+                    bindFixedSettingsPanel(currentState)
+                    applyLiveBatteryOverlayPreference(
+                        enabled = false,
+                        controllerIdentifier = controllerIdentifier,
+                        reason = "profile_missing"
+                    )
                     return@post
                 }
-                
+
+                selectedLiveBatteryOverlayEnabled = profile.liveBatteryOverlayEnabled
+                LogCompat.dDebug {
+                    "UI_VERIFY LBO profileLoad " +
+                            "id=${maskIdentifier(persistentId)} runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"} " +
+                            "enabled=${profile.liveBatteryOverlayEnabled} missing=false"
+                }
+                bindFixedSettingsPanel(currentState)
+                applyLiveBatteryOverlayPreference(
+                    enabled = profile.liveBatteryOverlayEnabled,
+                    controllerIdentifier = controllerIdentifier,
+                    reason = "profile_loaded"
+                )
+
                 // Only update internal color state if the hardware application was actually successful
                 if (restoreStatus == com.android.synclab.glimpse.data.model.ControllerLightCommandStatus.SUCCESS) {
                     selectedVibeColor = profile.lightbarColor
@@ -1131,13 +1241,19 @@ class MainActivity : AppCompatActivity() {
                     "ControllerProfile loaded id=${maskIdentifier(persistentId)} " +
                             "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"} " +
                             "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)} " +
+                            "lbo=${profile.liveBatteryOverlayEnabled} " +
                             "restoreStatus=${restoreStatus ?: "n/a"}"
                 )
             }
         }
     }
 
-    private fun persistControllerProfile(lightbarColor: Int, targetId: String? = null) {
+    private fun persistControllerProfile(
+        lightbarColor: Int,
+        targetId: String? = null,
+        liveBatteryOverlayEnabled: Boolean = selectedLiveBatteryOverlayEnabled,
+        reason: String = "profile"
+    ) {
         val persistentId = targetId ?: viewModel.currentUiState().controllerPersistentId
         if (persistentId.isNullOrBlank()) {
             LogCompat.d(
@@ -1150,11 +1266,13 @@ class MainActivity : AppCompatActivity() {
         val profile = ControllerProfile(
             id = persistentId,
             deviceName = deviceName,
-            lightbarColor = lightbarColor
+            lightbarColor = lightbarColor,
+            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled
         )
         LogCompat.d(
             "ControllerProfile save queued id=${maskIdentifier(persistentId)} " +
-                    "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+                    "reason=$reason deviceName=$deviceName " +
+                    "color=${toHexColor(lightbarColor)} lbo=$liveBatteryOverlayEnabled"
         )
         profileIoExecutor.execute {
             runCatching {
@@ -1162,8 +1280,14 @@ class MainActivity : AppCompatActivity() {
             }.onSuccess {
                 LogCompat.d(
                     "ControllerProfile saved id=${maskIdentifier(persistentId)} " +
-                            "deviceName=$deviceName color=${toHexColor(lightbarColor)}"
+                            "reason=$reason deviceName=$deviceName " +
+                            "color=${toHexColor(lightbarColor)} lbo=$liveBatteryOverlayEnabled"
                 )
+                LogCompat.dDebug {
+                    "UI_VERIFY LBO profilePersist " +
+                            "id=${maskIdentifier(persistentId)} enabled=$liveBatteryOverlayEnabled " +
+                            "reason=$reason"
+                }
             }.onFailure { throwable ->
                 LogCompat.e("ControllerProfile save failed id=${maskIdentifier(persistentId)}", throwable)
             }

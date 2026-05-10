@@ -25,6 +25,8 @@ class BatteryOverlayService : Service() {
             "com.android.synclab.glimpse.action.SHOW_OVERLAY"
         const val ACTION_HIDE_OVERLAY =
             "com.android.synclab.glimpse.action.HIDE_OVERLAY"
+        const val EXTRA_CONTROLLER_IDENTIFIER =
+            "com.android.synclab.glimpse.extra.CONTROLLER_IDENTIFIER"
 
         private const val NOTIFICATION_ID = 31001
         private const val CHANNEL_ID = "glimpse_monitor_channel_v1"
@@ -51,6 +53,7 @@ class BatteryOverlayService : Service() {
 
     private var foregroundStarted = false
     private var updateLoopStarted = false
+    private var activeOverlayControllerIdentifier: String? = null
 
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -110,10 +113,21 @@ class BatteryOverlayService : Service() {
             ACTION_HIDE_OVERLAY -> {
                 overlayWindowController.hide()
                 MonitoringStateStore.isOverlayVisible = overlayWindowController.isVisible()
+                activeOverlayControllerIdentifier = null
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayService action=hide target=none " +
+                            "visible=${MonitoringStateStore.isOverlayVisible}"
+                }
             }
 
             ACTION_SHOW_OVERLAY -> {
+                activeOverlayControllerIdentifier = readControllerIdentifier(intent)
                 MonitoringStateStore.isOverlayVisible = overlayWindowController.show()
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayService action=show " +
+                            "target=${activeOverlayControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                            "visible=${MonitoringStateStore.isOverlayVisible}"
+                }
             }
 
             ACTION_START_MONITORING -> {
@@ -164,6 +178,7 @@ class BatteryOverlayService : Service() {
         MonitoringStateStore.isMonitoringEnabled = false
         MonitoringStateStore.isOverlayVisible = false
         MonitoringStateStore.lastStatusText = ""
+        activeOverlayControllerIdentifier = null
 
         super.onDestroy()
     }
@@ -202,8 +217,11 @@ class BatteryOverlayService : Service() {
     }
 
     private fun updateBatteryState() {
+        val overlayTargetIdentifier = activeOverlayControllerIdentifier
+            ?.takeIf { MonitoringStateStore.isOverlayVisible }
         val snapshot = getPrimaryGamepadBatteryUseCase(
-            getString(R.string.unknown_controller_name)
+            defaultControllerName = getString(R.string.unknown_controller_name),
+            controllerIdentifier = overlayTargetIdentifier
         )
 
         val overlayText = when {
@@ -230,9 +248,16 @@ class BatteryOverlayService : Service() {
         val iconRes = pickNotificationIcon(snapshot.batteryPercent)
         MonitoringStateStore.lastStatusText = notificationText
         LogCompat.d(
-            "updateBatteryState controller=${snapshot.controllerName} " +
-                    "percent=${snapshot.batteryPercent}"
+            "updateBatteryState target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "controller=${snapshot.controllerName} percent=${snapshot.batteryPercent}"
         )
+        LogCompat.dDebug {
+            "UI_VERIFY OverlayService battery " +
+                    "target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "controller=${snapshot.controllerName ?: "none"} " +
+                    "percent=${snapshot.batteryPercent} " +
+                    "overlayVisible=${MonitoringStateStore.isOverlayVisible}"
+        }
 
         if (MonitoringStateStore.isMonitoringEnabled) {
             ensureForegroundStarted(notificationText, iconRes)
@@ -255,5 +280,16 @@ class BatteryOverlayService : Service() {
             percent <= 85 -> R.drawable.ic_battery_75
             else -> R.drawable.ic_battery_100
         }
+    }
+
+    private fun readControllerIdentifier(intent: Intent?): String? {
+        return intent
+            ?.getStringExtra(EXTRA_CONTROLLER_IDENTIFIER)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
 }

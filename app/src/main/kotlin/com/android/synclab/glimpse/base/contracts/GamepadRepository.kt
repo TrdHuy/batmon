@@ -7,7 +7,10 @@ import com.android.synclab.glimpse.data.model.ControllerLightCommandResult
 interface GamepadRepository {
     fun getConnectedPs4Controllers(defaultDeviceName: String): List<ControllerInfo>
 
-    fun getPrimaryGamepadBatterySnapshot(defaultControllerName: String): GamepadBatterySnapshot
+    fun getPrimaryGamepadBatterySnapshot(
+        defaultControllerName: String,
+        controllerIdentifier: String? = null
+    ): GamepadBatterySnapshot
 
     fun setPs4ControllerLightColor(
         color: Int,
