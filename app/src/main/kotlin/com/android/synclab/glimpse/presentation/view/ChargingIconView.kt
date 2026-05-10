@@ -15,6 +15,7 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.AppCompatImageView
 import com.android.synclab.glimpse.R
+import com.android.synclab.glimpse.utils.LogCompat
 import kotlin.math.max
 import kotlin.math.min
 
@@ -70,9 +71,12 @@ class ChargingIconView @JvmOverloads constructor(
 
     private class GlowLayerView(context: Context) : View(context) {
         private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val ambientBlurPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val coreBlurPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
         private var sourceBitmap: Bitmap? = null
-        private var alphaBitmap: Bitmap? = null
+        private var ambientGlowBitmap: Bitmap? = null
+        private var coreGlowBitmap: Bitmap? = null
         private var iconDrawable: Drawable? = null
 
         private var glowEnabled: Boolean = false
@@ -82,6 +86,10 @@ class ChargingIconView @JvmOverloads constructor(
         private var iconHeightPx: Int = 0
         private var drawLeft: Float = 0f
         private var drawTop: Float = 0f
+        private var ambientGlowLeft: Float = 0f
+        private var ambientGlowTop: Float = 0f
+        private var coreGlowLeft: Float = 0f
+        private var coreGlowTop: Float = 0f
 
         init {
             setLayerType(LAYER_TYPE_SOFTWARE, null)
@@ -92,6 +100,7 @@ class ChargingIconView @JvmOverloads constructor(
                 return
             }
             glowEnabled = enabled
+            LogCompat.dDebug { "UI_VERIFY ChargingIcon glowEnabled=$enabled" }
             invalidate()
         }
 
@@ -102,6 +111,10 @@ class ChargingIconView @JvmOverloads constructor(
             }
             glowColor = color
             glowRadiusPx = safeRadius
+            rebuildGlowBitmaps()
+            LogCompat.dDebug {
+                "UI_VERIFY ChargingIcon glowStyle color=${color.toHexColor()} radius=${safeRadius.toInt()}"
+            }
             invalidate()
         }
 
@@ -124,14 +137,20 @@ class ChargingIconView @JvmOverloads constructor(
                 return
             }
 
-            val alpha = alphaBitmap ?: return
             if (glowRadiusPx <= 0f || glowColor == 0) {
                 return
             }
 
             glowPaint.color = glowColor
-            glowPaint.maskFilter = BlurMaskFilter(glowRadiusPx, BlurMaskFilter.Blur.OUTER)
-            canvas.drawBitmap(alpha, drawLeft, drawTop, glowPaint)
+            ambientGlowBitmap?.let { ambient ->
+                glowPaint.alpha = AMBIENT_GLOW_ALPHA
+                canvas.drawBitmap(ambient, ambientGlowLeft, ambientGlowTop, glowPaint)
+            }
+            coreGlowBitmap?.let { core ->
+                glowPaint.alpha = CORE_GLOW_ALPHA
+                canvas.drawBitmap(core, coreGlowLeft, coreGlowTop, glowPaint)
+            }
+            glowPaint.alpha = 255
         }
 
         override fun onDetachedFromWindow() {
@@ -159,14 +178,65 @@ class ChargingIconView @JvmOverloads constructor(
             val sourceCanvas = Canvas(source)
             drawable.setBounds(0, 0, sourceCanvas.width, sourceCanvas.height)
             drawable.draw(sourceCanvas)
-            alphaBitmap = source.extractAlpha()
+            rebuildGlowBitmaps()
+            LogCompat.dDebug {
+                "UI_VERIFY ChargingIcon bitmaps view=${viewWidth}x$viewHeight " +
+                        "icon=${targetWidth}x$targetHeight " +
+                        "ambient=${ambientGlowBitmap?.width}x${ambientGlowBitmap?.height} " +
+                        "core=${coreGlowBitmap?.width}x${coreGlowBitmap?.height}"
+            }
+        }
+
+        private fun rebuildGlowBitmaps() {
+            recycleGlowBitmaps()
+
+            val source = sourceBitmap ?: return
+            if (glowRadiusPx <= 0f) {
+                return
+            }
+
+            ambientBlurPaint.maskFilter = BlurMaskFilter(
+                glowRadiusPx * AMBIENT_GLOW_RADIUS_MULTIPLIER,
+                BlurMaskFilter.Blur.NORMAL
+            )
+            coreBlurPaint.maskFilter = BlurMaskFilter(
+                glowRadiusPx * CORE_GLOW_RADIUS_MULTIPLIER,
+                BlurMaskFilter.Blur.NORMAL
+            )
+
+            val ambientOffset = IntArray(2)
+            ambientGlowBitmap = source.extractAlpha(ambientBlurPaint, ambientOffset)
+            ambientGlowLeft = drawLeft + ambientOffset[0]
+            ambientGlowTop = drawTop + ambientOffset[1]
+
+            val coreOffset = IntArray(2)
+            coreGlowBitmap = source.extractAlpha(coreBlurPaint, coreOffset)
+            coreGlowLeft = drawLeft + coreOffset[0]
+            coreGlowTop = drawTop + coreOffset[1]
         }
 
         private fun recycleBitmaps() {
             sourceBitmap?.recycle()
-            alphaBitmap?.recycle()
+            recycleGlowBitmaps()
             sourceBitmap = null
-            alphaBitmap = null
+        }
+
+        private fun recycleGlowBitmaps() {
+            ambientGlowBitmap?.recycle()
+            coreGlowBitmap?.recycle()
+            ambientGlowBitmap = null
+            coreGlowBitmap = null
+        }
+
+        private fun Int.toHexColor(): String {
+            return "#${toUInt().toString(16).uppercase().padStart(8, '0')}"
+        }
+
+        companion object {
+            private const val AMBIENT_GLOW_RADIUS_MULTIPLIER = 1.35f
+            private const val CORE_GLOW_RADIUS_MULTIPLIER = 0.55f
+            private const val AMBIENT_GLOW_ALPHA = 150
+            private const val CORE_GLOW_ALPHA = 215
         }
     }
 }

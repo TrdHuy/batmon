@@ -236,6 +236,11 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
                 radiusPx = 11f * itemView.resources.displayMetrics.density
             )
             chargingIconView.setGlowEnabled(isCharging)
+            LogCompat.dDebug {
+                "UI_VERIFY ChargingIcon bind " +
+                        "id=${maskControllerPageId(page.uniqueId)} " +
+                        "status=${page.batteryStatus} glowEnabled=$isCharging"
+            }
         }
 
         private fun bindSelection(page: ControllerPageUiModel) {
@@ -307,7 +312,7 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
     }
 
     companion object {
-        private const val CHARGING_GLOW_COLOR = 0xFFD58C2E.toInt()
+        private const val CHARGING_GLOW_COLOR = 0xFFFFB447.toInt()
     }
 }
 
