@@ -7,7 +7,7 @@
         "line": null,
         "symbol": "com.android.synclab.glimpse.presentation.MainActivity",
         "threshold": 50,
-        "value": 83
+        "value": 84
       },
       "id": "cbo-com.android.synclab.glimpse.presentation.MainActivity",
       "metric": "cbo",
@@ -16,7 +16,7 @@
         "Push business decisions toward ViewModel, service, or use case layers.",
         "Keep UI/lifecycle classes focused on lifecycle, navigation, and view binding."
       ],
-      "score_impact": "CBO score is 4.29",
+      "score_impact": "CBO score is 4.27",
       "severity": "medium",
       "title": "High coupling detected",
       "why_it_matters": "High coupling makes the class harder to change, test, and reuse."
@@ -36,7 +36,7 @@
         "Push business decisions toward ViewModel, service, or use case layers.",
         "Keep UI/lifecycle classes focused on lifecycle, navigation, and view binding."
       ],
-      "score_impact": "CBO score is 4.29",
+      "score_impact": "CBO score is 4.27",
       "severity": "medium",
       "title": "High coupling detected",
       "why_it_matters": "High coupling makes the class harder to change, test, and reuse."
@@ -94,8 +94,8 @@
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line_count": 9,
-            "line_end": 1109,
-            "line_start": 1101
+            "line_end": 1114,
+            "line_start": 1106
           }
         ]
       },
@@ -143,67 +143,67 @@
     },
     {
       "evidence": {
-        "candidate_count": 282,
+        "candidate_count": 322,
         "sample": [
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/BatteryOverlayService.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/SettingsPanelView.kt",
             "line": null,
-            "symbol": "isMonitoringEnabled",
-            "type": "UNUSED_CLASS_METHOD"
+            "symbol": "$i$a$-let-SettingsPanelView$applyAttributes$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/domain/manager/DeveloperOptionManager.kt",
-            "line": 38,
-            "symbol": "$i$a$-apply-DeveloperOptionManager$1$1",
-            "type": "UNUSED_LOCAL_VARIABLE"
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
+            "line": null,
+            "symbol": "$VALUES",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
           },
           {
             "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
             "line": null,
-            "symbol": "SERVICE_ACTION_STATE_SYNC_DELAY_MS",
+            "symbol": "$i$a$-let-MainActivity$bindFixedSettingsPanel$1$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/di/AppContainer.kt",
+            "line": null,
+            "symbol": "instance",
             "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
-            "line": 694,
-            "symbol": "$i$f$firstOrNull",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
+            "line": 21,
+            "symbol": "$marker",
+            "type": "UNUSED_FUNCTION_PARAMETER"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/di/AppContainer.kt",
+            "line": 103,
+            "symbol": "$i$a$-also-AppContainer$Companion$from$1$1",
             "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
-            "line": null,
-            "symbol": "isMock",
-            "type": "UNUSED_CLASS_METHOD"
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
+            "line": 136,
+            "symbol": "it",
+            "type": "UNUSED_FUNCTION_PARAMETER"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
-            "line": 478,
-            "symbol": "$i$a$-logDiagnosticDebug-GamepadRepositoryImpl$closeControllerLightSessionInternal$session$1$1",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ControllerPageAdapter.kt",
+            "line": null,
+            "symbol": "this$0",
+            "type": "UNUSED_CLASS_DATA_MEMBER"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": null,
+            "symbol": "$i$a$-let-MainActivity$onFixedSettingToggleChanged$1$1",
             "type": "UNUSED_LOCAL_VARIABLE"
           },
           {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
             "line": null,
-            "symbol": "component5",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/ControllerPageUiModel.kt",
-            "line": null,
-            "symbol": "getDeviceId",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/data/model/ControllerLightCommandResult.kt",
-            "line": null,
-            "symbol": "component1",
-            "type": "UNUSED_CLASS_METHOD"
-          },
-          {
-            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
-            "line": null,
-            "symbol": "component2",
-            "type": "UNUSED_CLASS_METHOD"
+            "symbol": "$colorPreview",
+            "type": "UNUSED_CLASS_DATA_MEMBER"
           }
         ]
       },
@@ -221,15 +221,15 @@
   ],
   "mode": "svace",
   "outputs": {
-    "agent_json": "/tmp/sam-agent-runs/batmon-20260509-205158/agent-report.json",
-    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260509-205158/agent-report.md",
-    "dev_html": "/tmp/sam-agent-runs/batmon-20260509-205158/dev-report.html",
-    "log": "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace/log/sam.log_20260509",
-    "raw_sam": "/tmp/sam-agent-runs/batmon-20260509-205158/raw-sam",
-    "run_dir": "/tmp/sam-agent-runs/batmon-20260509-205158",
-    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace/sam-result/html/SAM_Report_batmon_20260509_index.html",
-    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace/sam-result/report.json",
-    "score_csv": "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace/sam-result/SAM_total_score.csv"
+    "agent_json": "/tmp/sam-agent-runs/batmon-20260510-091737/agent-report.json",
+    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260510-091737/agent-report.md",
+    "dev_html": "/tmp/sam-agent-runs/batmon-20260510-091737/dev-report.html",
+    "log": "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace/log/sam.log_20260510",
+    "raw_sam": "/tmp/sam-agent-runs/batmon-20260510-091737/raw-sam",
+    "run_dir": "/tmp/sam-agent-runs/batmon-20260510-091737",
+    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace/sam-result/html/SAM_Report_batmon_20260510_index.html",
+    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace/sam-result/report.json",
+    "score_csv": "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace/sam-result/SAM_total_score.csv"
   },
   "project": {
     "detected": {
@@ -240,16 +240,16 @@
     },
     "language": "kotlin",
     "name": "batmon",
-    "path": "/home/huy/Desktop/workspace/gitprojects/batmon",
+    "path": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
     "type": "OO"
   },
   "project_metrics": {
-    "analysis_time": "2026-05-09 20:52",
+    "analysis_time": "2026-05-10 09:18",
     "class_count": 130,
-    "code_loc": 4374,
+    "code_loc": 4381,
     "file_count": 45,
-    "method_count": 479,
-    "physical_loc": 4995,
+    "method_count": 481,
+    "physical_loc": 5009,
     "total_node": 23
   },
   "run": {
@@ -259,9 +259,9 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "init",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace"
+          "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace"
         ],
-        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
         "step": "init"
       },
@@ -270,11 +270,11 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "scan",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/gitprojects/batmon",
+          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
           "--pmd-heap-size",
           "2g",
           "--sequential",
@@ -283,7 +283,7 @@
           "clean",
           ":app:assembleDebug"
         ],
-        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
         "step": "scan"
       },
@@ -292,13 +292,13 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "analyze",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/gitprojects/batmon"
+          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon"
         ],
-        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
         "step": "analyze"
       },
@@ -307,21 +307,21 @@
           "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
           "calculate",
           "--sam-dir",
-          "/tmp/sam-agent-runs/batmon-20260509-205158/attempts/svace",
+          "/tmp/sam-agent-runs/batmon-20260510-091737/attempts/svace",
           "--language",
           "KOTLIN",
           "--source-path",
-          "/home/huy/Desktop/workspace/gitprojects/batmon",
+          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
           "--project-name",
           "batmon",
           "--include",
-          "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin",
+          "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin",
           "--metrics",
           "cc,dc,mcd,cbo,loc,dep,gm,uc,ncs",
           "--scoring-metrics",
           "cc,dc,mcd,cbo,loc,dep,gm"
         ],
-        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "cwd": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon",
         "exit_code": 0,
         "step": "calculate"
       }
@@ -333,8 +333,8 @@
   "scorecard": {
     "metrics": {
       "cbo": {
-        "raw_score": 4.29,
-        "score": 4.29,
+        "raw_score": 4.27,
+        "score": 4.27,
         "scoring": true,
         "status": "watch"
       },
