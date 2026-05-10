@@ -8,7 +8,6 @@ import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.presentation.model.DebugControllerPageFactory
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
@@ -64,7 +63,7 @@ class MainViewModel(
 
         val mockModeEnabled = developerOptionManager.isMockControllerPagesEnabled()
         if (mockModeEnabled) {
-            val mockPages = DebugControllerPageFactory.createPages(
+            val mockPages = buildDebugControllerPages(
                 previousSelectedUniqueId = uiState.selectedControllerUniqueId
             )
             val selectedMockPage = mockPages.firstOrNull { it.isSelected } ?: mockPages.first()
@@ -167,6 +166,61 @@ class MainViewModel(
                     "primaryDescriptor=${newState.controllerDescriptor?.let(::maskIdentifier)} " +
                     "primaryName=${newState.controllerName}"
         )
+    }
+
+    private fun buildDebugControllerPages(previousSelectedUniqueId: String? = null): List<ControllerPageUiModel> {
+        val basePages = listOf(
+            ControllerPageUiModel(
+                uniqueId = "debug-controller-alpha",
+                persistentId = "debug-controller-alpha",
+                descriptor = null,
+                deviceId = null,
+                name = "Debug Controller Alpha",
+                vendorId = null,
+                productId = null,
+                batteryPercent = 78,
+                batteryStatus = BatteryChargeStatus.CHARGING,
+                isSelected = false,
+                isMock = true
+            ),
+            ControllerPageUiModel(
+                uniqueId = "debug-controller-bravo",
+                persistentId = "debug-controller-bravo",
+                descriptor = null,
+                deviceId = null,
+                name = "Debug Controller Bravo",
+                vendorId = null,
+                productId = null,
+                batteryPercent = 42,
+                batteryStatus = BatteryChargeStatus.DISCHARGING,
+                isSelected = false,
+                isMock = true
+            ),
+            ControllerPageUiModel(
+                uniqueId = "debug-controller-charlie",
+                persistentId = "debug-controller-charlie",
+                descriptor = null,
+                deviceId = null,
+                name = "Debug Controller Charlie",
+                vendorId = null,
+                productId = null,
+                batteryPercent = null,
+                batteryStatus = BatteryChargeStatus.UNKNOWN,
+                isSelected = false,
+                isMock = true
+            )
+        )
+
+        val selectedUniqueId = when {
+            previousSelectedUniqueId != null && basePages.any { it.uniqueId == previousSelectedUniqueId } -> {
+                previousSelectedUniqueId
+            }
+            else -> basePages.first().uniqueId
+        }
+
+        return basePages.map { page ->
+            page.copy(isSelected = page.uniqueId == selectedUniqueId)
+        }
     }
 
     fun selectController(

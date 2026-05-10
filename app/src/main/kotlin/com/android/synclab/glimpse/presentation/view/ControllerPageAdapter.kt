@@ -70,6 +70,10 @@ class ControllerPageAdapter : RecyclerView.Adapter<ControllerPageAdapter.Control
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ControllerPageViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_controller_page, parent, false)
+        view.layoutParams = RecyclerView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
         return ControllerPageViewHolder(view)
     }
 

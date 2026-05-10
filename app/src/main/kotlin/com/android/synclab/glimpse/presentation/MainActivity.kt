@@ -255,6 +255,9 @@ class MainActivity : AppCompatActivity() {
                                 "position=$position uniqueId=${maskIdentifier(page.uniqueId)} " +
                                 "placeholder=${page.isPlaceholder}"
                     }
+                    controllerPager.post {
+                        logControllerPagerBounds("onPageSelected:$position")
+                    }
                     if (page.isPlaceholder) {
                         return
                     }
@@ -277,6 +280,15 @@ class MainActivity : AppCompatActivity() {
                             uniqueId = currentPage.uniqueId,
                             source = EventChangeParam.Source.VIEW
                         )
+                    }
+                }
+
+                override fun onPageScrollStateChanged(state: Int) {
+                    if (state != ViewPager2.SCROLL_STATE_IDLE) {
+                        return
+                    }
+                    controllerPager.post {
+                        logControllerPagerBounds("scrollIdle:${controllerPager.currentItem}")
                     }
                 }
             }
@@ -304,13 +316,16 @@ class MainActivity : AppCompatActivity() {
             if (!hasLoggedFixedSettingsLayout) {
                 hasLoggedFixedSettingsLayout = true
                 logFixedSettingsLayout("firstLayout")
+                logControllerPagerBounds("firstLayout")
             }
         }
         mainHandler.post {
             logFixedSettingsLayout("postSetup")
+            logControllerPagerBounds("postSetup")
         }
         mainHandler.postDelayed({
             logFixedSettingsLayout("postLayout")
+            logControllerPagerBounds("postLayout")
         }, 500L)
     }
 
@@ -910,8 +925,33 @@ class MainActivity : AppCompatActivity() {
             "UI_VERIFY FixedSettings layout " +
                     "reason=$reason " +
                     "pagerTop=${controllerPager.top} pagerBottom=${controllerPager.bottom} " +
+                    "pagerLeft=${controllerPager.left} pagerRight=${controllerPager.right} " +
                     "utilTop=${utilSettingsPanel.top} utilBottom=${utilSettingsPanel.bottom} " +
                     "otherTop=${otherSettingsPanel.top} otherBottom=${otherSettingsPanel.bottom}"
+        }
+    }
+
+    private fun logControllerPagerBounds(reason: String) {
+        if (!::controllerPager.isInitialized || !::controllerPageAdapter.isInitialized) {
+            return
+        }
+
+        val recyclerView = controllerPager.getChildAt(0) as? RecyclerView
+        val childBounds = recyclerView?.let { rv ->
+            (0 until rv.childCount).joinToString(separator = ";") { index ->
+                val child = rv.getChildAt(index)
+                val adapterPosition = rv.getChildAdapterPosition(child)
+                "adapter=$adapterPosition,left=${child.left},right=${child.right},width=${child.width}"
+            }
+        } ?: "none"
+        LogCompat.dDebug {
+            "UI_VERIFY ControllerPager bounds " +
+                    "reason=$reason current=${controllerPager.currentItem} " +
+                    "itemCount=${controllerPageAdapter.itemCount} " +
+                    "pagerLeft=${controllerPager.left} pagerRight=${controllerPager.right} " +
+                    "pagerWidth=${controllerPager.width} " +
+                    "rvWidth=${recyclerView?.width} rvScrollX=${recyclerView?.scrollX} " +
+                    "children=[$childBounds]"
         }
     }
 
