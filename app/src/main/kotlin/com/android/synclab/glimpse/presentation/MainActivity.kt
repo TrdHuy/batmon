@@ -447,11 +447,12 @@ class MainActivity : AppCompatActivity() {
         }
         // TODO(PR-23): Gate dialog opening on the target controller profile load so the
         // initial color cannot come from the previously selected page.
-        // TODO(PR-23): Use the selected page's runtime controllerUniqueId for lightbar
-        // commands, and keep controllerPersistentId only as the profile storage key.
-        val targetId = viewModel.currentUiState().controllerPersistentId
+        val currentState = viewModel.currentUiState()
+        val profileId = currentState.controllerPersistentId
+        val runtimeControllerId = currentState.controllerUniqueId
         LogCompat.dDebug {
-            "CustomizeVibeDialog open targetId=${targetId?.let(::maskIdentifier)} " +
+            "CustomizeVibeDialog open profileId=${profileId?.let(::maskIdentifier)} " +
+                    "runtimeId=${runtimeControllerId?.let(::maskIdentifier)} " +
                     "selectedColor=${toHexColor(selectedVibeColor)}"
         }
 
@@ -459,14 +460,15 @@ class MainActivity : AppCompatActivity() {
             context = this,
             initialColor = selectedVibeColor,
             setPs4ControllerLightColorUseCase = setPs4ControllerLightColorUseCase,
-            controllerIdentifier = targetId,
+            controllerIdentifier = runtimeControllerId,
             onColorApplied = { color ->
                 selectedVibeColor = color
                 LogCompat.dDebug {
                     "CustomizeVibeDialog onColorApplied color=${toHexColor(color)} " +
-                            "targetId=${targetId?.let(::maskIdentifier)}"
+                            "profileId=${profileId?.let(::maskIdentifier)} " +
+                            "runtimeId=${runtimeControllerId?.let(::maskIdentifier)}"
                 }
-                persistControllerProfile(color, targetId)
+                persistControllerProfile(color, profileId)
             },
             onDismiss = {
                 customizeVibeDialog = null
@@ -1022,16 +1024,29 @@ class MainActivity : AppCompatActivity() {
         lastLoadedProfileDescriptor = persistentId
         LogCompat.d(
             "ControllerProfile load scheduled id=${maskIdentifier(persistentId)} " +
+                    "runtimeId=${selectedUniqueId?.let(::maskIdentifier) ?: "n/a"} " +
                     "activeName=${activeControllerName ?: "n/a"}"
         )
-        loadControllerProfile(persistentId)
+        loadControllerProfile(
+            persistentId = persistentId,
+            controllerIdentifier = selectedUniqueId
+        )
     }
 
-    private fun loadControllerProfile(persistentId: String) {
-        LogCompat.d("ControllerProfile load queued id=${maskIdentifier(persistentId)}")
+    private fun loadControllerProfile(
+        persistentId: String,
+        controllerIdentifier: String?
+    ) {
+        LogCompat.d(
+            "ControllerProfile load queued id=${maskIdentifier(persistentId)} " +
+                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"}"
+        )
         val requestGeneration = controllerProfileGeneration
         profileIoExecutor.execute {
-            LogCompat.d("ControllerProfile load started id=${maskIdentifier(persistentId)}")
+            LogCompat.d(
+                "ControllerProfile load started id=${maskIdentifier(persistentId)} " +
+                        "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"}"
+            )
             val profile = runCatching {
                 getControllerProfileUseCase(persistentId)
             }.onFailure { throwable ->
@@ -1050,15 +1065,13 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     LogCompat.i(
                         "ControllerProfile auto-restoring vibe id=${maskIdentifier(persistentId)} " +
+                                "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"} " +
                                 "color=${toHexColor(profile.lightbarColor)}"
                     )
                     runCatching {
-                        // TODO(PR-23): Resolve and pass the active runtime controllerUniqueId
-                        // for lightbar commands; persistentId should remain only the Room
-                        // profile key and may not identify descriptor-less controllers.
                         val result = setPs4ControllerLightColorUseCase(
                             profile.lightbarColor,
-                            controllerIdentifier = persistentId
+                            controllerIdentifier = controllerIdentifier
                         )
                         restoreStatus = result.status
                     }.onFailure { throwable ->
@@ -1077,11 +1090,22 @@ class MainActivity : AppCompatActivity() {
                     )
                     return@post
                 }
-                val currentPersistentId = viewModel.currentUiState().controllerPersistentId
+                val currentState = viewModel.currentUiState()
+                val currentPersistentId = currentState.controllerPersistentId
+                val currentRuntimeId = currentState.controllerUniqueId
                 if (currentPersistentId != persistentId) {
                     LogCompat.d(
                         "ControllerProfile load ignored id=${maskIdentifier(persistentId)} " +
                                 "reason=active_controller_switched current=${currentPersistentId?.let(::maskIdentifier)}"
+                    )
+                    return@post
+                }
+                if (controllerIdentifier != null && currentRuntimeId != controllerIdentifier) {
+                    LogCompat.d(
+                        "ControllerProfile load ignored id=${maskIdentifier(persistentId)} " +
+                                "reason=runtime_controller_switched " +
+                                "expected=${controllerIdentifier.let(::maskIdentifier)} " +
+                                "current=${currentRuntimeId?.let(::maskIdentifier)}"
                     )
                     return@post
                 }
@@ -1105,6 +1129,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 LogCompat.d(
                     "ControllerProfile loaded id=${maskIdentifier(persistentId)} " +
+                            "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "n/a"} " +
                             "deviceName=${profile.deviceName} color=${toHexColor(profile.lightbarColor)} " +
                             "restoreStatus=${restoreStatus ?: "n/a"}"
                 )
