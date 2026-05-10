@@ -169,6 +169,8 @@ def main():
     github_sha = os.environ.get("GITHUB_SHA", "")
     github_token = os.environ.get("GITHUB_TOKEN", "")
     github_event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    github_pr_number_env = os.environ.get("GITHUB_PR_NUMBER", "")
+    github_pr_action = os.environ.get("GITHUB_PR_ACTION", "")
     
     if not github_ref or not github_sha:
         Logger.error("GITHUB_REF and GITHUB_SHA must be set.")
@@ -181,10 +183,12 @@ def main():
         
     Logger.info(f"--- SAM Automation Start ---")
     Logger.info(f"Event: {github_event_name}")
+    Logger.info(f"Action: {github_pr_action}")
     Logger.info(f"Branch: {branch_name}")
     Logger.info(f"SHA: {github_sha}")
     
-    is_pr_closed_event = (github_event_name == "pull_request")
+    # Check if this is a PR close event (for pruning only)
+    is_pr_closed_event = (github_event_name == "pull_request" and github_pr_action == "closed")
     
     if args.dry_run:
         Logger.dry_run("RUNNING IN DRY-RUN MODE")
@@ -202,19 +206,25 @@ def main():
     
     # 1. Identify PR
     pr_number = None
-    try:
-        timer.start("IDENTIFY_PR")
-        pr_view_cmd = ["gh", "pr", "view", branch_name, "--json", "number,headRefName,url"]
-        pr_result = run_command(pr_view_cmd, env=env)
-        pr_data = json.loads(pr_result.stdout)
-        pr_number = pr_data["number"]
-        Logger.info(f"Detected PR #{pr_number}")
-        timer.stop("IDENTIFY_PR")
-    except Exception as e:
-        Logger.warn(f"Could not find active PR for branch {branch_name}.")
+    if github_pr_number_env and github_pr_number_env.isdigit():
+        pr_number = int(github_pr_number_env)
+        Logger.info(f"PR Number from environment: {pr_number}")
+    else:
+        try:
+            timer.start("IDENTIFY_PR")
+            # Try to find PR by branch name
+            pr_view_cmd = ["gh", "pr", "view", branch_name, "--json", "number,headRefName,url"]
+            pr_result = run_command(pr_view_cmd, env=env)
+            pr_data = json.loads(pr_result.stdout)
+            pr_number = pr_data["number"]
+            Logger.info(f"Detected PR #{pr_number} via CLI")
+            timer.stop("IDENTIFY_PR")
+        except Exception as e:
+            Logger.warn(f"Could not find active PR for branch {branch_name}. Logic will continue without PR context.")
 
     # 2. Run SAM metrics
     report_dir = None
+    # We run analysis for Push, Manual, or PR Open/Sync. We only skip if it's a PR Close.
     if not is_pr_closed_event:
         timer.start("SAM_ANALYSIS")
         Logger.info("Running SAM metrics...")

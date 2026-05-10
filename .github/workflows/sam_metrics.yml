@@ -8,7 +8,7 @@ on:
       - 'fix/**'
       - 'infra/**'
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, closed]
     branches:
       - main
       - 'feat/**'
@@ -45,6 +45,8 @@ jobs:
           GITHUB_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.event.pull_request.head.ref) || github.ref }}
           GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_PR_ACTION: ${{ github.event.action }}
         run: |
           FLAGS=""
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
