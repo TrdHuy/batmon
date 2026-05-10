@@ -14,5 +14,7 @@ data class ControllerProfileEntity(
     @ColumnInfo(name = "lightbar_color")
     val lightbarColor: Int,
     @ColumnInfo(name = "live_battery_overlay_enabled")
-    val liveBatteryOverlayEnabled: Boolean = false
+    val liveBatteryOverlayEnabled: Boolean = false,
+    @ColumnInfo(name = "background_monitoring_enabled")
+    val backgroundMonitoringEnabled: Boolean = false
 )
