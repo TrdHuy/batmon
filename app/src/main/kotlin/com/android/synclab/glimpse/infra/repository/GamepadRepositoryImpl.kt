@@ -67,8 +67,34 @@ class GamepadRepositoryImpl(
             .toList()
     }
 
-    override fun getPrimaryGamepadBatterySnapshot(defaultControllerName: String): GamepadBatterySnapshot {
+    override fun getPrimaryGamepadBatterySnapshot(
+        defaultControllerName: String,
+        controllerIdentifier: String?
+    ): GamepadBatterySnapshot {
         val devices = inputDeviceGateway.getInputDevices()
+        val normalizedControllerIdentifier = normalizeControllerIdentifier(controllerIdentifier)
+        if (normalizedControllerIdentifier != null) {
+            val matchedDevice = devices.firstOrNull { device ->
+                isGamepad(device) && buildControllerLookupKey(device) == normalizedControllerIdentifier
+            }
+            if (matchedDevice == null) {
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayBatterySnapshot " +
+                            "target=${maskIdentifier(normalizedControllerIdentifier)} matched=false"
+                }
+                return GamepadBatterySnapshot(null, null)
+            }
+
+            val controllerName = matchedDevice.name ?: defaultControllerName
+            val batteryPercent = readBatteryInfo(matchedDevice).first
+            LogCompat.dDebug {
+                "UI_VERIFY OverlayBatterySnapshot " +
+                        "target=${maskIdentifier(normalizedControllerIdentifier)} " +
+                        "matched=true deviceId=${matchedDevice.id} percent=$batteryPercent"
+            }
+            return GamepadBatterySnapshot(controllerName, batteryPercent)
+        }
+
         var fallbackControllerName: String? = null
 
         for (device in devices) {
@@ -83,10 +109,18 @@ class GamepadRepositoryImpl(
 
             val batteryPercent = readBatteryInfo(device).first
             if (batteryPercent != null) {
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayBatterySnapshot target=primary " +
+                            "matched=true deviceId=${device.id} percent=$batteryPercent"
+                }
                 return GamepadBatterySnapshot(controllerName, batteryPercent)
             }
         }
 
+        LogCompat.dDebug {
+            "UI_VERIFY OverlayBatterySnapshot target=primary " +
+                    "matched=${fallbackControllerName != null} percent=null"
+        }
         return when {
             fallbackControllerName != null -> GamepadBatterySnapshot(fallbackControllerName, null)
             else -> GamepadBatterySnapshot(null, null)
@@ -479,6 +513,10 @@ class GamepadRepositoryImpl(
 
     private fun normalizeControllerIdentifier(controllerIdentifier: String?): String? {
         return controllerIdentifier?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
 
     private fun buildLightTargetCacheKey(controllerIdentifier: String?): String {
