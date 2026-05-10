@@ -2,7 +2,7 @@
 
 <html>
 <head>
-    <title>SAM Report - DC</title>
+    <title>SAM Report - DEP</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta property="og:locale" content="en_US"/>
@@ -15,6 +15,7 @@
     <link href="css/plugins.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/style.bundle.css" rel="stylesheet" type="text/css"/>
     <link href="css/jstree.bundle.css" rel="stylesheet" type="text/css"/>
+    <link href="css/vis.min.css" rel="stylesheet" type="text/css"/>
     <style>
         .flipper {
             transition: transform .5s;
@@ -107,7 +108,7 @@
                                 <li class="breadcrumb-item">
                                     <i class="ki-outline ki-right fs-4 text-white mx-n1"></i>
                                 </li>
-                                <li class="breadcrumb-item text-white fw-bold lh-1">DC</li>
+                                <li class="breadcrumb-item text-white fw-bold lh-1">DEP</li>
                             </ul>
                         </div>
 
@@ -128,15 +129,15 @@
                                                 <div class="col-sm-6">
 
                                                     <div class="fs-3 fw-semibold text-gray-400">Metric Name</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Duplicate Code</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">Dependency Complexity</div>
                                                 </div>
                                                 <div class="col-sm-3">
                                                     <div class="fs-3 fw-semibold text-gray-400">Violations</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">8</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                                 <div class="col-sm-3">
-                                                    <div class="fs-3 fw-semibold text-gray-400">DC Ratio</div>
-                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0.31%</div>
+                                                    <div class="fs-3 fw-semibold text-gray-400">Max Fanout</div>
+                                                    <div class="text-gray-900 fw-bold fs-1 mb-2">0</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -145,9 +146,9 @@
                                 <div class="col-sm-4 align-items-stretch mb-8">
                                     <div class="card card-stretch">
                                         <div class="card-body p-0">
-                                            <div class="border border-dashed border-success text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
-                                                <span class="fs-2hx fw-semibold text-primary d-block">DC Score</span>
-                                                <span class="fs-2hx fw-bold text-success">4.94 <span class="fs-3 text-gray-400">/ 5</span></span>
+                                            <div class="border border-dashed border-inverse text-center min-w-125px rounded pt-4 pb-2 my-0 h-100 align-self-center">
+                                                <span class="fs-2hx fw-semibold text-primary d-block">DEP Score</span>
+                                                <span class="fs-2hx fw-bold text-inverse">-1 <span class="fs-3 text-gray-400">/ 5</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -160,7 +161,7 @@
                                     <div class="card card-flush mt-6 mt-xl-9" style="min-height:60rem;max-height:60rem">
                                         <div class="card-header mt-5">
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">DC list</h3>
+                                                <h3 class="fw-bold mb-1">DEP list</h3>
                                                 <div class="fs-6 text-gray-400">File Tree</div>
                                             </div>
                                         </div>
@@ -170,7 +171,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-sm-8 mb-5">
+                                <div class="col-sm-8 mb-5" style="min-height:60rem;max-height:60rem">
                                     <div id="card-table" class="card card-flush mt-6 mt-xl-9 h-100 border-0 pb-0 flipper">
                                         <div class="card-front overflow-y-scroll">
                                             <div class="card-header m-0 px-0">
@@ -183,9 +184,12 @@
                                                     <table id="table-metric-violations" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
                                                         <thead class="fs-7 text-gray-400 text-uppercase">
                                                         <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
+                                                            <th>#</th>
+                                                            <th>Module Name</th>
+                                                            <th>Dependency Complexity</th>
+                                                            <th>Max Fanout</th>
                                                             <th>Score Penalty</th>
+                                                            <th></th>
                                                         </tr>
                                                         </thead>
                                                         <tbody class="fs-5"></tbody>
@@ -197,23 +201,12 @@
                                             <div class="card-header m-0 px-0">
                                                 <div class="card-title flex-column">
                                                     <h3 class="fw-bold mb-1 d-flex align-items-center">
-                                                        <i id="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i> Block Detail
+                                                        <i id="button-back" class="cursor-pointer ki-outline ki-left text-dark fs-2x me-3"></i>
+                                                        <span id="span-module"></span>
                                                     </h3>
                                                 </div>
                                             </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive h-100">
-                                                    <table id="table-blocks" class="table table-row-bordered table-row-dashed gy-2 align-middle fw-bold">
-                                                        <thead class="fs-7 text-gray-400 text-uppercase">
-                                                        <tr>
-                                                            <th>Block</th>
-                                                            <th>Location</th>
-                                                            <th>Score Penalty</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody class="fs-5"></tbody>
-                                                    </table>
-                                                </div>
+                                            <div id="div-graph" class="card-body p-0 h-700px">
                                             </div>
                                         </div>
                                     </div>
@@ -240,15 +233,22 @@
 <script src="js/scripts.bundle.js"></script>
 <script src="js/datatables.bundle.js"></script>
 <script src="js/jstree.bundle.js"></script>
+<script src="js/vis.min.js"></script>
+<script src="js/sam.graph.js"></script>
 
 </body>
 <script>
-    let violations = [{"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.03, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 1, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "1146", "line_end": "1154", "line_count": "9", "score_penalty": -0.03, "background_color": "#6d5a5d", "text_color": "#ffffff"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "339", "line_end": "345", "line_count": "7", "score_penalty": -0.03, "background_color": "#73fa68", "text_color": "#000000"}, {"block_key": 2, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "355", "line_end": "361", "line_count": "7", "score_penalty": -0.03, "background_color": "#73fa68", "text_color": "#000000"}, {"block_key": 3, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "line_start": "55", "line_end": "63", "line_count": "9", "score_penalty": -0.03, "background_color": "#fb63f0", "text_color": "#000000"}, {"block_key": 3, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "1146", "line_end": "1154", "line_count": "9", "score_penalty": -0.03, "background_color": "#fb63f0", "text_color": "#000000"}, {"block_key": 4, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "339", "line_end": "345", "line_count": "7", "score_penalty": -0.03, "background_color": "#5796fe", "text_color": "#ffffff"}, {"block_key": 4, "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "line_start": "355", "line_end": "361", "line_count": "7", "score_penalty": -0.03, "background_color": "#5796fe", "text_color": "#ffffff"}];
+    let violations = [];
+
+    let graphData = {};
+
+    let graph = null;
+
     const drawTree = () => {
         var $tree = $('#file-tree');
         $tree.jstree({
             core: {
-                data: {"text": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse (8)", "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "filename": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse", "type": "directory", "state": {"opened": true}, "children": [{"text": "infra/repository/roomdb/RoomControllerProfileRepository.kt (2)", "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt", "filename": "infra/repository/roomdb/RoomControllerProfileRepository.kt", "type": "file", "state": {"opened": true}, "children": []}, {"text": "presentation/MainActivity.kt (6)", "fullpath": "/home/huy/Desktop/workspace/githubactions/actions-runner-1/_work/batmon/batmon/app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt", "filename": "presentation/MainActivity.kt", "type": "file", "state": {"opened": true}, "children": []}]},
+                data: {"text": " (0)", "fullpath": null, "filename": "", "type": "file", "state": {"opened": true}, "children": []},
                 themes: {
                     responsive: false
                 }
@@ -275,64 +275,57 @@
         return $tree;
     };
 
+    const addTreeClickEvent = (tree, table) => {
+        tree.on('changed.jstree', function (e, data) {
+            $('#card-table').toggleClass('flipped', false);
+            if (graph != null) {
+                graph.destroy();
+            }
+            let selectedNode = data.node.original.fullpath
+            if (selectedNode.startsWith('/')) {
+                selectedNode = selectedNode.substring(1)
+            }
+
+            const filteredList = violations.filter(item => item.module.includes(selectedNode))
+            table.clear().rows.add(filteredList).draw();
+        });
+    }
+
     const drawTable = (id, callback) => {
         return $(document.querySelector('#' + id)).DataTable({
             'data': violations,
             'columns': [{
-                type: 'num-fmt',
                 render: function (data, type, row) {
-                    if (type ==='display' || type === 'filter') {
-                        return`<div class="mb-1 text-dark fw-bold fs-6">
-                                            <span block-id=${row.block_key} class="cursor-pointer badge"
-                                                style="background-color:${row.background_color};color:${row.text_color}">
-                                                Block ${row.block_key.toString().padStart(2, '0')}
-                                            </span>
-                                        </div>`;
-                    }
-                    return row.block_key;
+                    return `<div class="text-dark fw-bold">${row.index}</div>`;
                 }
             }, {
                 render: function (data, type, row) {
-                    return `<div class="mb-1 text-dark fw-normal">
-                                <p class="mb-0 fs-7">
-                                    ${row.fullpath}:${row.line_start}~${row.line_end}
-                                    <i onclick="copyPath('${row.fullpath}')" class="cursor-pointer ki-outline ki-copy text-success"></i>
-                                </p>
+                    return `<div class="text-dark fw-bold">${row.module}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="text-dark fw-bold">${row.complexity}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="text-danger fw-bold">${row.fanout}</div>`;
+                }
+            }, {
+                render: function (data, type, row) {
+                    return `<div class="d-flex flex-row">
+                                <div class="d-flex">
+                                    <span class="badge badge-light-danger me-4 align-self-center align-middle">${row.score_penalty}</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span onclick="drawDEPGraph('${row.module}')" class="btn btn-sm btn-outline btn-outline-dark btn-icon-primary btn-text-dark float-end">
+                                         <i class="ki-outline ki-chart-pie-4 fs-1"></i>
+                                         See Diagram
+                                    </span>
+                                </div>
                             </div>`;
                 }
-            }, {
-                render: function (data, type, row) {
-                    return `<span class="badge badge-light-danger">${row.score_penalty}</span>`;
-                }
-            }],
-            'drawCallback': () => {
-                callback?.();
-            }
+            }]
         });
-    }
-
-    const addTreeClickEvent = (tree, table) => {
-        tree.on('changed.jstree', function (e, data) {
-            $('#card-table').toggleClass('flipped', false);
-            $('.badge').off('click');
-            const selectedNode = data.node.original.fullpath
-            const filteredList = violations.filter(item => item.fullpath.includes(selectedNode))
-            redrawTable(table, filteredList);
-        });
-    }
-
-    const addRowClickEvent = () => {
-        $('.badge').on('click', (e) => {
-            $('#card-table').toggleClass('flipped', true);
-
-            let blockId = $(e.target).attr('block-id');
-            const filteredList = violations.filter(item => item.block_key == blockId);
-            redrawTable($tableBlock, filteredList);
-        });
-    }
-
-    const redrawTable = (table, dataList) => {
-        table.clear().rows.add(dataList).draw();
     }
 
     const addBackButtonEvent = () => {
@@ -341,20 +334,22 @@
         });
     }
 
-    var $tree = drawTree();
-    var $tableMain = drawTable('table-metric-violations', addRowClickEvent);
-    var $tableBlock = drawTable('table-blocks');
+    const drawDEPGraph = (moduleName) => {
+        if (graph != null) {
+            graph.destroy();
+        }
 
-    addTreeClickEvent($tree, $tableMain);
+        $('#span-module').text(moduleName);
+        $('#card-table').toggleClass('flipped', true);
+        let data = graphData[moduleName]
+        graph = new Graph("div-graph", data.nodes, data.edges);
+        graph.draw();
+    }
+
     addBackButtonEvent();
 
-    const copyPath = (path) => {
-        var $temp = $("<input>");
-        $("body").append($temp);
-        $temp.val(path).select();
-        document.execCommand("copy");
-        $temp.remove();
-        alert("Copied.");
-    }
+    var $tree = drawTree();
+    var $table = drawTable('table-metric-violations');
+    addTreeClickEvent($tree, $table);
 </script>
 </html>
