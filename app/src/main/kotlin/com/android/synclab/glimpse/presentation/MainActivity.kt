@@ -35,6 +35,7 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
+import com.android.synclab.glimpse.presentation.model.PendingBackgroundMonitoringStart
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
 import com.android.synclab.glimpse.presentation.view.CustomizeVibeDialog
 import com.android.synclab.glimpse.presentation.view.ControllerPageAdapter
@@ -55,12 +56,6 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_CODE_BLUETOOTH_CONNECT = 1002
         private val DEFAULT_VIBE_COLOR = Color.rgb(44, 100, 255)
     }
-
-    private data class PendingBackgroundMonitoringStart(
-        val profileId: String?,
-        val controllerIdentifier: String?,
-        val reason: String
-    )
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val profileIoExecutor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -432,74 +427,119 @@ class MainActivity : AppCompatActivity() {
         reason: String
     ): Boolean {
         val state = viewModel.currentUiState()
-        val persistentId = state.controllerPersistentId
-        val controllerIdentifier = state.controllerUniqueId
-        LogCompat.dDebug {
-            "UI_VERIFY BM toggle " +
-                    "reason=$reason enabled=$enabled " +
-                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
-                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+        return if (enabled) {
+            startBackgroundMonitoring(
+                state = state,
+                reason = reason
+            )
+        } else {
+            stopBackgroundMonitoring(
+                state = state,
+                reason = reason
+            )
         }
-
-        selectedBackgroundMonitoringEnabled = enabled
-        bindFixedSettingsPanel(state)
-        persistControllerProfile(
-            lightbarColor = selectedVibeColor,
-            targetId = persistentId,
-            backgroundMonitoringEnabled = enabled,
-            reason = "bm_$reason"
-        )
-
-        val applied = applyBackgroundMonitoringPreference(
-            enabled = enabled,
-            profileId = persistentId,
-            controllerIdentifier = controllerIdentifier,
-            reason = reason
-        )
-        refreshSettingsStateLater()
-        return applied
     }
 
-    private fun applyBackgroundMonitoringPreference(
-        enabled: Boolean,
-        profileId: String?,
-        controllerIdentifier: String?,
+    private fun startBackgroundMonitoring(
+        state: MainUiState,
         reason: String
     ): Boolean {
+        val persistentId = state.controllerPersistentId?.takeIf { it.isNotBlank() }
+        val controllerIdentifier = state.controllerUniqueId?.takeIf { it.isNotBlank() }
         LogCompat.dDebug {
-            "UI_VERIFY BM applySelected " +
-                    "reason=$reason enabled=$enabled " +
-                    "profileId=${profileId?.let(::maskIdentifier) ?: "none"} " +
+            "UI_VERIFY BM toggle " +
+                    "reason=$reason enabled=true " +
+                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
                     "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"} " +
                     "serviceRunning=${BatteryOverlayService.isRunning} " +
                     "monitoring=${BatteryOverlayService.isMonitoringEnabled}"
         }
 
-        if (enabled) {
-            val pendingStart = PendingBackgroundMonitoringStart(
-                profileId = profileId,
-                controllerIdentifier = controllerIdentifier,
-                reason = reason
-            )
-            return startMonitoring(
-                controllerIdentifier = controllerIdentifier,
-                pendingStart = pendingStart,
-                reason = reason
-            )
+        if (persistentId == null || controllerIdentifier == null) {
+            LogCompat.dDebug {
+                "UI_VERIFY BM toggle rejected reason=$reason " +
+                        "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
+                        "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+            }
+            selectedBackgroundMonitoringEnabled = false
+            bindFixedSettingsPanel(state)
+            refreshSettingsStateLater()
+            return false
         }
 
+        val pendingStart = PendingBackgroundMonitoringStart(
+            profileId = persistentId,
+            controllerIdentifier = controllerIdentifier,
+            reason = reason,
+            persistOnSuccess = true
+        )
+        pendingBackgroundMonitoringStart = pendingStart
+
+        if (!ensureForegroundPermissions(
+                autoResumeStartMonitoring = true,
+                pendingStart = pendingStart
+            )
+        ) {
+            selectedBackgroundMonitoringEnabled = false
+            bindFixedSettingsPanel(state)
+            refreshSettingsStateLater()
+            return false
+        }
+
+        return dispatchAndApplyBackgroundMonitoringStart(
+            state = state,
+            profileId = persistentId,
+            controllerIdentifier = controllerIdentifier,
+            pendingStart = pendingStart,
+            reason = reason
+        )
+    }
+
+    private fun stopBackgroundMonitoring(
+        state: MainUiState,
+        reason: String
+    ): Boolean {
+        val persistentId = state.controllerPersistentId?.takeIf { it.isNotBlank() }
+        val controllerIdentifier = state.controllerUniqueId?.takeIf { it.isNotBlank() }
+        LogCompat.dDebug {
+            "UI_VERIFY BM toggle " +
+                    "reason=$reason enabled=false " +
+                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+        }
+
+        selectedBackgroundMonitoringEnabled = false
         pendingBackgroundMonitoringStart = null
+        bindFixedSettingsPanel(state)
+
         if (!BatteryOverlayService.isMonitoringEnabled) {
             LogCompat.dDebug {
                 "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
             }
+            persistControllerProfile(
+                lightbarColor = selectedVibeColor,
+                targetId = persistentId,
+                backgroundMonitoringEnabled = false,
+                reason = "bm_$reason"
+            )
+            refreshSettingsStateLater()
             return true
         }
 
-        return dispatchServiceAction(
+        val dispatched = dispatchServiceAction(
             action = BatteryOverlayService.ACTION_STOP_MONITORING,
             foreground = false
         )
+        if (dispatched) {
+            persistControllerProfile(
+                lightbarColor = selectedVibeColor,
+                targetId = persistentId,
+                backgroundMonitoringEnabled = false,
+                reason = "bm_$reason"
+            )
+        }
+        refreshSettingsStateLater()
+        return dispatched
     }
 
     private fun handleLiveBatteryOverlayToggle(
@@ -763,19 +803,159 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startMonitoring(
-        controllerIdentifier: String?,
+    private fun resumePendingBackgroundMonitoringStart(reason: String): Boolean {
+        val pendingStart = pendingBackgroundMonitoringStart
+            ?: run {
+                LogCompat.dDebug {
+                    "UI_VERIFY BM resumeSkipped reason=$reason no_pending_start"
+                }
+                return false
+            }
+        pendingBackgroundMonitoringStart = null
+        val controllerIdentifier = pendingStart.controllerIdentifier
+        val persistentId = pendingStart.profileId
+            ?.takeIf { it.isNotBlank() }
+        val currentState = viewModel.currentUiState()
+        val currentPersistentId = currentState.controllerPersistentId?.takeIf { it.isNotBlank() }
+        val currentControllerIdentifier = currentState.controllerUniqueId?.takeIf { it.isNotBlank() }
+        LogCompat.dDebug {
+            "UI_VERIFY BM resumePending " +
+                    "reason=$reason originalReason=${pendingStart.reason} " +
+                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+        }
+
+        if (persistentId == null || controllerIdentifier.isNullOrBlank()) {
+            LogCompat.d("Background Monitoring resume skipped: missing controller identifier")
+            return false
+        }
+
+        if (currentPersistentId != persistentId || currentControllerIdentifier != controllerIdentifier) {
+            LogCompat.dDebug {
+                "UI_VERIFY BM resumeRejected reason=$reason " +
+                        "pendingProfileId=${persistentId.let(::maskIdentifier)} " +
+                        "currentProfileId=${currentPersistentId?.let(::maskIdentifier) ?: "none"} " +
+                        "pendingRuntimeId=${controllerIdentifier.let(::maskIdentifier)} " +
+                        "currentRuntimeId=${currentControllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+            }
+            return false
+        }
+
+        val dispatched = dispatchAndApplyBackgroundMonitoringStart(
+            state = currentState,
+            profileId = persistentId,
+            controllerIdentifier = controllerIdentifier,
+            pendingStart = pendingStart,
+            reason = reason
+        )
+        if (!dispatched) {
+            if (pendingStart.persistOnSuccess) {
+                selectedBackgroundMonitoringEnabled = false
+                bindFixedSettingsPanel(currentState)
+                refreshSettingsStateLater()
+            }
+        }
+        return dispatched
+    }
+
+    private fun dispatchAndApplyBackgroundMonitoringStart(
+        state: MainUiState,
+        profileId: String,
+        controllerIdentifier: String,
         pendingStart: PendingBackgroundMonitoringStart,
         reason: String
     ): Boolean {
-        LogCompat.i(
-            "startMonitoring invoked reason=$reason " +
-                    "controller=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+        val dispatched = dispatchServiceAction(
+            action = BatteryOverlayService.ACTION_START_MONITORING,
+            foreground = true,
+            controllerIdentifier = controllerIdentifier
         )
-        if (controllerIdentifier.isNullOrBlank()) {
-            LogCompat.d("Background Monitoring start skipped: missing controller identifier")
+        if (!dispatched) {
+            pendingBackgroundMonitoringStart = null
+            LogCompat.dDebug {
+                "UI_VERIFY BM startRejected reason=$reason " +
+                        "profileId=${profileId.let(::maskIdentifier)} " +
+                        "runtimeId=${controllerIdentifier.let(::maskIdentifier)}"
+            }
+            if (pendingStart.persistOnSuccess) {
+                selectedBackgroundMonitoringEnabled = false
+                bindFixedSettingsPanel(state)
+            }
             return false
         }
+
+        pendingBackgroundMonitoringStart = null
+        selectedBackgroundMonitoringEnabled = true
+        bindFixedSettingsPanel(state)
+        if (pendingStart.persistOnSuccess) {
+            persistControllerProfile(
+                lightbarColor = selectedVibeColor,
+                targetId = profileId,
+                backgroundMonitoringEnabled = true,
+                reason = "bm_$reason"
+            )
+        } else {
+            LogCompat.dDebug {
+                "UI_VERIFY BM applySelected reason=$reason action=runtime_started " +
+                        "profileId=${profileId.let(::maskIdentifier)} " +
+                        "runtimeId=${controllerIdentifier.let(::maskIdentifier)}"
+            }
+        }
+        refreshSettingsStateLater()
+        return true
+    }
+
+    private fun applyBackgroundMonitoringPreference(
+        enabled: Boolean,
+        profileId: String?,
+        controllerIdentifier: String?,
+        reason: String
+    ): Boolean {
+        val resolvedProfileId = profileId?.takeIf { it.isNotBlank() }
+        val resolvedControllerIdentifier = controllerIdentifier?.takeIf { it.isNotBlank() }
+        LogCompat.dDebug {
+            "UI_VERIFY BM applySelected " +
+                    "reason=$reason enabled=$enabled " +
+                    "profileId=${resolvedProfileId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${resolvedControllerIdentifier?.let(::maskIdentifier) ?: "none"} " +
+                    "serviceRunning=${BatteryOverlayService.isRunning} " +
+                    "monitoring=${BatteryOverlayService.isMonitoringEnabled}"
+        }
+
+        if (!enabled) {
+            pendingBackgroundMonitoringStart = null
+            selectedBackgroundMonitoringEnabled = false
+            bindFixedSettingsPanel(viewModel.currentUiState())
+            if (!BatteryOverlayService.isMonitoringEnabled) {
+                LogCompat.dDebug {
+                    "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
+                }
+                return true
+            }
+
+            return dispatchServiceAction(
+                action = BatteryOverlayService.ACTION_STOP_MONITORING,
+                foreground = false
+            )
+        }
+
+        if (resolvedProfileId == null || resolvedControllerIdentifier == null) {
+            LogCompat.dDebug {
+                "UI_VERIFY BM applyRejected reason=$reason " +
+                        "profileId=${resolvedProfileId?.let(::maskIdentifier) ?: "none"} " +
+                        "runtimeId=${resolvedControllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+            }
+            return false
+        }
+
+        val pendingStart = PendingBackgroundMonitoringStart(
+            profileId = resolvedProfileId,
+            controllerIdentifier = resolvedControllerIdentifier,
+            reason = reason,
+            persistOnSuccess = false
+        )
+        pendingBackgroundMonitoringStart = pendingStart
+
         if (!ensureForegroundPermissions(
                 autoResumeStartMonitoring = true,
                 pendingStart = pendingStart
@@ -784,40 +964,12 @@ class MainActivity : AppCompatActivity() {
             return false
         }
 
-        return dispatchServiceAction(
-            action = BatteryOverlayService.ACTION_START_MONITORING,
-            foreground = true,
-            controllerIdentifier = controllerIdentifier
-        )
-    }
-
-    private fun resumePendingBackgroundMonitoringStart(reason: String): Boolean {
-        val pendingStart = pendingBackgroundMonitoringStart
-            ?: viewModel.currentUiState().let { state ->
-                PendingBackgroundMonitoringStart(
-                    profileId = state.controllerPersistentId,
-                    controllerIdentifier = state.controllerUniqueId,
-                    reason = reason
-                )
-            }
-        pendingBackgroundMonitoringStart = null
-        val controllerIdentifier = pendingStart.controllerIdentifier
-        LogCompat.dDebug {
-            "UI_VERIFY BM resumePending " +
-                    "reason=$reason originalReason=${pendingStart.reason} " +
-                    "profileId=${pendingStart.profileId?.let(::maskIdentifier) ?: "none"} " +
-                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
-        }
-
-        if (controllerIdentifier.isNullOrBlank()) {
-            LogCompat.d("Background Monitoring resume skipped: missing controller identifier")
-            return false
-        }
-
-        return dispatchServiceAction(
-            action = BatteryOverlayService.ACTION_START_MONITORING,
-            foreground = true,
-            controllerIdentifier = controllerIdentifier
+        return dispatchAndApplyBackgroundMonitoringStart(
+            state = viewModel.currentUiState(),
+            profileId = resolvedProfileId,
+            controllerIdentifier = resolvedControllerIdentifier,
+            pendingStart = pendingStart,
+            reason = reason
         )
     }
 
