@@ -137,6 +137,35 @@ class BackgroundMonitoringPlannerTest {
     }
 
     @Test
+    fun planResumePending_withoutPendingStartRejects() {
+        val decision = planner.planResumePending(
+            pendingStart = null,
+            currentState = state()
+        )
+
+        val reject = decision as BackgroundMonitoringDecision.Reject
+        assertEquals(
+            BackgroundMonitoringRejectReason.NO_PENDING_START,
+            reject.reason
+        )
+        assertNull(reject.selectedEnabled)
+    }
+
+    @Test
+    fun planResumePending_withoutBluetoothPermissionRequestsBluetoothConnect() {
+        val pending = pendingStart()
+        val decision = planner.planResumePending(
+            pendingStart = pending,
+            currentState = state(hasBluetoothConnectPermission = false)
+        )
+
+        val request = decision as BackgroundMonitoringDecision.RequestPermission
+        assertEquals(BackgroundMonitoringPermission.BLUETOOTH_CONNECT, request.permission)
+        assertEquals(pending, request.pendingStart)
+        assertEquals(false, request.selectedEnabled)
+    }
+
+    @Test
     fun planStartDispatchResult_failedUserStartRollsBackWithoutPersisting() {
         val result = planner.planStartDispatchResult(
             pendingStart = pendingStart(persistOnSuccess = true),

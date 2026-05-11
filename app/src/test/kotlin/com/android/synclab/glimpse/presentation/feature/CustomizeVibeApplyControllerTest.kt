@@ -106,6 +106,48 @@ class CustomizeVibeApplyControllerTest {
     }
 
     @Test
+    fun scheduleColorApply_whenApplyThrowsReportsFailureAndContinuesQueuedWork() {
+        val dispatchedColors = mutableListOf<Int>()
+        var shouldThrow = true
+        val controller = CustomizeVibeApplyController(
+            applyColor = { color ->
+                dispatchedColors += color
+                if (shouldThrow) {
+                    shouldThrow = false
+                    throw IllegalStateException("light api failed")
+                }
+                ControllerLightCommandResult(status = ControllerLightCommandStatus.SUCCESS)
+            },
+            onColorApplied = { color -> persistedColors += color },
+            onApplyResult = { _, result -> results += result },
+            onApplyFailure = { status -> failures += status },
+            scheduler = scheduler,
+            worker = worker,
+            clock = clock
+        )
+
+        controller.scheduleColorApply(COLOR_RED)
+        controller.scheduleColorApply(COLOR_GREEN)
+        worker.runNext()
+
+        clock.advance(16L)
+        scheduler.runDelayed()
+        worker.runNext()
+
+        assertEquals(listOf(COLOR_RED, COLOR_GREEN), dispatchedColors)
+        assertEquals(
+            listOf(
+                ControllerLightCommandStatus.FAILED,
+                ControllerLightCommandStatus.SUCCESS
+            ),
+            results.map { it.status }
+        )
+        assertEquals("light api failed", results.first().detail)
+        assertEquals(listOf(ControllerLightCommandStatus.FAILED), failures)
+        assertEquals(listOf(COLOR_GREEN), persistedColors)
+    }
+
+    @Test
     fun disposeClearsPendingWorkAndStopsWorker() {
         val controller = controller()
 

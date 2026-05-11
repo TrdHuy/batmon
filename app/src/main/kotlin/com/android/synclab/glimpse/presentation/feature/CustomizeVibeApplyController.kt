@@ -104,7 +104,14 @@ class CustomizeVibeApplyController(
         lastDispatchUptimeMs = clock.uptimeMillis()
 
         worker.execute {
-            val result = applyColor(color)
+            val result = runCatching {
+                applyColor(color)
+            }.getOrElse { throwable ->
+                ControllerLightCommandResult(
+                    status = ControllerLightCommandStatus.FAILED,
+                    detail = throwable.message ?: throwable::class.java.simpleName
+                )
+            }
             scheduler.post(
                 Runnable {
                     if (isDisposed) {
