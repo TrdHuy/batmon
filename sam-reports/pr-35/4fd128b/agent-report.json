@@ -1,0 +1,425 @@
+{
+  "fallback_reason": null,
+  "findings": [
+    {
+      "evidence": {
+        "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+        "line": null,
+        "symbol": "com.android.synclab.glimpse.presentation.MainActivity",
+        "threshold": 50,
+        "value": 86
+      },
+      "id": "cbo-com.android.synclab.glimpse.presentation.MainActivity",
+      "metric": "cbo",
+      "recommended_actions": [
+        "Move orchestration logic into smaller coordinator or binder classes.",
+        "Push business decisions toward ViewModel, service, or use case layers.",
+        "Keep UI/lifecycle classes focused on lifecycle, navigation, and view binding."
+      ],
+      "score_impact": "CBO score is 4.24",
+      "severity": "medium",
+      "title": "High coupling detected",
+      "why_it_matters": "High coupling makes the class harder to change, test, and reuse."
+    },
+    {
+      "evidence": {
+        "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
+        "line": null,
+        "symbol": "com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
+        "threshold": 50,
+        "value": 65
+      },
+      "id": "cbo-com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
+      "metric": "cbo",
+      "recommended_actions": [
+        "Move orchestration logic into smaller coordinator or binder classes.",
+        "Push business decisions toward ViewModel, service, or use case layers.",
+        "Keep UI/lifecycle classes focused on lifecycle, navigation, and view binding."
+      ],
+      "score_impact": "CBO score is 4.24",
+      "severity": "medium",
+      "title": "High coupling detected",
+      "why_it_matters": "High coupling makes the class harder to change, test, and reuse."
+    },
+    {
+      "evidence": {
+        "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+        "line": null,
+        "symbol": "com.android.synclab.glimpse.presentation.MainActivity",
+        "threshold": 500,
+        "value": 1401
+      },
+      "id": "loc-com.android.synclab.glimpse.presentation.MainActivity",
+      "metric": "loc",
+      "recommended_actions": [
+        "Split unrelated responsibilities into focused classes.",
+        "Move repeated rendering, mapping, or setup code into dedicated helpers.",
+        "Keep high-level classes as coordination points rather than implementation containers."
+      ],
+      "score_impact": "LOC score is 3.45",
+      "severity": "medium",
+      "title": "Oversized class or file detected",
+      "why_it_matters": "Large classes increase review cost and make changes riskier."
+    },
+    {
+      "evidence": {
+        "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/GamepadRepositoryImpl.kt",
+        "line": null,
+        "symbol": "com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
+        "threshold": 500,
+        "value": 630
+      },
+      "id": "loc-com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl",
+      "metric": "loc",
+      "recommended_actions": [
+        "Split unrelated responsibilities into focused classes.",
+        "Move repeated rendering, mapping, or setup code into dedicated helpers.",
+        "Keep high-level classes as coordination points rather than implementation containers."
+      ],
+      "score_impact": "LOC score is 3.45",
+      "severity": "medium",
+      "title": "Oversized class or file detected",
+      "why_it_matters": "Large classes increase review cost and make changes riskier."
+    },
+    {
+      "evidence": {
+        "block_key": "1",
+        "locations": [
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/RoomControllerProfileRepository.kt",
+            "line_count": 9,
+            "line_end": 73,
+            "line_start": 65
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line_count": 9,
+            "line_end": 1654,
+            "line_start": 1646
+          }
+        ]
+      },
+      "id": "dc-block-1",
+      "metric": "dc",
+      "recommended_actions": [
+        "Extract shared logic when the duplicated block represents the same behavior.",
+        "Keep duplication if the code is intentionally independent or framework boilerplate.",
+        "Prefer a small named function over copy-pasted condition or mapping logic."
+      ],
+      "score_impact": "DC score is 4.89",
+      "severity": "low",
+      "title": "Duplicated code block detected",
+      "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
+    },
+    {
+      "evidence": {
+        "block_key": "4",
+        "locations": [
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line_count": 9,
+            "line_end": 451,
+            "line_start": 443
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line_count": 9,
+            "line_end": 506,
+            "line_start": 498
+          }
+        ]
+      },
+      "id": "dc-block-4",
+      "metric": "dc",
+      "recommended_actions": [
+        "Extract shared logic when the duplicated block represents the same behavior.",
+        "Keep duplication if the code is intentionally independent or framework boilerplate.",
+        "Prefer a small named function over copy-pasted condition or mapping logic."
+      ],
+      "score_impact": "DC score is 4.89",
+      "severity": "low",
+      "title": "Duplicated code block detected",
+      "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
+    },
+    {
+      "evidence": {
+        "block_key": "2",
+        "locations": [
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line_count": 7,
+            "line_end": 350,
+            "line_start": 344
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line_count": 7,
+            "line_end": 366,
+            "line_start": 360
+          }
+        ]
+      },
+      "id": "dc-block-2",
+      "metric": "dc",
+      "recommended_actions": [
+        "Extract shared logic when the duplicated block represents the same behavior.",
+        "Keep duplication if the code is intentionally independent or framework boilerplate.",
+        "Prefer a small named function over copy-pasted condition or mapping logic."
+      ],
+      "score_impact": "DC score is 4.89",
+      "severity": "low",
+      "title": "Duplicated code block detected",
+      "why_it_matters": "Duplicated code raises maintenance cost when the same behavior changes in multiple places."
+    },
+    {
+      "evidence": {
+        "candidate_count": 384,
+        "sample": [
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/BatteryProgressView.kt",
+            "line": 75,
+            "symbol": "$i$a$-apply-BatteryProgressView$trackPaint$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/MainActivity.kt",
+            "line": null,
+            "symbol": "$i$a$-dDebug-MainActivity$persistControllerProfile$1$2$1",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/viewmodel/MainViewModel.kt",
+            "line": 408,
+            "symbol": "$i$f$dDebug",
+            "type": "UNUSED_LOCAL_VARIABLE"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/domain/usecase/DeleteControllerProfileUseCase.kt",
+            "line": null,
+            "symbol": "repository",
+            "type": "UNUSED_CLASS_DATA_MEMBER"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
+            "line": null,
+            "symbol": "$VALUES",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/model/EventChangeParam.kt",
+            "line": null,
+            "symbol": "$VALUES",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/CustomizeVibeDialog.kt",
+            "line": 103,
+            "symbol": "seekBar",
+            "type": "UNUSED_FUNCTION_PARAMETER"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/BatteryProgressView.kt",
+            "line": null,
+            "symbol": "BatteryProgressView",
+            "type": "UNUSED_CLASS_METHOD"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/presentation/view/ChargingIconView.kt",
+            "line": null,
+            "symbol": "CORE_GLOW_ALPHA",
+            "type": "UNUSED_CLASS_DATA_MEMBER_DECLARATION"
+          },
+          {
+            "file": "app/src/main/kotlin/com/android/synclab/glimpse/infra/repository/roomdb/core/ControllerProfileEntity.kt",
+            "line": null,
+            "symbol": "component4",
+            "type": "UNUSED_CLASS_METHOD"
+          }
+        ]
+      },
+      "id": "uc-unused-code-candidates",
+      "metric": "uc",
+      "recommended_actions": [
+        "Review candidates manually before removal, especially in framework or lifecycle code.",
+        "Check reflection, XML references, generated code, and dependency injection entrypoints."
+      ],
+      "score_impact": "UC score is 0.0 (not included in total score)",
+      "severity": "info",
+      "title": "Unused code candidates reported",
+      "why_it_matters": "Unused-code analysis can contain false positives in framework-driven applications."
+    }
+  ],
+  "mode": "svace",
+  "outputs": {
+    "agent_json": "/tmp/sam-agent-runs/batmon-20260511-073706/agent-report.json",
+    "agent_markdown": "/tmp/sam-agent-runs/batmon-20260511-073706/agent-report.md",
+    "dev_html": "/tmp/sam-agent-runs/batmon-20260511-073706/dev-report.html",
+    "log": "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace/log/sam.log_20260511",
+    "raw_sam": "/tmp/sam-agent-runs/batmon-20260511-073706/raw-sam",
+    "run_dir": "/tmp/sam-agent-runs/batmon-20260511-073706",
+    "sam_html_index": "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace/sam-result/html/SAM_Report_batmon_20260511_index.html",
+    "sam_report_json": "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace/sam-result/report.json",
+    "score_csv": "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace/sam-result/SAM_total_score.csv"
+  },
+  "project": {
+    "detected": {
+      "android": true,
+      "build_command_defaulted": false,
+      "has_gradlew": true,
+      "include_defaulted": true
+    },
+    "language": "kotlin",
+    "name": "batmon",
+    "path": "/home/huy/Desktop/workspace/gitprojects/batmon",
+    "type": "OO"
+  },
+  "project_metrics": {
+    "analysis_time": "2026-05-11 07:37",
+    "class_count": 133,
+    "code_loc": 5202,
+    "file_count": 45,
+    "method_count": 521,
+    "physical_loc": 5873,
+    "total_node": 23
+  },
+  "run": {
+    "commands": [
+      {
+        "command": [
+          "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
+          "init",
+          "--sam-dir",
+          "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace"
+        ],
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "exit_code": 0,
+        "step": "init"
+      },
+      {
+        "command": [
+          "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
+          "scan",
+          "--sam-dir",
+          "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace",
+          "--language",
+          "KOTLIN",
+          "--source-path",
+          "/home/huy/Desktop/workspace/gitprojects/batmon",
+          "--pmd-heap-size",
+          "2g",
+          "--sequential",
+          "./gradlew",
+          "--no-daemon",
+          "clean",
+          ":app:assembleDebug"
+        ],
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "exit_code": 0,
+        "step": "scan"
+      },
+      {
+        "command": [
+          "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
+          "analyze",
+          "--sam-dir",
+          "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace",
+          "--language",
+          "KOTLIN",
+          "--source-path",
+          "/home/huy/Desktop/workspace/gitprojects/batmon"
+        ],
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "exit_code": 0,
+        "step": "analyze"
+      },
+      {
+        "command": [
+          "/home/huy/.local/share/agent-toolbox/tools/sam-agent-metrics/2026.04.0-agent.0.1.1/sam-agent-metrics-linux-x86_64-2026.04.0-agent.0.1.1/bin/sam",
+          "calculate",
+          "--sam-dir",
+          "/tmp/sam-agent-runs/batmon-20260511-073706/attempts/svace",
+          "--language",
+          "KOTLIN",
+          "--source-path",
+          "/home/huy/Desktop/workspace/gitprojects/batmon",
+          "--project-name",
+          "batmon",
+          "--include",
+          "/home/huy/Desktop/workspace/gitprojects/batmon/app/src/main/kotlin",
+          "--metrics",
+          "cc,dc,mcd,cbo,loc,dep,gm,uc,ncs",
+          "--scoring-metrics",
+          "cc,dc,mcd,cbo,loc,dep,gm"
+        ],
+        "cwd": "/home/huy/Desktop/workspace/gitprojects/batmon",
+        "exit_code": 0,
+        "step": "calculate"
+      }
+    ],
+    "sam_version": "2026.04.0",
+    "tool": "sam-agent-metrics",
+    "wrapper_version": "0.1.1"
+  },
+  "scorecard": {
+    "metrics": {
+      "cbo": {
+        "raw_score": 4.24,
+        "score": 4.24,
+        "scoring": true,
+        "status": "watch"
+      },
+      "cc": {
+        "raw_score": 5.0,
+        "score": 5.0,
+        "scoring": true,
+        "status": "good"
+      },
+      "dc": {
+        "raw_score": 4.89,
+        "score": 4.89,
+        "scoring": true,
+        "status": "good"
+      },
+      "dep": {
+        "raw_score": -1,
+        "score": null,
+        "scoring": true,
+        "status": "not_applicable"
+      },
+      "gm": {
+        "raw_score": -1,
+        "score": null,
+        "scoring": true,
+        "status": "not_applicable"
+      },
+      "loc": {
+        "raw_score": 3.45,
+        "score": 3.45,
+        "scoring": true,
+        "status": "needs_attention"
+      },
+      "mcd": {
+        "raw_score": 5.0,
+        "score": 5.0,
+        "scoring": true,
+        "status": "good"
+      },
+      "ncs": {
+        "raw_score": -1,
+        "score": null,
+        "scoring": false,
+        "status": "not_applicable"
+      },
+      "uc": {
+        "raw_score": 0.0,
+        "score": 0.0,
+        "scoring": false,
+        "status": "poor"
+      }
+    },
+    "sam_score": 4.49,
+    "scale": "0-5",
+    "status": "watch"
+  },
+  "status": "success"
+}
