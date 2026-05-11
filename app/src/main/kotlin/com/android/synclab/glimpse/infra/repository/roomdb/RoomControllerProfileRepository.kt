@@ -22,7 +22,8 @@ class RoomControllerProfileRepository(
             "ControllerProfileRepository getById hit id=$maskedId " +
                     "deviceName=${entity.deviceName} " +
                     "color=${toHexColor(entity.lightbarColor)} " +
-                    "lbo=${entity.liveBatteryOverlayEnabled}"
+                    "lbo=${entity.liveBatteryOverlayEnabled} " +
+                    "bm=${entity.backgroundMonitoringEnabled}"
         )
         return entity.toModel()
     }
@@ -32,7 +33,8 @@ class RoomControllerProfileRepository(
             "ControllerProfileRepository upsert id=${maskIdentifier(profile.id)} " +
                     "deviceName=${profile.deviceName} " +
                     "color=${toHexColor(profile.lightbarColor)} " +
-                    "lbo=${profile.liveBatteryOverlayEnabled}"
+                    "lbo=${profile.liveBatteryOverlayEnabled} " +
+                    "bm=${profile.backgroundMonitoringEnabled}"
         )
         controllerProfileDao.upsert(profile.toEntity())
     }
@@ -47,7 +49,8 @@ class RoomControllerProfileRepository(
             id = id,
             deviceName = deviceName,
             lightbarColor = lightbarColor,
-            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled
+            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled,
+            backgroundMonitoringEnabled = backgroundMonitoringEnabled
         )
     }
 
@@ -56,7 +59,8 @@ class RoomControllerProfileRepository(
             id = id,
             deviceName = deviceName,
             lightbarColor = lightbarColor,
-            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled
+            liveBatteryOverlayEnabled = liveBatteryOverlayEnabled,
+            backgroundMonitoringEnabled = backgroundMonitoringEnabled
         )
     }
 

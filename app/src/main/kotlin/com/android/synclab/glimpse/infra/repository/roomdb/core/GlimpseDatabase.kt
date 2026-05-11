@@ -10,7 +10,7 @@ import com.android.synclab.glimpse.utils.LogCompat
 
 @Database(
     entities = [ControllerProfileEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class GlimpseDatabase : RoomDatabase() {
@@ -28,6 +28,15 @@ abstract class GlimpseDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE controller_profile " +
+                            "ADD COLUMN background_monitoring_enabled INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun create(context: Context): GlimpseDatabase {
             val databasePath = context.getDatabasePath(DATABASE_NAME).absolutePath
             LogCompat.i("GlimpseDatabase create path=$databasePath")
@@ -35,7 +44,7 @@ abstract class GlimpseDatabase : RoomDatabase() {
                 context,
                 GlimpseDatabase::class.java,
                 DATABASE_NAME
-            ).addMigrations(MIGRATION_1_2).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
         }
     }
 }
