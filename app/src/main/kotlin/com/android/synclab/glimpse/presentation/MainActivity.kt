@@ -33,6 +33,7 @@ import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseC
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
+import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
 import com.android.synclab.glimpse.presentation.model.MainUiState
@@ -75,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
+    private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -562,30 +564,18 @@ class MainActivity : AppCompatActivity() {
                     "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
         }
 
-        if (enabled && !Settings.canDrawOverlays(this)) {
-            requestOverlayPermission()
-            showToast(R.string.toast_overlay_permission_required)
-            refreshSettingsStateLater(300L)
-            bindFixedSettingsPanel(state)
-            return false
-        }
-
-        selectedLiveBatteryOverlayEnabled = enabled
-        bindFixedSettingsPanel(state)
-        persistControllerProfile(
-            lightbarColor = selectedVibeColor,
-            targetId = persistentId,
-            liveBatteryOverlayEnabled = enabled,
-            reason = "lbo_$reason"
-        )
-
-        val applied = applyLiveBatteryOverlayPreference(
+        val decision = liveBatteryOverlayPlanner.planUserToggle(
             enabled = enabled,
-            controllerIdentifier = controllerIdentifier,
+            state = buildLiveBatteryOverlayState(
+                profileId = persistentId,
+                controllerIdentifier = controllerIdentifier
+            )
+        )
+        return executeLiveBatteryOverlayDecision(
+            decision = decision,
+            state = state,
             reason = reason
         )
-        refreshSettingsStateLater()
-        return applied
     }
 
     private fun applyLiveBatteryOverlayPreference(
@@ -601,33 +591,107 @@ class MainActivity : AppCompatActivity() {
                     "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
         }
 
-        if (enabled) {
-            if (controllerIdentifier.isNullOrBlank()) {
-                LogCompat.d("Live Battery Overlay show skipped: missing controller identifier")
-                return false
-            }
-            if (!Settings.canDrawOverlays(this)) {
-                requestOverlayPermission()
-                showToast(R.string.toast_overlay_permission_required)
-                return false
-            }
-            return dispatchServiceAction(
-                action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
-                foreground = false,
+        val decision = liveBatteryOverlayPlanner.planProfilePreference(
+            enabled = enabled,
+            state = buildLiveBatteryOverlayState(
+                profileId = null,
                 controllerIdentifier = controllerIdentifier
             )
-        }
+        )
+        return executeLiveBatteryOverlayDecision(
+            decision = decision,
+            state = viewModel.currentUiState(),
+            reason = reason
+        )
+    }
 
-        if (!BatteryOverlayService.isRunning && !BatteryOverlayService.isOverlayVisible) {
-            LogCompat.dDebug {
-                "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
+    private fun executeLiveBatteryOverlayDecision(
+        decision: LiveBatteryOverlayPlanner.Decision,
+        state: MainUiState,
+        reason: String
+    ): Boolean {
+        when (decision) {
+            is LiveBatteryOverlayPlanner.Decision.Show -> {
+                val dispatched = dispatchServiceAction(
+                    action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
+                    foreground = false,
+                    controllerIdentifier = decision.controllerIdentifier
+                )
+                selectedLiveBatteryOverlayEnabled = dispatched && decision.selectedEnabled
+                bindFixedSettingsPanel(state)
+                if (dispatched && decision.persistProfileId != null) {
+                    persistControllerProfile(
+                        lightbarColor = selectedVibeColor,
+                        targetId = decision.persistProfileId,
+                        liveBatteryOverlayEnabled = true,
+                        reason = "lbo_$reason"
+                    )
+                }
+                refreshSettingsStateLater()
+                return dispatched
             }
-            return true
-        }
 
-        return dispatchServiceAction(
-            action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
-            foreground = false
+            is LiveBatteryOverlayPlanner.Decision.Hide -> {
+                selectedLiveBatteryOverlayEnabled = decision.selectedEnabled
+                bindFixedSettingsPanel(state)
+                val dispatched = if (decision.shouldDispatchHide) {
+                    dispatchServiceAction(
+                        action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
+                        foreground = false
+                    )
+                } else {
+                    LogCompat.dDebug {
+                        "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
+                    }
+                    true
+                }
+                if (dispatched && decision.persistProfileId != null) {
+                    persistControllerProfile(
+                        lightbarColor = selectedVibeColor,
+                        targetId = decision.persistProfileId,
+                        liveBatteryOverlayEnabled = false,
+                        reason = "lbo_$reason"
+                    )
+                }
+                refreshSettingsStateLater()
+                return dispatched
+            }
+
+            is LiveBatteryOverlayPlanner.Decision.RequestOverlayPermission -> {
+                decision.selectedEnabled?.let {
+                    selectedLiveBatteryOverlayEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
+                requestOverlayPermission()
+                showToast(R.string.toast_overlay_permission_required)
+                refreshSettingsStateLater(300L)
+                return false
+            }
+
+            is LiveBatteryOverlayPlanner.Decision.Reject -> {
+                LogCompat.dDebug {
+                    "UI_VERIFY LBO rejected reason=$reason plannerReason=${decision.reason}"
+                }
+                decision.selectedEnabled?.let {
+                    selectedLiveBatteryOverlayEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
+                refreshSettingsStateLater()
+                return false
+            }
+        }
+    }
+
+    private fun buildLiveBatteryOverlayState(
+        profileId: String?,
+        controllerIdentifier: String?
+    ): LiveBatteryOverlayPlanner.State {
+        return LiveBatteryOverlayPlanner.State(
+            profileId = profileId,
+            controllerIdentifier = controllerIdentifier,
+            hasOverlayPermission = Settings.canDrawOverlays(this),
+            isServiceRunning = BatteryOverlayService.isRunning,
+            isOverlayVisible = BatteryOverlayService.isOverlayVisible
         )
     }
 
