@@ -24,6 +24,7 @@ class LiveBatteryOverlayPlannerTest {
         assertEquals("controller-1", show.controllerIdentifier)
         assertEquals("profile-1", show.persistProfileId)
         assertTrue(show.selectedEnabled)
+        assertTrue(show.rollbackSelectionOnDispatchFailure)
     }
 
     @Test
@@ -66,6 +67,7 @@ class LiveBatteryOverlayPlannerTest {
         assertEquals("controller-1", show.controllerIdentifier)
         assertNull(show.persistProfileId)
         assertTrue(show.selectedEnabled)
+        assertFalse(show.rollbackSelectionOnDispatchFailure)
     }
 
     @Test

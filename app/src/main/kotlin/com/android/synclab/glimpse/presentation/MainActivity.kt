@@ -624,7 +624,13 @@ class MainActivity : AppCompatActivity() {
                     foreground = false,
                     controllerIdentifier = decision.controllerIdentifier
                 )
-                selectedLiveBatteryOverlayEnabled = dispatched && decision.selectedEnabled
+                selectedLiveBatteryOverlayEnabled = if (
+                    dispatched || !decision.rollbackSelectionOnDispatchFailure
+                ) {
+                    decision.selectedEnabled
+                } else {
+                    false
+                }
                 bindFixedSettingsPanel(state)
                 if (dispatched && decision.persistProfileId != null) {
                     persistControllerProfile(

@@ -63,7 +63,8 @@ class LiveBatteryOverlayPlanner :
 
         return LiveBatteryOverlayDecision.Show(
             controllerIdentifier = controllerIdentifier,
-            persistProfileId = state.profileId.normalizedIdentifier().takeIf { persistOnSuccess }
+            persistProfileId = state.profileId.normalizedIdentifier().takeIf { persistOnSuccess },
+            rollbackSelectionOnDispatchFailure = rollbackSelectionOnFailure
         )
     }
 }

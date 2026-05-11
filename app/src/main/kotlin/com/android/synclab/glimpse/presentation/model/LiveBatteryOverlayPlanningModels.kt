@@ -16,7 +16,8 @@ sealed interface LiveBatteryOverlayDecision {
     data class Show(
         val controllerIdentifier: String,
         val persistProfileId: String?,
-        val selectedEnabled: Boolean = true
+        val selectedEnabled: Boolean = true,
+        val rollbackSelectionOnDispatchFailure: Boolean
     ) : LiveBatteryOverlayDecision
 
     data class Hide(
