@@ -25,6 +25,8 @@ class BatteryOverlayService : Service() {
             "com.android.synclab.glimpse.action.SHOW_OVERLAY"
         const val ACTION_HIDE_OVERLAY =
             "com.android.synclab.glimpse.action.HIDE_OVERLAY"
+        const val EXTRA_CONTROLLER_IDENTIFIER =
+            "com.android.synclab.glimpse.extra.CONTROLLER_IDENTIFIER"
 
         private const val NOTIFICATION_ID = 31001
         private const val CHANNEL_ID = "glimpse_monitor_channel_v1"
@@ -51,6 +53,8 @@ class BatteryOverlayService : Service() {
 
     private var foregroundStarted = false
     private var updateLoopStarted = false
+    private var activeMonitoringControllerIdentifier: String? = null
+    private var activeOverlayControllerIdentifier: String? = null
 
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -86,7 +90,11 @@ class BatteryOverlayService : Service() {
 
         if (action == ACTION_STOP_MONITORING) {
             MonitoringStateStore.isMonitoringEnabled = false
+            activeMonitoringControllerIdentifier = null
             LogCompat.i("Received stop monitoring action")
+            LogCompat.dDebug {
+                "UI_VERIFY BM Service action=stop target=none monitoring=false"
+            }
             if (foregroundStarted) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 foregroundStarted = false
@@ -110,15 +118,35 @@ class BatteryOverlayService : Service() {
             ACTION_HIDE_OVERLAY -> {
                 overlayWindowController.hide()
                 MonitoringStateStore.isOverlayVisible = overlayWindowController.isVisible()
+                activeOverlayControllerIdentifier = null
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayService action=hide target=none " +
+                            "visible=${MonitoringStateStore.isOverlayVisible}"
+                }
             }
 
             ACTION_SHOW_OVERLAY -> {
+                activeOverlayControllerIdentifier = readControllerIdentifier(intent)
                 MonitoringStateStore.isOverlayVisible = overlayWindowController.show()
+                LogCompat.dDebug {
+                    "UI_VERIFY OverlayService action=show " +
+                            "target=${activeOverlayControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                            "visible=${MonitoringStateStore.isOverlayVisible}"
+                }
             }
 
             ACTION_START_MONITORING -> {
+                activeMonitoringControllerIdentifier = readControllerIdentifier(intent)
                 MonitoringStateStore.isMonitoringEnabled = true
-                LogCompat.i("Monitoring enabled")
+                LogCompat.i(
+                    "Monitoring enabled target=" +
+                            (activeMonitoringControllerIdentifier?.let(::maskIdentifier) ?: "primary")
+                )
+                LogCompat.dDebug {
+                    "UI_VERIFY BM Service action=start " +
+                            "target=${activeMonitoringControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                            "monitoring=${MonitoringStateStore.isMonitoringEnabled}"
+                }
                 if (
                     !ensureForegroundStarted(
                         getString(R.string.notification_initial_text),
@@ -164,6 +192,8 @@ class BatteryOverlayService : Service() {
         MonitoringStateStore.isMonitoringEnabled = false
         MonitoringStateStore.isOverlayVisible = false
         MonitoringStateStore.lastStatusText = ""
+        activeMonitoringControllerIdentifier = null
+        activeOverlayControllerIdentifier = null
 
         super.onDestroy()
     }
@@ -202,37 +232,67 @@ class BatteryOverlayService : Service() {
     }
 
     private fun updateBatteryState() {
-        val snapshot = getPrimaryGamepadBatteryUseCase(
-            getString(R.string.unknown_controller_name)
+        val overlayTargetIdentifier = activeOverlayControllerIdentifier
+            ?.takeIf { MonitoringStateStore.isOverlayVisible }
+        val monitoringTargetIdentifier = activeMonitoringControllerIdentifier
+            ?.takeIf { MonitoringStateStore.isMonitoringEnabled }
+        val overlaySnapshot = getPrimaryGamepadBatteryUseCase(
+            defaultControllerName = getString(R.string.unknown_controller_name),
+            controllerIdentifier = overlayTargetIdentifier
         )
+        val notificationSnapshot = when {
+            !MonitoringStateStore.isMonitoringEnabled -> overlaySnapshot
+            monitoringTargetIdentifier == overlayTargetIdentifier -> overlaySnapshot
+            else -> getPrimaryGamepadBatteryUseCase(
+                defaultControllerName = getString(R.string.unknown_controller_name),
+                controllerIdentifier = monitoringTargetIdentifier
+            )
+        }
 
         val overlayText = when {
-            snapshot.controllerName == null -> getString(R.string.overlay_no_gamepad)
-            snapshot.batteryPercent == null -> getString(R.string.overlay_battery_unavailable)
-            else -> getString(R.string.overlay_battery_percent, snapshot.batteryPercent)
+            overlaySnapshot.controllerName == null -> getString(R.string.overlay_no_gamepad)
+            overlaySnapshot.batteryPercent == null -> getString(R.string.overlay_battery_unavailable)
+            else -> getString(R.string.overlay_battery_percent, overlaySnapshot.batteryPercent)
         }
         overlayWindowController.updateText(overlayText)
 
         val notificationText = when {
-            snapshot.controllerName == null -> getString(R.string.notification_no_gamepad)
-            snapshot.batteryPercent == null -> getString(
+            notificationSnapshot.controllerName == null -> getString(R.string.notification_no_gamepad)
+            notificationSnapshot.batteryPercent == null -> getString(
                 R.string.notification_battery_unavailable,
-                snapshot.controllerName
+                notificationSnapshot.controllerName
             )
 
             else -> getString(
                 R.string.notification_battery_percent,
-                snapshot.controllerName,
-                snapshot.batteryPercent
+                notificationSnapshot.controllerName,
+                notificationSnapshot.batteryPercent
             )
         }
 
-        val iconRes = pickNotificationIcon(snapshot.batteryPercent)
+        val iconRes = pickNotificationIcon(notificationSnapshot.batteryPercent)
         MonitoringStateStore.lastStatusText = notificationText
         LogCompat.d(
-            "updateBatteryState controller=${snapshot.controllerName} " +
-                    "percent=${snapshot.batteryPercent}"
+            "updateBatteryState target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "controller=${overlaySnapshot.controllerName} percent=${overlaySnapshot.batteryPercent} " +
+                    "monitoringTarget=${monitoringTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "monitoringController=${notificationSnapshot.controllerName} " +
+                    "monitoringPercent=${notificationSnapshot.batteryPercent}"
         )
+        LogCompat.dDebug {
+            "UI_VERIFY OverlayService battery " +
+                    "target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "controller=${overlaySnapshot.controllerName ?: "none"} " +
+                    "percent=${overlaySnapshot.batteryPercent} " +
+                    "overlayVisible=${MonitoringStateStore.isOverlayVisible}"
+        }
+        LogCompat.dDebug {
+            "UI_VERIFY BM battery " +
+                    "target=${monitoringTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "controller=${notificationSnapshot.controllerName ?: "none"} " +
+                    "percent=${notificationSnapshot.batteryPercent} " +
+                    "monitoring=${MonitoringStateStore.isMonitoringEnabled}"
+        }
 
         if (MonitoringStateStore.isMonitoringEnabled) {
             ensureForegroundStarted(notificationText, iconRes)
@@ -255,5 +315,16 @@ class BatteryOverlayService : Service() {
             percent <= 85 -> R.drawable.ic_battery_75
             else -> R.drawable.ic_battery_100
         }
+    }
+
+    private fun readControllerIdentifier(intent: Intent?): String? {
+        return intent
+            ?.getStringExtra(EXTRA_CONTROLLER_IDENTIFIER)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun maskIdentifier(raw: String): String {
+        return if (raw.length <= 12) raw else "${raw.take(6)}...${raw.takeLast(6)}"
     }
 }
