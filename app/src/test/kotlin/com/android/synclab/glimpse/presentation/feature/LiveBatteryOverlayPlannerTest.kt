@@ -1,5 +1,8 @@
 package com.android.synclab.glimpse.presentation.feature
 
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayRejectReason
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,10 +16,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planUserToggle_onWithPermissionAndController_showsAndPersists() {
         val decision = planner.planUserToggle(
             enabled = true,
-            state = state()
+            state = state(),
+            reason = "fixed_settings"
         )
 
-        val show = decision as LiveBatteryOverlayPlanner.Decision.Show
+        val show = decision as LiveBatteryOverlayDecision.Show
         assertEquals("controller-1", show.controllerIdentifier)
         assertEquals("profile-1", show.persistProfileId)
         assertTrue(show.selectedEnabled)
@@ -26,10 +30,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planUserToggle_onWithoutOverlayPermission_requestsPermissionWithoutPersisting() {
         val decision = planner.planUserToggle(
             enabled = true,
-            state = state(hasOverlayPermission = false)
+            state = state(hasOverlayPermission = false),
+            reason = "fixed_settings"
         )
 
-        val request = decision as LiveBatteryOverlayPlanner.Decision.RequestOverlayPermission
+        val request = decision as LiveBatteryOverlayDecision.RequestOverlayPermission
         assertEquals(false, request.selectedEnabled)
     }
 
@@ -37,12 +42,13 @@ class LiveBatteryOverlayPlannerTest {
     fun planUserToggle_onWithoutController_rejectsAndRollsBackSelection() {
         val decision = planner.planUserToggle(
             enabled = true,
-            state = state(controllerIdentifier = null)
+            state = state(controllerIdentifier = null),
+            reason = "fixed_settings"
         )
 
-        val reject = decision as LiveBatteryOverlayPlanner.Decision.Reject
+        val reject = decision as LiveBatteryOverlayDecision.Reject
         assertEquals(
-            LiveBatteryOverlayPlanner.RejectReason.MISSING_CONTROLLER_IDENTIFIER,
+            LiveBatteryOverlayRejectReason.MISSING_CONTROLLER_IDENTIFIER,
             reject.reason
         )
         assertEquals(false, reject.selectedEnabled)
@@ -52,10 +58,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planProfilePreference_onShowsRuntimeWithoutPersisting() {
         val decision = planner.planProfilePreference(
             enabled = true,
-            state = state()
+            state = state(),
+            reason = "profile_loaded"
         )
 
-        val show = decision as LiveBatteryOverlayPlanner.Decision.Show
+        val show = decision as LiveBatteryOverlayDecision.Show
         assertEquals("controller-1", show.controllerIdentifier)
         assertNull(show.persistProfileId)
         assertTrue(show.selectedEnabled)
@@ -65,10 +72,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planProfilePreference_offHidesRuntimeWithoutPersisting() {
         val decision = planner.planProfilePreference(
             enabled = false,
-            state = state(isServiceRunning = true, isOverlayVisible = true)
+            state = state(isServiceRunning = true, isOverlayVisible = true),
+            reason = "profile_loaded"
         )
 
-        val hide = decision as LiveBatteryOverlayPlanner.Decision.Hide
+        val hide = decision as LiveBatteryOverlayDecision.Hide
         assertTrue(hide.shouldDispatchHide)
         assertNull(hide.persistProfileId)
         assertFalse(hide.selectedEnabled)
@@ -78,10 +86,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planUserToggle_offWhileIdleSkipsHideButPersistsFalse() {
         val decision = planner.planUserToggle(
             enabled = false,
-            state = state(isServiceRunning = false, isOverlayVisible = false)
+            state = state(isServiceRunning = false, isOverlayVisible = false),
+            reason = "fixed_settings"
         )
 
-        val hide = decision as LiveBatteryOverlayPlanner.Decision.Hide
+        val hide = decision as LiveBatteryOverlayDecision.Hide
         assertFalse(hide.shouldDispatchHide)
         assertEquals("profile-1", hide.persistProfileId)
     }
@@ -90,10 +99,11 @@ class LiveBatteryOverlayPlannerTest {
     fun planUserToggle_offWhileOverlayActiveHidesAndPersistsFalse() {
         val decision = planner.planUserToggle(
             enabled = false,
-            state = state(isServiceRunning = true, isOverlayVisible = true)
+            state = state(isServiceRunning = true, isOverlayVisible = true),
+            reason = "fixed_settings"
         )
 
-        val hide = decision as LiveBatteryOverlayPlanner.Decision.Hide
+        val hide = decision as LiveBatteryOverlayDecision.Hide
         assertTrue(hide.shouldDispatchHide)
         assertEquals("profile-1", hide.persistProfileId)
     }
@@ -104,8 +114,8 @@ class LiveBatteryOverlayPlannerTest {
         hasOverlayPermission: Boolean = true,
         isServiceRunning: Boolean = false,
         isOverlayVisible: Boolean = false
-    ): LiveBatteryOverlayPlanner.State {
-        return LiveBatteryOverlayPlanner.State(
+    ): LiveBatteryOverlayState {
+        return LiveBatteryOverlayState(
             profileId = profileId,
             controllerIdentifier = controllerIdentifier,
             hasOverlayPermission = hasOverlayPermission,

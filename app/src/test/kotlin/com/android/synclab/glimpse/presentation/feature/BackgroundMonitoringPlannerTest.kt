@@ -1,5 +1,9 @@
 package com.android.synclab.glimpse.presentation.feature
 
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringRejectReason
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
 import com.android.synclab.glimpse.presentation.model.PendingBackgroundMonitoringStart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,7 +22,7 @@ class BackgroundMonitoringPlannerTest {
             reason = "fixed_settings"
         )
 
-        val start = decision as BackgroundMonitoringPlanner.Decision.Start
+        val start = decision as BackgroundMonitoringDecision.Start
         assertEquals("profile-1", start.pendingStart.profileId)
         assertEquals("controller-1", start.pendingStart.controllerIdentifier)
         assertTrue(start.pendingStart.persistOnSuccess)
@@ -38,9 +42,9 @@ class BackgroundMonitoringPlannerTest {
             reason = "fixed_settings"
         )
 
-        val reject = decision as BackgroundMonitoringPlanner.Decision.Reject
+        val reject = decision as BackgroundMonitoringDecision.Reject
         assertEquals(
-            BackgroundMonitoringPlanner.RejectReason.MISSING_CONTROLLER_IDENTIFIER,
+            BackgroundMonitoringRejectReason.MISSING_CONTROLLER_IDENTIFIER,
             reject.reason
         )
         assertEquals(false, reject.selectedEnabled)
@@ -54,8 +58,8 @@ class BackgroundMonitoringPlannerTest {
             reason = "fixed_settings"
         )
 
-        val request = decision as BackgroundMonitoringPlanner.Decision.RequestPermission
-        assertEquals(BackgroundMonitoringPlanner.Permission.POST_NOTIFICATIONS, request.permission)
+        val request = decision as BackgroundMonitoringDecision.RequestPermission
+        assertEquals(BackgroundMonitoringPermission.POST_NOTIFICATIONS, request.permission)
         assertTrue(request.pendingStart.persistOnSuccess)
         assertEquals(false, request.selectedEnabled)
     }
@@ -68,7 +72,7 @@ class BackgroundMonitoringPlannerTest {
             reason = "profile_loaded"
         )
 
-        val start = decision as BackgroundMonitoringPlanner.Decision.Start
+        val start = decision as BackgroundMonitoringDecision.Start
         assertFalse(start.pendingStart.persistOnSuccess)
 
         val result = planner.planStartDispatchResult(start.pendingStart, dispatched = true)
@@ -85,7 +89,7 @@ class BackgroundMonitoringPlannerTest {
             reason = "fixed_settings"
         )
 
-        val stop = decision as BackgroundMonitoringPlanner.Decision.Stop
+        val stop = decision as BackgroundMonitoringDecision.Stop
         assertTrue(stop.shouldDispatchStop)
         assertEquals("profile-1", stop.persistProfileId)
         assertFalse(stop.selectedEnabled)
@@ -100,7 +104,7 @@ class BackgroundMonitoringPlannerTest {
             reason = "profile_loaded"
         )
 
-        val stop = decision as BackgroundMonitoringPlanner.Decision.Stop
+        val stop = decision as BackgroundMonitoringDecision.Stop
         assertTrue(stop.shouldDispatchStop)
         assertNull(stop.persistProfileId)
     }
@@ -113,7 +117,7 @@ class BackgroundMonitoringPlannerTest {
             currentState = state()
         )
 
-        val start = decision as BackgroundMonitoringPlanner.Decision.Start
+        val start = decision as BackgroundMonitoringDecision.Start
         assertEquals(pending, start.pendingStart)
     }
 
@@ -124,9 +128,9 @@ class BackgroundMonitoringPlannerTest {
             currentState = state(controllerIdentifier = "controller-2")
         )
 
-        val reject = decision as BackgroundMonitoringPlanner.Decision.Reject
+        val reject = decision as BackgroundMonitoringDecision.Reject
         assertEquals(
-            BackgroundMonitoringPlanner.RejectReason.PENDING_CONTROLLER_CHANGED,
+            BackgroundMonitoringRejectReason.PENDING_CONTROLLER_CHANGED,
             reject.reason
         )
         assertNull(reject.selectedEnabled)
@@ -151,8 +155,8 @@ class BackgroundMonitoringPlannerTest {
         isMonitoringEnabled: Boolean = false,
         hasNotificationPermission: Boolean = true,
         hasBluetoothConnectPermission: Boolean = true
-    ): BackgroundMonitoringPlanner.State {
-        return BackgroundMonitoringPlanner.State(
+    ): BackgroundMonitoringState {
+        return BackgroundMonitoringState(
             profileId = profileId,
             controllerIdentifier = controllerIdentifier,
             isMonitoringEnabled = isMonitoringEnabled,

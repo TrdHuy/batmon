@@ -1,45 +1,16 @@
 package com.android.synclab.glimpse.presentation.feature
 
-class LiveBatteryOverlayPlanner {
-    enum class RejectReason {
-        MISSING_CONTROLLER_IDENTIFIER
-    }
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayRejectReason
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 
-    data class State(
-        val profileId: String?,
-        val controllerIdentifier: String?,
-        val hasOverlayPermission: Boolean,
-        val isServiceRunning: Boolean,
-        val isOverlayVisible: Boolean
-    )
-
-    sealed interface Decision {
-        data class Show(
-            val controllerIdentifier: String,
-            val persistProfileId: String?,
-            val selectedEnabled: Boolean = true
-        ) : Decision
-
-        data class Hide(
-            val shouldDispatchHide: Boolean,
-            val persistProfileId: String?,
-            val selectedEnabled: Boolean = false
-        ) : Decision
-
-        data class RequestOverlayPermission(
-            val selectedEnabled: Boolean?
-        ) : Decision
-
-        data class Reject(
-            val reason: RejectReason,
-            val selectedEnabled: Boolean?
-        ) : Decision
-    }
-
-    fun planUserToggle(
+class LiveBatteryOverlayPlanner :
+    ControllerToggleFeaturePlanner<LiveBatteryOverlayState, LiveBatteryOverlayDecision>() {
+    override fun planUserToggle(
         enabled: Boolean,
-        state: State
-    ): Decision {
+        state: LiveBatteryOverlayState,
+        reason: String
+    ): LiveBatteryOverlayDecision {
         return if (enabled) {
             planShow(
                 state = state,
@@ -47,17 +18,18 @@ class LiveBatteryOverlayPlanner {
                 rollbackSelectionOnFailure = true
             )
         } else {
-            Decision.Hide(
+            LiveBatteryOverlayDecision.Hide(
                 shouldDispatchHide = state.isServiceRunning || state.isOverlayVisible,
-                persistProfileId = state.profileId.normalized()
+                persistProfileId = state.profileId.normalizedIdentifier()
             )
         }
     }
 
-    fun planProfilePreference(
+    override fun planProfilePreference(
         enabled: Boolean,
-        state: State
-    ): Decision {
+        state: LiveBatteryOverlayState,
+        reason: String
+    ): LiveBatteryOverlayDecision {
         return if (enabled) {
             planShow(
                 state = state,
@@ -65,7 +37,7 @@ class LiveBatteryOverlayPlanner {
                 rollbackSelectionOnFailure = false
             )
         } else {
-            Decision.Hide(
+            LiveBatteryOverlayDecision.Hide(
                 shouldDispatchHide = state.isServiceRunning || state.isOverlayVisible,
                 persistProfileId = null
             )
@@ -73,29 +45,25 @@ class LiveBatteryOverlayPlanner {
     }
 
     private fun planShow(
-        state: State,
+        state: LiveBatteryOverlayState,
         persistOnSuccess: Boolean,
         rollbackSelectionOnFailure: Boolean
-    ): Decision {
+    ): LiveBatteryOverlayDecision {
         if (!state.hasOverlayPermission) {
-            return Decision.RequestOverlayPermission(
+            return LiveBatteryOverlayDecision.RequestOverlayPermission(
                 selectedEnabled = false.takeIf { rollbackSelectionOnFailure }
             )
         }
 
-        val controllerIdentifier = state.controllerIdentifier.normalized()
-            ?: return Decision.Reject(
-                reason = RejectReason.MISSING_CONTROLLER_IDENTIFIER,
+        val controllerIdentifier = state.controllerIdentifier.normalizedIdentifier()
+            ?: return LiveBatteryOverlayDecision.Reject(
+                reason = LiveBatteryOverlayRejectReason.MISSING_CONTROLLER_IDENTIFIER,
                 selectedEnabled = false.takeIf { rollbackSelectionOnFailure }
             )
 
-        return Decision.Show(
+        return LiveBatteryOverlayDecision.Show(
             controllerIdentifier = controllerIdentifier,
-            persistProfileId = state.profileId.normalized().takeIf { persistOnSuccess }
+            persistProfileId = state.profileId.normalizedIdentifier().takeIf { persistOnSuccess }
         )
-    }
-
-    private fun String?.normalized(): String? {
-        return this?.trim()?.takeIf { it.isNotEmpty() }
     }
 }

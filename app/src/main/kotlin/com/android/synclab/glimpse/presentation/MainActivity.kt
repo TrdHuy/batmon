@@ -34,8 +34,13 @@ import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.PendingBackgroundMonitoringStart
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
@@ -456,12 +461,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeBackgroundMonitoringDecision(
-        decision: BackgroundMonitoringPlanner.Decision,
+        decision: BackgroundMonitoringDecision,
         state: MainUiState,
         reason: String
     ): Boolean {
         when (decision) {
-            is BackgroundMonitoringPlanner.Decision.Start -> {
+            is BackgroundMonitoringDecision.Start -> {
                 pendingBackgroundMonitoringStart = decision.pendingStart
                 return dispatchAndApplyBackgroundMonitoringStart(
                     state = state,
@@ -472,7 +477,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-            is BackgroundMonitoringPlanner.Decision.Stop -> {
+            is BackgroundMonitoringDecision.Stop -> {
                 selectedBackgroundMonitoringEnabled = decision.selectedEnabled
                 if (decision.clearPending) {
                     pendingBackgroundMonitoringStart = null
@@ -502,7 +507,7 @@ class MainActivity : AppCompatActivity() {
                 return dispatched
             }
 
-            is BackgroundMonitoringPlanner.Decision.RequestPermission -> {
+            is BackgroundMonitoringDecision.RequestPermission -> {
                 decision.selectedEnabled?.let {
                     selectedBackgroundMonitoringEnabled = it
                     bindFixedSettingsPanel(state)
@@ -512,7 +517,7 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
 
-            is BackgroundMonitoringPlanner.Decision.Reject -> {
+            is BackgroundMonitoringDecision.Reject -> {
                 LogCompat.dDebug {
                     "UI_VERIFY BM rejected reason=$reason plannerReason=${decision.reason}"
                 }
@@ -527,11 +532,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestBackgroundMonitoringPermission(
-        decision: BackgroundMonitoringPlanner.Decision.RequestPermission
+        decision: BackgroundMonitoringDecision.RequestPermission
     ) {
         pendingBackgroundMonitoringStart = decision.pendingStart
         when (decision.permission) {
-            BackgroundMonitoringPlanner.Permission.POST_NOTIFICATIONS -> {
+            BackgroundMonitoringPermission.POST_NOTIFICATIONS -> {
                 pendingStartAfterNotificationPermission = true
                 requestPermissions(
                     arrayOf(Manifest.permission.POST_NOTIFICATIONS),
@@ -539,7 +544,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-            BackgroundMonitoringPlanner.Permission.BLUETOOTH_CONNECT -> {
+            BackgroundMonitoringPermission.BLUETOOTH_CONNECT -> {
                 pendingStartAfterBluetoothPermission = true
                 requestPermissions(
                     arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
@@ -569,7 +574,8 @@ class MainActivity : AppCompatActivity() {
             state = buildLiveBatteryOverlayState(
                 profileId = persistentId,
                 controllerIdentifier = controllerIdentifier
-            )
+            ),
+            reason = reason
         )
         return executeLiveBatteryOverlayDecision(
             decision = decision,
@@ -596,7 +602,8 @@ class MainActivity : AppCompatActivity() {
             state = buildLiveBatteryOverlayState(
                 profileId = null,
                 controllerIdentifier = controllerIdentifier
-            )
+            ),
+            reason = reason
         )
         return executeLiveBatteryOverlayDecision(
             decision = decision,
@@ -606,12 +613,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeLiveBatteryOverlayDecision(
-        decision: LiveBatteryOverlayPlanner.Decision,
+        decision: LiveBatteryOverlayDecision,
         state: MainUiState,
         reason: String
     ): Boolean {
         when (decision) {
-            is LiveBatteryOverlayPlanner.Decision.Show -> {
+            is LiveBatteryOverlayDecision.Show -> {
                 val dispatched = dispatchServiceAction(
                     action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
                     foreground = false,
@@ -631,7 +638,7 @@ class MainActivity : AppCompatActivity() {
                 return dispatched
             }
 
-            is LiveBatteryOverlayPlanner.Decision.Hide -> {
+            is LiveBatteryOverlayDecision.Hide -> {
                 selectedLiveBatteryOverlayEnabled = decision.selectedEnabled
                 bindFixedSettingsPanel(state)
                 val dispatched = if (decision.shouldDispatchHide) {
@@ -657,7 +664,7 @@ class MainActivity : AppCompatActivity() {
                 return dispatched
             }
 
-            is LiveBatteryOverlayPlanner.Decision.RequestOverlayPermission -> {
+            is LiveBatteryOverlayDecision.RequestOverlayPermission -> {
                 decision.selectedEnabled?.let {
                     selectedLiveBatteryOverlayEnabled = it
                     bindFixedSettingsPanel(state)
@@ -668,7 +675,7 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
 
-            is LiveBatteryOverlayPlanner.Decision.Reject -> {
+            is LiveBatteryOverlayDecision.Reject -> {
                 LogCompat.dDebug {
                     "UI_VERIFY LBO rejected reason=$reason plannerReason=${decision.reason}"
                 }
@@ -685,8 +692,8 @@ class MainActivity : AppCompatActivity() {
     private fun buildLiveBatteryOverlayState(
         profileId: String?,
         controllerIdentifier: String?
-    ): LiveBatteryOverlayPlanner.State {
-        return LiveBatteryOverlayPlanner.State(
+    ): LiveBatteryOverlayState {
+        return LiveBatteryOverlayState(
             profileId = profileId,
             controllerIdentifier = controllerIdentifier,
             hasOverlayPermission = Settings.canDrawOverlays(this),
@@ -993,8 +1000,8 @@ class MainActivity : AppCompatActivity() {
     private fun buildBackgroundMonitoringState(
         profileId: String?,
         controllerIdentifier: String?
-    ): BackgroundMonitoringPlanner.State {
-        return BackgroundMonitoringPlanner.State(
+    ): BackgroundMonitoringState {
+        return BackgroundMonitoringState(
             profileId = profileId,
             controllerIdentifier = controllerIdentifier,
             isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
