@@ -30,8 +30,15 @@ import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
+import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
+import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
 import com.android.synclab.glimpse.presentation.model.ControllerPageUiModel
 import com.android.synclab.glimpse.presentation.model.EventChangeParam
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
+import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 import com.android.synclab.glimpse.presentation.model.MainUiState
 import com.android.synclab.glimpse.presentation.model.PendingBackgroundMonitoringStart
 import com.android.synclab.glimpse.presentation.model.SettingItemUiModel
@@ -70,6 +77,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
     private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
     private lateinit var viewModel: MainViewModel
+
+    private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
+    private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -434,119 +444,122 @@ class MainActivity : AppCompatActivity() {
         reason: String
     ): Boolean {
         val state = viewModel.currentUiState()
-        return if (enabled) {
-            startBackgroundMonitoring(
-                state = state,
-                reason = reason
-            )
-        } else {
-            stopBackgroundMonitoring(
-                state = state,
-                reason = reason
-            )
-        }
-    }
-
-    private fun startBackgroundMonitoring(
-        state: MainUiState,
-        reason: String
-    ): Boolean {
-        val persistentId = state.controllerPersistentId?.takeIf { it.isNotBlank() }
-        val controllerIdentifier = state.controllerUniqueId?.takeIf { it.isNotBlank() }
         LogCompat.dDebug {
             "UI_VERIFY BM toggle " +
-                    "reason=$reason enabled=true " +
-                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
-                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"} " +
+                    "reason=$reason enabled=$enabled " +
+                    "profileId=${state.controllerPersistentId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${state.controllerUniqueId?.let(::maskIdentifier) ?: "none"} " +
                     "serviceRunning=${BatteryOverlayService.isRunning} " +
                     "monitoring=${BatteryOverlayService.isMonitoringEnabled}"
         }
-
-        if (persistentId == null || controllerIdentifier == null) {
-            LogCompat.dDebug {
-                "UI_VERIFY BM toggle rejected reason=$reason " +
-                        "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
-                        "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
-            }
-            selectedBackgroundMonitoringEnabled = false
-            bindFixedSettingsPanel(state)
-            refreshSettingsStateLater()
-            return false
-        }
-
-        val pendingStart = PendingBackgroundMonitoringStart(
-            profileId = persistentId,
-            controllerIdentifier = controllerIdentifier,
-            reason = reason,
-            persistOnSuccess = true
+        val decision = backgroundMonitoringPlanner.planUserToggle(
+            enabled = enabled,
+            state = buildBackgroundMonitoringState(
+                profileId = state.controllerPersistentId,
+                controllerIdentifier = state.controllerUniqueId
+            ),
+            reason = reason
         )
-        pendingBackgroundMonitoringStart = pendingStart
-
-        if (!ensureForegroundPermissions(
-                autoResumeStartMonitoring = true,
-                pendingStart = pendingStart
-            )
-        ) {
-            selectedBackgroundMonitoringEnabled = false
-            bindFixedSettingsPanel(state)
-            refreshSettingsStateLater()
-            return false
-        }
-
-        return dispatchAndApplyBackgroundMonitoringStart(
+        return executeBackgroundMonitoringDecision(
+            decision = decision,
             state = state,
-            profileId = persistentId,
-            controllerIdentifier = controllerIdentifier,
-            pendingStart = pendingStart,
             reason = reason
         )
     }
 
-    private fun stopBackgroundMonitoring(
+    private fun executeBackgroundMonitoringDecision(
+        decision: BackgroundMonitoringDecision,
         state: MainUiState,
         reason: String
     ): Boolean {
-        val persistentId = state.controllerPersistentId?.takeIf { it.isNotBlank() }
-        val controllerIdentifier = state.controllerUniqueId?.takeIf { it.isNotBlank() }
-        LogCompat.dDebug {
-            "UI_VERIFY BM toggle " +
-                    "reason=$reason enabled=false " +
-                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
-                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
-        }
-
-        selectedBackgroundMonitoringEnabled = false
-        pendingBackgroundMonitoringStart = null
-        bindFixedSettingsPanel(state)
-
-        if (!BatteryOverlayService.isMonitoringEnabled) {
-            LogCompat.dDebug {
-                "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
+        when (decision) {
+            is BackgroundMonitoringDecision.Start -> {
+                pendingBackgroundMonitoringStart = decision.pendingStart
+                return dispatchAndApplyBackgroundMonitoringStart(
+                    state = state,
+                    profileId = decision.pendingStart.profileId.orEmpty(),
+                    controllerIdentifier = decision.pendingStart.controllerIdentifier.orEmpty(),
+                    pendingStart = decision.pendingStart,
+                    reason = reason
+                )
             }
-            persistControllerProfile(
-                lightbarColor = selectedVibeColor,
-                targetId = persistentId,
-                backgroundMonitoringEnabled = false,
-                reason = "bm_$reason"
-            )
-            refreshSettingsStateLater()
-            return true
-        }
 
-        val dispatched = dispatchServiceAction(
-            action = BatteryOverlayService.ACTION_STOP_MONITORING,
-            foreground = false
-        )
-        if (dispatched) {
-            persistControllerProfile(
-                lightbarColor = selectedVibeColor,
-                targetId = persistentId,
-                backgroundMonitoringEnabled = false,
-                reason = "bm_$reason"
-            )
+            is BackgroundMonitoringDecision.Stop -> {
+                selectedBackgroundMonitoringEnabled = decision.selectedEnabled
+                if (decision.clearPending) {
+                    pendingBackgroundMonitoringStart = null
+                }
+                bindFixedSettingsPanel(state)
+
+                val dispatched = if (decision.shouldDispatchStop) {
+                    dispatchServiceAction(
+                        action = BatteryOverlayService.ACTION_STOP_MONITORING,
+                        foreground = false
+                    )
+                } else {
+                    LogCompat.dDebug {
+                        "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
+                    }
+                    true
+                }
+                if (dispatched && decision.persistProfileId != null) {
+                    persistControllerProfile(
+                        lightbarColor = selectedVibeColor,
+                        targetId = decision.persistProfileId,
+                        backgroundMonitoringEnabled = false,
+                        reason = "bm_$reason"
+                    )
+                }
+                refreshSettingsStateLater()
+                return dispatched
+            }
+
+            is BackgroundMonitoringDecision.RequestPermission -> {
+                decision.selectedEnabled?.let {
+                    selectedBackgroundMonitoringEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
+                requestBackgroundMonitoringPermission(decision)
+                refreshSettingsStateLater()
+                return false
+            }
+
+            is BackgroundMonitoringDecision.Reject -> {
+                LogCompat.dDebug {
+                    "UI_VERIFY BM rejected reason=$reason plannerReason=${decision.reason}"
+                }
+                decision.selectedEnabled?.let {
+                    selectedBackgroundMonitoringEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
+                refreshSettingsStateLater()
+                return false
+            }
         }
-        refreshSettingsStateLater()
-        return dispatched
+    }
+
+    private fun requestBackgroundMonitoringPermission(
+        decision: BackgroundMonitoringDecision.RequestPermission
+    ) {
+        pendingBackgroundMonitoringStart = decision.pendingStart
+        when (decision.permission) {
+            BackgroundMonitoringPermission.POST_NOTIFICATIONS -> {
+                pendingStartAfterNotificationPermission = true
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_CODE_POST_NOTIFICATIONS
+                )
+            }
+
+            BackgroundMonitoringPermission.BLUETOOTH_CONNECT -> {
+                pendingStartAfterBluetoothPermission = true
+                requestPermissions(
+                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                    REQUEST_CODE_BLUETOOTH_CONNECT
+                )
+                showToast(R.string.toast_bluetooth_permission_required)
+            }
+        }
     }
 
     private fun handleLiveBatteryOverlayToggle(
@@ -563,30 +576,19 @@ class MainActivity : AppCompatActivity() {
                     "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
         }
 
-        if (enabled && !Settings.canDrawOverlays(this)) {
-            requestOverlayPermission()
-            showToast(R.string.toast_overlay_permission_required)
-            refreshSettingsStateLater(300L)
-            bindFixedSettingsPanel(state)
-            return false
-        }
-
-        selectedLiveBatteryOverlayEnabled = enabled
-        bindFixedSettingsPanel(state)
-        persistControllerProfile(
-            lightbarColor = selectedVibeColor,
-            targetId = persistentId,
-            liveBatteryOverlayEnabled = enabled,
-            reason = "lbo_$reason"
-        )
-
-        val applied = applyLiveBatteryOverlayPreference(
+        val decision = liveBatteryOverlayPlanner.planUserToggle(
             enabled = enabled,
-            controllerIdentifier = controllerIdentifier,
+            state = buildLiveBatteryOverlayState(
+                profileId = persistentId,
+                controllerIdentifier = controllerIdentifier
+            ),
             reason = reason
         )
-        refreshSettingsStateLater()
-        return applied
+        return executeLiveBatteryOverlayDecision(
+            decision = decision,
+            state = state,
+            reason = reason
+        )
     }
 
     private fun applyLiveBatteryOverlayPreference(
@@ -602,33 +604,114 @@ class MainActivity : AppCompatActivity() {
                     "overlayVisible=${BatteryOverlayService.isOverlayVisible}"
         }
 
-        if (enabled) {
-            if (controllerIdentifier.isNullOrBlank()) {
-                LogCompat.d("Live Battery Overlay show skipped: missing controller identifier")
-                return false
+        val decision = liveBatteryOverlayPlanner.planProfilePreference(
+            enabled = enabled,
+            state = buildLiveBatteryOverlayState(
+                profileId = null,
+                controllerIdentifier = controllerIdentifier
+            ),
+            reason = reason
+        )
+        return executeLiveBatteryOverlayDecision(
+            decision = decision,
+            state = viewModel.currentUiState(),
+            reason = reason
+        )
+    }
+
+    private fun executeLiveBatteryOverlayDecision(
+        decision: LiveBatteryOverlayDecision,
+        state: MainUiState,
+        reason: String
+    ): Boolean {
+        when (decision) {
+            is LiveBatteryOverlayDecision.Show -> {
+                val dispatched = dispatchServiceAction(
+                    action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
+                    foreground = false,
+                    controllerIdentifier = decision.controllerIdentifier
+                )
+                selectedLiveBatteryOverlayEnabled = if (
+                    dispatched || !decision.rollbackSelectionOnDispatchFailure
+                ) {
+                    decision.selectedEnabled
+                } else {
+                    false
+                }
+                bindFixedSettingsPanel(state)
+                if (dispatched && decision.persistProfileId != null) {
+                    persistControllerProfile(
+                        lightbarColor = selectedVibeColor,
+                        targetId = decision.persistProfileId,
+                        liveBatteryOverlayEnabled = true,
+                        reason = "lbo_$reason"
+                    )
+                }
+                refreshSettingsStateLater()
+                return dispatched
             }
-            if (!Settings.canDrawOverlays(this)) {
+
+            is LiveBatteryOverlayDecision.Hide -> {
+                selectedLiveBatteryOverlayEnabled = decision.selectedEnabled
+                bindFixedSettingsPanel(state)
+                val dispatched = if (decision.shouldDispatchHide) {
+                    dispatchServiceAction(
+                        action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
+                        foreground = false
+                    )
+                } else {
+                    LogCompat.dDebug {
+                        "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
+                    }
+                    true
+                }
+                if (dispatched && decision.persistProfileId != null) {
+                    persistControllerProfile(
+                        lightbarColor = selectedVibeColor,
+                        targetId = decision.persistProfileId,
+                        liveBatteryOverlayEnabled = false,
+                        reason = "lbo_$reason"
+                    )
+                }
+                refreshSettingsStateLater()
+                return dispatched
+            }
+
+            is LiveBatteryOverlayDecision.RequestOverlayPermission -> {
+                decision.selectedEnabled?.let {
+                    selectedLiveBatteryOverlayEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
                 requestOverlayPermission()
                 showToast(R.string.toast_overlay_permission_required)
+                refreshSettingsStateLater(300L)
                 return false
             }
-            return dispatchServiceAction(
-                action = BatteryOverlayService.ACTION_SHOW_OVERLAY,
-                foreground = false,
-                controllerIdentifier = controllerIdentifier
-            )
-        }
 
-        if (!BatteryOverlayService.isRunning && !BatteryOverlayService.isOverlayVisible) {
-            LogCompat.dDebug {
-                "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
+            is LiveBatteryOverlayDecision.Reject -> {
+                LogCompat.dDebug {
+                    "UI_VERIFY LBO rejected reason=$reason plannerReason=${decision.reason}"
+                }
+                decision.selectedEnabled?.let {
+                    selectedLiveBatteryOverlayEnabled = it
+                    bindFixedSettingsPanel(state)
+                }
+                refreshSettingsStateLater()
+                return false
             }
-            return true
         }
+    }
 
-        return dispatchServiceAction(
-            action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
-            foreground = false
+    private fun buildLiveBatteryOverlayState(
+        profileId: String?,
+        controllerIdentifier: String?
+    ): LiveBatteryOverlayState {
+        return LiveBatteryOverlayState(
+            profileId = profileId,
+            controllerIdentifier = controllerIdentifier,
+            hasOverlayPermission = Settings.canDrawOverlays(this),
+            isServiceRunning = BatteryOverlayService.isRunning,
+            isOverlayVisible = BatteryOverlayService.isOverlayVisible
         )
     }
 
@@ -718,57 +801,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun resumePendingBackgroundMonitoringStart(reason: String): Boolean {
         val pendingStart = pendingBackgroundMonitoringStart
-            ?: run {
-                LogCompat.dDebug {
-                    "UI_VERIFY BM resumeSkipped reason=$reason no_pending_start"
-                }
-                return false
-            }
         pendingBackgroundMonitoringStart = null
-        val controllerIdentifier = pendingStart.controllerIdentifier
-        val persistentId = pendingStart.profileId
-            ?.takeIf { it.isNotBlank() }
         val currentState = viewModel.currentUiState()
-        val currentPersistentId = currentState.controllerPersistentId?.takeIf { it.isNotBlank() }
-        val currentControllerIdentifier = currentState.controllerUniqueId?.takeIf { it.isNotBlank() }
         LogCompat.dDebug {
             "UI_VERIFY BM resumePending " +
-                    "reason=$reason originalReason=${pendingStart.reason} " +
-                    "profileId=${persistentId?.let(::maskIdentifier) ?: "none"} " +
-                    "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
+                    "reason=$reason originalReason=${pendingStart?.reason ?: "none"} " +
+                    "profileId=${pendingStart?.profileId?.let(::maskIdentifier) ?: "none"} " +
+                    "runtimeId=${pendingStart?.controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
         }
-
-        if (persistentId == null || controllerIdentifier.isNullOrBlank()) {
-            LogCompat.d("Background Monitoring resume skipped: missing controller identifier")
-            return false
-        }
-
-        if (currentPersistentId != persistentId || currentControllerIdentifier != controllerIdentifier) {
-            LogCompat.dDebug {
-                "UI_VERIFY BM resumeRejected reason=$reason " +
-                        "pendingProfileId=${persistentId.let(::maskIdentifier)} " +
-                        "currentProfileId=${currentPersistentId?.let(::maskIdentifier) ?: "none"} " +
-                        "pendingRuntimeId=${controllerIdentifier.let(::maskIdentifier)} " +
-                        "currentRuntimeId=${currentControllerIdentifier?.let(::maskIdentifier) ?: "none"}"
-            }
-            return false
-        }
-
-        val dispatched = dispatchAndApplyBackgroundMonitoringStart(
-            state = currentState,
-            profileId = persistentId,
-            controllerIdentifier = controllerIdentifier,
+        val decision = backgroundMonitoringPlanner.planResumePending(
             pendingStart = pendingStart,
+            currentState = buildBackgroundMonitoringState(
+                profileId = currentState.controllerPersistentId,
+                controllerIdentifier = currentState.controllerUniqueId
+            )
+        )
+        return executeBackgroundMonitoringDecision(
+            decision = decision,
+            state = currentState,
             reason = reason
         )
-        if (!dispatched) {
-            if (pendingStart.persistOnSuccess) {
-                selectedBackgroundMonitoringEnabled = false
-                bindFixedSettingsPanel(currentState)
-                refreshSettingsStateLater()
-            }
-        }
-        return dispatched
     }
 
     private fun dispatchAndApplyBackgroundMonitoringStart(
@@ -790,21 +842,36 @@ class MainActivity : AppCompatActivity() {
                         "profileId=${profileId.let(::maskIdentifier)} " +
                         "runtimeId=${controllerIdentifier.let(::maskIdentifier)}"
             }
-            if (pendingStart.persistOnSuccess) {
-                selectedBackgroundMonitoringEnabled = false
+            val result = backgroundMonitoringPlanner.planStartDispatchResult(
+                pendingStart = pendingStart,
+                dispatched = false
+            )
+            if (result.clearPending) {
+                pendingBackgroundMonitoringStart = null
+            }
+            result.selectedEnabled?.let {
+                selectedBackgroundMonitoringEnabled = it
                 bindFixedSettingsPanel(state)
             }
             return false
         }
 
-        pendingBackgroundMonitoringStart = null
-        selectedBackgroundMonitoringEnabled = true
-        bindFixedSettingsPanel(state)
-        if (pendingStart.persistOnSuccess) {
+        val result = backgroundMonitoringPlanner.planStartDispatchResult(
+            pendingStart = pendingStart,
+            dispatched = true
+        )
+        if (result.clearPending) {
+            pendingBackgroundMonitoringStart = null
+        }
+        result.selectedEnabled?.let {
+            selectedBackgroundMonitoringEnabled = it
+            bindFixedSettingsPanel(state)
+        }
+        if (result.persistProfileId != null && result.persistEnabled != null) {
             persistControllerProfile(
                 lightbarColor = selectedVibeColor,
-                targetId = profileId,
-                backgroundMonitoringEnabled = true,
+                targetId = result.persistProfileId,
+                backgroundMonitoringEnabled = result.persistEnabled,
                 reason = "bm_$reason"
             )
         } else {
@@ -834,93 +901,32 @@ class MainActivity : AppCompatActivity() {
                     "serviceRunning=${BatteryOverlayService.isRunning} " +
                     "monitoring=${BatteryOverlayService.isMonitoringEnabled}"
         }
-
-        if (!enabled) {
-            pendingBackgroundMonitoringStart = null
-            selectedBackgroundMonitoringEnabled = false
-            bindFixedSettingsPanel(viewModel.currentUiState())
-            if (!BatteryOverlayService.isMonitoringEnabled) {
-                LogCompat.dDebug {
-                    "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
-                }
-                return true
-            }
-
-            return dispatchServiceAction(
-                action = BatteryOverlayService.ACTION_STOP_MONITORING,
-                foreground = false
-            )
-        }
-
-        if (resolvedProfileId == null || resolvedControllerIdentifier == null) {
-            LogCompat.dDebug {
-                "UI_VERIFY BM applyRejected reason=$reason " +
-                        "profileId=${resolvedProfileId?.let(::maskIdentifier) ?: "none"} " +
-                        "runtimeId=${resolvedControllerIdentifier?.let(::maskIdentifier) ?: "none"}"
-            }
-            return false
-        }
-
-        val pendingStart = PendingBackgroundMonitoringStart(
-            profileId = resolvedProfileId,
-            controllerIdentifier = resolvedControllerIdentifier,
-            reason = reason,
-            persistOnSuccess = false
+        val decision = backgroundMonitoringPlanner.planProfilePreference(
+            enabled = enabled,
+            state = buildBackgroundMonitoringState(
+                profileId = profileId,
+                controllerIdentifier = controllerIdentifier
+            ),
+            reason = reason
         )
-        pendingBackgroundMonitoringStart = pendingStart
-
-        if (!ensureForegroundPermissions(
-                autoResumeStartMonitoring = true,
-                pendingStart = pendingStart
-            )
-        ) {
-            return false
-        }
-
-        return dispatchAndApplyBackgroundMonitoringStart(
+        return executeBackgroundMonitoringDecision(
+            decision = decision,
             state = viewModel.currentUiState(),
-            profileId = resolvedProfileId,
-            controllerIdentifier = resolvedControllerIdentifier,
-            pendingStart = pendingStart,
             reason = reason
         )
     }
 
-    private fun ensureForegroundPermissions(
-        autoResumeStartMonitoring: Boolean,
-        pendingStart: PendingBackgroundMonitoringStart? = null
-    ): Boolean {
-        if (shouldRequestNotificationPermission()) {
-            LogCompat.w("POST_NOTIFICATIONS not granted")
-            pendingStartAfterNotificationPermission = autoResumeStartMonitoring
-            if (autoResumeStartMonitoring) {
-                pendingBackgroundMonitoringStart = pendingStart
-            }
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
-            )
-            if (!autoResumeStartMonitoring) {
-                showToast(R.string.toast_notification_permission_required)
-            }
-            return false
-        }
-
-        if (shouldRequestBluetoothConnectPermission()) {
-            LogCompat.w("BLUETOOTH_CONNECT not granted")
-            pendingStartAfterBluetoothPermission = autoResumeStartMonitoring
-            if (autoResumeStartMonitoring) {
-                pendingBackgroundMonitoringStart = pendingStart
-            }
-            requestPermissions(
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                REQUEST_CODE_BLUETOOTH_CONNECT
-            )
-            showToast(R.string.toast_bluetooth_permission_required)
-            return false
-        }
-
-        return true
+    private fun buildBackgroundMonitoringState(
+        profileId: String?,
+        controllerIdentifier: String?
+    ): BackgroundMonitoringState {
+        return BackgroundMonitoringState(
+            profileId = profileId,
+            controllerIdentifier = controllerIdentifier,
+            isMonitoringEnabled = BatteryOverlayService.isMonitoringEnabled,
+            hasNotificationPermission = !shouldRequestNotificationPermission(),
+            hasBluetoothConnectPermission = !shouldRequestBluetoothConnectPermission()
+        )
     }
 
     private fun shouldRequestNotificationPermission(): Boolean {

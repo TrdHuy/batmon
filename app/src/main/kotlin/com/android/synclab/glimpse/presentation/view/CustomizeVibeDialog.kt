@@ -18,6 +18,7 @@ import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.ControllerLightCommandResult
 import com.android.synclab.glimpse.data.model.ControllerLightCommandStatus
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
+import com.android.synclab.glimpse.presentation.feature.CustomizeVibeApplyController
 import com.android.synclab.glimpse.utils.LogCompat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -31,28 +32,19 @@ class CustomizeVibeDialog(
     private val onColorApplied: (Int) -> Unit = {},
     private val onDismiss: () -> Unit = {}
 ) {
-    companion object {
-        private const val APPLY_THROTTLE_MS = 16L
-        private const val FAILURE_TOAST_COOLDOWN_MS = 1_200L
-    }
-
     private val mainHandler = Handler(Looper.getMainLooper())
     private val worker: ExecutorService = Executors.newSingleThreadExecutor()
+    private val applyController = CustomizeVibeApplyController(
+        applyColor = ::applyColorToController,
+        onColorApplied = onColorApplied,
+        onApplyResult = ::logApplyResult,
+        onApplyFailure = ::showStatusToast,
+        scheduler = HandlerScheduler(mainHandler),
+        worker = ExecutorWorker(worker),
+        clock = AndroidClock
+    )
 
     private var dialog: AlertDialog? = null
-    private var pendingColor: Int? = null
-    private var isRequestInFlight = false
-    private var lastSentColor: Int? = null
-    private var lastDispatchUptimeMs: Long = 0L
-    private var isDisposed = false
-
-    private var lastFailureStatus: ControllerLightCommandStatus? = null
-    private var lastFailureToastTime: Long = 0L
-
-    private val applyColorRunnable = Runnable {
-        val targetColor = pendingColor ?: return@Runnable
-        sendColorToController(targetColor)
-    }
 
     val isShowing: Boolean
         get() = dialog?.isShowing == true
@@ -149,84 +141,32 @@ class CustomizeVibeDialog(
     }
 
     private fun scheduleColorApply(color: Int) {
-        pendingColor = color
-        if (isDisposed || isRequestInFlight) {
-            return
-        }
-        mainHandler.removeCallbacks(applyColorRunnable)
-        val now = SystemClock.uptimeMillis()
-        val elapsed = now - lastDispatchUptimeMs
-        val delayMs = if (lastDispatchUptimeMs == 0L || elapsed >= APPLY_THROTTLE_MS) {
-            0L
-        } else {
-            APPLY_THROTTLE_MS - elapsed
-        }
-        if (delayMs == 0L) {
-            mainHandler.post(applyColorRunnable)
-        } else {
-            mainHandler.postDelayed(applyColorRunnable, delayMs)
-        }
+        applyController.scheduleColorApply(color)
     }
 
     private fun flushPendingColorApply() {
-        mainHandler.removeCallbacks(applyColorRunnable)
-        if (isRequestInFlight) {
-            return
-        }
-        val color = pendingColor ?: return
-        sendColorToController(color)
+        applyController.flushPendingColorApply()
     }
 
-    private fun sendColorToController(color: Int) {
-        if (isDisposed) {
-            return
-        }
-        if (isRequestInFlight) {
-            pendingColor = color
-            return
-        }
-        if (lastSentColor == color) {
-            return
-        }
-
-        pendingColor = null
-        isRequestInFlight = true
-        lastDispatchUptimeMs = SystemClock.uptimeMillis()
+    private fun applyColorToController(color: Int): ControllerLightCommandResult {
         val colorHex = toHexColor(color)
         LogCompat.d("CustomizeVibeDialog apply color=$colorHex")
-
-        worker.execute {
-            val result = runCatching {
-                setPs4ControllerLightColorUseCase(
-                    color = color,
-                    controllerIdentifier = controllerIdentifier
-                )
-            }.getOrElse { throwable ->
-                LogCompat.e("CustomizeVibeDialog apply failed", throwable)
-                ControllerLightCommandResult(
-                    status = ControllerLightCommandStatus.FAILED,
-                    colorHex = colorHex,
-                    detail = throwable.javaClass.simpleName
-                )
-            }
-
-            mainHandler.post {
-                if (isDisposed) {
-                    return@post
-                }
-
-                isRequestInFlight = false
-                handleApplyResult(color = color, result = result)
-
-                val queued = pendingColor
-                if (queued != null && queued != color) {
-                    scheduleColorApply(queued)
-                }
-            }
+        return runCatching {
+            setPs4ControllerLightColorUseCase(
+                color = color,
+                controllerIdentifier = controllerIdentifier
+            )
+        }.getOrElse { throwable ->
+            LogCompat.e("CustomizeVibeDialog apply failed", throwable)
+            ControllerLightCommandResult(
+                status = ControllerLightCommandStatus.FAILED,
+                colorHex = colorHex,
+                detail = throwable.javaClass.simpleName
+            )
         }
     }
 
-    private fun handleApplyResult(color: Int, result: ControllerLightCommandResult) {
+    private fun logApplyResult(color: Int, result: ControllerLightCommandResult) {
         LogCompat.d(
             "CustomizeVibeDialog result status=${result.status} " +
                     "color=${result.colorHex ?: toHexColor(color)} " +
@@ -234,29 +174,6 @@ class CustomizeVibeDialog(
                     "controllerIdentifier=${controllerIdentifier ?: "n/a"} " +
                     "detail=${result.detail}"
         )
-
-        if (result.status == ControllerLightCommandStatus.SUCCESS) {
-            lastSentColor = color
-            lastFailureStatus = null
-            onColorApplied.invoke(color)
-            return
-        }
-
-        if (!shouldShowFailureToast(result.status)) {
-            return
-        }
-        showStatusToast(result.status)
-    }
-
-    private fun shouldShowFailureToast(status: ControllerLightCommandStatus): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        val shouldShow = status != lastFailureStatus ||
-                (now - lastFailureToastTime) >= FAILURE_TOAST_COOLDOWN_MS
-        if (shouldShow) {
-            lastFailureStatus = status
-            lastFailureToastTime = now
-        }
-        return shouldShow
     }
 
     private fun showStatusToast(status: ControllerLightCommandStatus) {
@@ -276,14 +193,46 @@ class CustomizeVibeDialog(
     }
 
     private fun dispose() {
-        if (isDisposed) {
-            return
-        }
-        isDisposed = true
-        pendingColor = null
-        mainHandler.removeCallbacks(applyColorRunnable)
-        worker.shutdownNow()
+        applyController.dispose()
         dialog = null
         LogCompat.d("CustomizeVibeDialog disposed")
+    }
+
+    private class HandlerScheduler(
+        private val handler: Handler
+    ) : CustomizeVibeApplyController.Scheduler {
+        override fun post(runnable: Runnable) {
+            handler.post(runnable)
+        }
+
+        override fun postDelayed(runnable: Runnable, delayMs: Long) {
+            handler.postDelayed(runnable, delayMs)
+        }
+
+        override fun removeCallbacks(runnable: Runnable) {
+            handler.removeCallbacks(runnable)
+        }
+    }
+
+    private class ExecutorWorker(
+        private val executorService: ExecutorService
+    ) : CustomizeVibeApplyController.Worker {
+        override fun execute(block: () -> Unit) {
+            executorService.execute(block)
+        }
+
+        override fun shutdownNow() {
+            executorService.shutdownNow()
+        }
+    }
+
+    private object AndroidClock : CustomizeVibeApplyController.Clock {
+        override fun uptimeMillis(): Long {
+            return SystemClock.uptimeMillis()
+        }
+
+        override fun elapsedRealtime(): Long {
+            return SystemClock.elapsedRealtime()
+        }
     }
 }
