@@ -13,6 +13,7 @@ import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCase
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
+import com.android.synclab.glimpse.presentation.feature.BatteryTargetResolver
 import com.android.synclab.glimpse.utils.LogCompat
 
 class BatteryOverlayService : Service() {
@@ -46,6 +47,7 @@ class BatteryOverlayService : Service() {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    private val batteryTargetResolver = BatteryTargetResolver()
 
     private lateinit var getPrimaryGamepadBatteryUseCase: GetPrimaryGamepadBatteryUseCase
     private lateinit var overlayWindowController: OverlayWindowController
@@ -232,20 +234,24 @@ class BatteryOverlayService : Service() {
     }
 
     private fun updateBatteryState() {
-        val overlayTargetIdentifier = activeOverlayControllerIdentifier
-            ?.takeIf { MonitoringStateStore.isOverlayVisible }
-        val monitoringTargetIdentifier = activeMonitoringControllerIdentifier
-            ?.takeIf { MonitoringStateStore.isMonitoringEnabled }
+        val targets = batteryTargetResolver.resolveTargets(
+            BatteryTargetResolver.RuntimeState(
+                isMonitoringEnabled = MonitoringStateStore.isMonitoringEnabled,
+                isOverlayVisible = MonitoringStateStore.isOverlayVisible,
+                activeMonitoringControllerIdentifier = activeMonitoringControllerIdentifier,
+                activeOverlayControllerIdentifier = activeOverlayControllerIdentifier
+            )
+        )
         val overlaySnapshot = getPrimaryGamepadBatteryUseCase(
             defaultControllerName = getString(R.string.unknown_controller_name),
-            controllerIdentifier = overlayTargetIdentifier
+            controllerIdentifier = targets.overlayControllerIdentifier
         )
-        val notificationSnapshot = when {
-            !MonitoringStateStore.isMonitoringEnabled -> overlaySnapshot
-            monitoringTargetIdentifier == overlayTargetIdentifier -> overlaySnapshot
-            else -> getPrimaryGamepadBatteryUseCase(
+        val notificationSnapshot = if (targets.reuseOverlaySnapshotForNotification) {
+            overlaySnapshot
+        } else {
+            getPrimaryGamepadBatteryUseCase(
                 defaultControllerName = getString(R.string.unknown_controller_name),
-                controllerIdentifier = monitoringTargetIdentifier
+                controllerIdentifier = targets.notificationControllerIdentifier
             )
         }
 
@@ -273,22 +279,22 @@ class BatteryOverlayService : Service() {
         val iconRes = pickNotificationIcon(notificationSnapshot.batteryPercent)
         MonitoringStateStore.lastStatusText = notificationText
         LogCompat.d(
-            "updateBatteryState target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+            "updateBatteryState target=${targets.overlayControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
                     "controller=${overlaySnapshot.controllerName} percent=${overlaySnapshot.batteryPercent} " +
-                    "monitoringTarget=${monitoringTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "monitoringTarget=${targets.notificationControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
                     "monitoringController=${notificationSnapshot.controllerName} " +
                     "monitoringPercent=${notificationSnapshot.batteryPercent}"
         )
         LogCompat.dDebug {
             "UI_VERIFY OverlayService battery " +
-                    "target=${overlayTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "target=${targets.overlayControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
                     "controller=${overlaySnapshot.controllerName ?: "none"} " +
                     "percent=${overlaySnapshot.batteryPercent} " +
                     "overlayVisible=${MonitoringStateStore.isOverlayVisible}"
         }
         LogCompat.dDebug {
             "UI_VERIFY BM battery " +
-                    "target=${monitoringTargetIdentifier?.let(::maskIdentifier) ?: "primary"} " +
+                    "target=${targets.notificationControllerIdentifier?.let(::maskIdentifier) ?: "primary"} " +
                     "controller=${notificationSnapshot.controllerName ?: "none"} " +
                     "percent=${notificationSnapshot.batteryPercent} " +
                     "monitoring=${MonitoringStateStore.isMonitoringEnabled}"
@@ -304,16 +310,13 @@ class BatteryOverlayService : Service() {
     }
 
     private fun pickNotificationIcon(percent: Int?): Int {
-        if (percent == null) {
-            return R.drawable.ic_battery_unknown
-        }
-
-        return when {
-            percent <= 10 -> R.drawable.ic_battery_0
-            percent <= 35 -> R.drawable.ic_battery_25
-            percent <= 60 -> R.drawable.ic_battery_50
-            percent <= 85 -> R.drawable.ic_battery_75
-            else -> R.drawable.ic_battery_100
+        return when (batteryTargetResolver.notificationIconLevelFor(percent)) {
+            BatteryTargetResolver.NotificationIconLevel.UNKNOWN -> R.drawable.ic_battery_unknown
+            BatteryTargetResolver.NotificationIconLevel.BATTERY_0 -> R.drawable.ic_battery_0
+            BatteryTargetResolver.NotificationIconLevel.BATTERY_25 -> R.drawable.ic_battery_25
+            BatteryTargetResolver.NotificationIconLevel.BATTERY_50 -> R.drawable.ic_battery_50
+            BatteryTargetResolver.NotificationIconLevel.BATTERY_75 -> R.drawable.ic_battery_75
+            BatteryTargetResolver.NotificationIconLevel.BATTERY_100 -> R.drawable.ic_battery_100
         }
     }
 
