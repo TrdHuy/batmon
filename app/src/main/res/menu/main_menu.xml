@@ -2,8 +2,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_config"
+        android:id="@+id/action_main_menu"
         android:icon="@drawable/ic_ui_config"
         app:showAsAction="always"
-        android:title="@string/menu_config" />
+        android:title="@string/menu_main">
+        <menu>
+            <item
+                android:id="@+id/action_about_glimpse"
+                android:title="@string/menu_about_glimpse" />
+            <item
+                android:id="@+id/action_contact_us"
+                android:title="@string/menu_contact_us" />
+        </menu>
+    </item>
 </menu>
