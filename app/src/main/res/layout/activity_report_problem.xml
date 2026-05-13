@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#262626">
+
+    <ImageButton
+        android:id="@+id/reportProblemBackButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="44dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/about_glimpse_back"
+        android:padding="14dp"
+        android:src="@drawable/ic_about_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/reportProblemHeaderTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="32dp"
+        android:fontFamily="@font/samsung_sharp_sans_bold"
+        android:text="@string/report_problem_title"
+        android:textColor="#F8F8F8"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/reportProblemBackButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/reportProblemBackButton"
+        app:layout_constraintTop_toTopOf="@id/reportProblemBackButton" />
+
+    <ScrollView
+        android:id="@+id/reportProblemScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="28dp"
+        app:layout_constraintBottom_toTopOf="@id/sendReportButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/reportProblemBackButton">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/problemTypeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:fontFamily="@font/samsung_sharp_sans_bold"
+                android:text="@string/report_problem_problem_type"
+                android:textColor="#F8F8F8"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/problemTypeLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="#303036"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#5A5A62"
+                app:endIconMode="dropdown_menu"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/problemTypeInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:completionThreshold="0"
+                    android:fontFamily="@font/samsung_sharp_sans"
+                    android:hint="@string/report_problem_type_hint"
+                    android:inputType="none"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:textColor="#F8F8F8"
+                    android:textColorHint="#8F8F96"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/problemDescriptionLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:fontFamily="@font/samsung_sharp_sans_bold"
+                android:text="@string/report_problem_description_label"
+                android:textColor="#F8F8F8"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/problemDescriptionLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="#303036"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#5A5A62"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/problemDescriptionInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="132dp"
+                    android:fontFamily="@font/samsung_sharp_sans"
+                    android:gravity="top"
+                    android:hint="@string/report_problem_description_hint"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:textColor="#F8F8F8"
+                    android:textColorHint="#8F8F96"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/problemStepsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/samsung_sharp_sans_bold"
+                android:text="@string/report_problem_steps_label"
+                android:textColor="#F8F8F8"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/problemStepsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="#303036"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#5A5A62"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/problemStepsInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="112dp"
+                    android:fontFamily="@font/samsung_sharp_sans"
+                    android:gravity="top"
+                    android:hint="@string/report_problem_steps_hint"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:textColor="#F8F8F8"
+                    android:textColorHint="#8F8F96"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/contactEmailLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/samsung_sharp_sans_bold"
+                android:text="@string/report_problem_email_label"
+                android:textColor="#F8F8F8"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/contactEmailLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="#303036"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#5A5A62"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/contactEmailInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/samsung_sharp_sans"
+                    android:hint="@string/report_problem_email_hint"
+                    android:inputType="textEmailAddress"
+                    android:singleLine="true"
+                    android:textColor="#F8F8F8"
+                    android:textColorHint="#8F8F96"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/reportProblemPrivacyNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:fontFamily="@font/samsung_sharp_sans"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/report_problem_privacy_note"
+                android:textColor="#A9A9B0"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/sendReportButton"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="52dp"
+        android:layout_marginEnd="52dp"
+        android:layout_marginBottom="36dp"
+        android:fontFamily="@font/samsung_sharp_sans_bold"
+        android:text="@string/report_problem_send"
+        android:textAllCaps="false"
+        android:textColor="#101014"
+        android:textSize="18sp"
+        app:backgroundTint="#E1E1E5"
+        app:cornerRadius="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:rippleColor="#B7B7BC" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

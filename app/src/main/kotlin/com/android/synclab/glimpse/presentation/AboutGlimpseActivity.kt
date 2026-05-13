@@ -32,7 +32,7 @@ class AboutGlimpseActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.reportProblemButton).setOnClickListener {
             LogCompat.d("About GLIMPSE report problem clicked")
-            showToast(R.string.toast_report_problem_selected)
+            startActivity(Intent(this, ReportProblemActivity::class.java))
         }
         findViewById<MaterialButton>(R.id.checkUpdateButton).setOnClickListener {
             LogCompat.d("About GLIMPSE check update clicked")
