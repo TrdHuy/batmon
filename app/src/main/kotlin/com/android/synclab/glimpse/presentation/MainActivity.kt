@@ -251,7 +251,7 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.action_about_glimpse -> {
                     LogCompat.d("Main menu item clicked: about_glimpse")
-                    showToast(R.string.toast_about_glimpse_selected)
+                    startActivity(Intent(this, AboutGlimpseActivity::class.java))
                     true
                 }
 
