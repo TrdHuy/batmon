@@ -1,7 +1,6 @@
 package com.android.synclab.glimpse.presentation
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -16,7 +15,6 @@ import android.provider.Settings
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
-import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -250,12 +248,21 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("setupToolbarMenu")
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_config) {
-                LogCompat.d("Config icon clicked")
-                showConfigDialog()
-                return@setOnMenuItemClickListener true
+            when (item.itemId) {
+                R.id.action_about_glimpse -> {
+                    LogCompat.d("Main menu item clicked: about_glimpse")
+                    startActivity(Intent(this, AboutGlimpseActivity::class.java))
+                    true
+                }
+
+                R.id.action_contact_us -> {
+                    LogCompat.d("Main menu item clicked: contact_us")
+                    showToast(R.string.toast_contact_us_selected)
+                    true
+                }
+
+                else -> false
             }
-            false
         }
     }
 
@@ -769,100 +776,6 @@ class MainActivity : AppCompatActivity() {
             },
             delayMs
         )
-    }
-
-    private fun showConfigDialog() {
-        runCatching {
-            val dialogView = layoutInflater.inflate(R.layout.dialog_config_checkboxes, null)
-            val overlayPermissionCheckBox =
-                dialogView.findViewById<CheckBox>(R.id.checkboxOverlayPermission)
-            val monitoringCheckBox =
-                dialogView.findViewById<CheckBox>(R.id.checkboxMonitoring)
-            val floatingOverlayCheckBox =
-                dialogView.findViewById<CheckBox>(R.id.checkboxFloatingOverlay)
-
-            var syncing = false
-            fun syncState() {
-                syncing = true
-                viewModel.syncServiceState(source = EventChangeParam.Source.VIEW)
-                val hasOverlayPermission = Settings.canDrawOverlays(this)
-                val state = viewModel.currentUiState()
-                overlayPermissionCheckBox.isChecked = hasOverlayPermission
-                monitoringCheckBox.isChecked = selectedBackgroundMonitoringEnabled
-                floatingOverlayCheckBox.isEnabled = hasOverlayPermission
-                floatingOverlayCheckBox.isChecked = selectedLiveBatteryOverlayEnabled
-                syncing = false
-                LogCompat.d(
-                    "Config dialog sync: overlayPermission=$hasOverlayPermission " +
-                            "monitoring=${state.isMonitoringEnabled} " +
-                            "bmProfile=$selectedBackgroundMonitoringEnabled " +
-                            "overlayVisible=${state.isOverlayVisible} " +
-                            "lboProfile=$selectedLiveBatteryOverlayEnabled"
-                )
-            }
-
-            overlayPermissionCheckBox.setOnCheckedChangeListener { _, isChecked ->
-                if (syncing) {
-                    return@setOnCheckedChangeListener
-                }
-                LogCompat.i("Config checkbox changed: overlayPermission=$isChecked")
-                if (isChecked && !Settings.canDrawOverlays(this)) {
-                    requestOverlayPermission()
-                } else if (!isChecked && Settings.canDrawOverlays(this)) {
-                    showToast(R.string.toast_overlay_permission_managed_by_system)
-                }
-                mainHandler.postDelayed({ syncState() }, 250L)
-            }
-
-            monitoringCheckBox.setOnCheckedChangeListener { _, isChecked ->
-                if (syncing) {
-                    return@setOnCheckedChangeListener
-                }
-                LogCompat.i("Config checkbox changed: monitoring=$isChecked")
-                val applied = handleBackgroundMonitoringToggle(
-                    enabled = isChecked,
-                    reason = "config_dialog"
-                )
-                if (applied) {
-                    showToast(
-                        if (isChecked) R.string.toast_monitoring_started else R.string.toast_monitoring_stopped
-                    )
-                }
-                mainHandler.postDelayed({ syncState() }, 350L)
-            }
-
-            floatingOverlayCheckBox.setOnCheckedChangeListener { _, isChecked ->
-                if (syncing) {
-                    return@setOnCheckedChangeListener
-                }
-                LogCompat.i("Config checkbox changed: floatingOverlay=$isChecked")
-                val applied = handleLiveBatteryOverlayToggle(
-                    enabled = isChecked,
-                    reason = "config_dialog"
-                )
-                if (applied) {
-                    showToast(
-                        if (isChecked) R.string.toast_overlay_shown else R.string.toast_overlay_hidden
-                    )
-                }
-                mainHandler.postDelayed({ syncState() }, 350L)
-            }
-
-            syncState()
-
-            AlertDialog.Builder(this)
-                .setTitle(R.string.menu_config)
-                .setView(dialogView)
-                .setPositiveButton(R.string.config_dialog_close, null)
-                .setOnDismissListener {
-                    requestControllerRefresh(EventChangeParam.Source.VIEW)
-                }
-                .show()
-            LogCompat.d("Config dialog shown")
-        }.onFailure { throwable ->
-            LogCompat.e("Failed to show config dialog", throwable)
-            showToast(R.string.toast_action_failed)
-        }
     }
 
     private fun requestOverlayPermission() {
