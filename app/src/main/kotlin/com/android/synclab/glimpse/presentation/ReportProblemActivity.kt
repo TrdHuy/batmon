@@ -398,7 +398,7 @@ class ReportProblemActivity : AppCompatActivity() {
         subject: String,
         body: String
     ): Uri {
-        val encodedEmail = Uri.encode(supportEmail, "@.")
+        val encodedEmail = Uri.encode(supportEmail, "@.+")
         val encodedSubject = Uri.encode(subject)
         val encodedBody = Uri.encode(body)
         return Uri.parse("mailto:$encodedEmail?subject=$encodedSubject&body=$encodedBody")

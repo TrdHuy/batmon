@@ -41,7 +41,7 @@
     <string name="about_glimpse_report_problem">Report problem</string>
     <string name="about_glimpse_check_for_update">Check for update</string>
     <string name="report_problem_title">Report problem</string>
-    <string name="report_problem_support_email">syncl4p+batmon.problem@gmail.com</string>
+    <string name="report_problem_support_email" translatable="false">syncl4p+batmon.problem@gmail.com</string>
     <string name="report_problem_problem_type">Problem type</string>
     <string name="report_problem_type_hint">Select problem type</string>
     <string name="report_problem_type_controller_not_detected">Controller not detected</string>

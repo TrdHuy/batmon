@@ -1,5 +1,7 @@
 package com.android.synclab.glimpse.presentation.model
 
+import java.util.Locale
+
 data class ReportProblemDiagnostics(
     val appVersion: String,
     val appVersionCode: Int,
@@ -54,7 +56,7 @@ data class ReportProblemDiagnostics(
     }
 }
 
-fun maskSensitiveIdentifier(value: String?): String {
+private fun maskSensitiveIdentifier(value: String?): String {
     val normalized = value?.takeIf { it.isNotBlank() } ?: return "n/a"
     return if (normalized.length <= 12) {
         "***"
@@ -64,5 +66,5 @@ fun maskSensitiveIdentifier(value: String?): String {
 }
 
 private fun Int.toHexId(): String {
-    return "0x%04X".format(this)
+    return String.format(Locale.US, "0x%04X", this)
 }
