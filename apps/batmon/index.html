@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Batmon / Glimpse | Synclab</title>
+    <meta
+      name="description"
+      content="Official Batmon / Glimpse app page for Bluetooth game controller battery monitoring and lightweight overlay status."
+    >
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="./">
+          <span class="brand-mark" aria-hidden="true">G</span>
+          <span>Synclab</span>
+        </a>
+        <div class="nav-links">
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="support.html">Support</a>
+          <a href="terms.html">Terms</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-inner">
+          <div>
+            <p class="eyebrow">Android utility app</p>
+            <h1>Batmon / Glimpse</h1>
+            <p class="lead">
+              A lightweight Android app for monitoring connected Bluetooth game
+              controllers and showing controller battery or status information in a
+              small overlay.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="privacy-policy.html">Read Privacy Policy</a>
+              <a class="button secondary" href="support.html">Get Support</a>
+            </div>
+          </div>
+          <div class="phone-preview" aria-label="Glimpse app interface preview">
+            <img src="assets/tablet-ui.png" alt="Glimpse controller status interface">
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>Features</h2>
+          <p class="section-intro">
+            Batmon / Glimpse focuses on controller status visibility while keeping
+            the app simple and local to the device.
+          </p>
+          <div class="grid">
+            <article class="card">
+              <img class="icon" src="assets/gamepad-plain.svg" alt="">
+              <h3>Controller detection</h3>
+              <p>
+                Uses Android Bluetooth and input device APIs to identify connected
+                game controllers and read available battery information.
+              </p>
+            </article>
+            <article class="card">
+              <img class="icon" src="assets/overlay.svg" alt="">
+              <h3>Live overlay</h3>
+              <p>
+                Shows a compact floating overlay with battery or status information
+                when the user enables the overlay feature.
+              </p>
+            </article>
+            <article class="card">
+              <img class="icon" src="assets/monitor.svg" alt="">
+              <h3>Background monitoring</h3>
+              <p>
+                Uses a foreground service notification so controller monitoring and
+                overlay updates can remain stable while enabled.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt">
+        <div class="container">
+          <h2>Permissions</h2>
+          <p class="section-intro">
+            The app requests permissions only for the features it provides. Permission
+            availability and behavior can vary by Android version and device.
+          </p>
+          <div class="grid">
+            <article class="card">
+              <h3>Bluetooth</h3>
+              <p>
+                Used to detect connected controllers and access controller status such
+                as battery level when Android exposes it.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Overlay</h3>
+              <p>
+                Used to display the optional floating controller status overlay. The
+                app does not use the overlay to control other apps.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Notifications and service</h3>
+              <p>
+                Used for the foreground service notification that keeps monitoring
+                visible to the user while it is active.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>Important Notes</h2>
+          <p class="section-intro">
+            Batmon / Glimpse does not use Accessibility Service, does not record the
+            screen, and does not control other apps. The Report Problem feature opens
+            the user's email app so the user can review and send a report manually.
+          </p>
+          <div class="link-list" aria-label="App documents">
+            <a href="privacy-policy.html">Privacy Policy</a>
+            <a href="support.html">Support</a>
+            <a href="terms.html">Terms of Service</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>Batmon / Glimpse by Synclab</span>
+        <a href="mailto:syncl4p+batmon.support@gmail.com">syncl4p+batmon.support@gmail.com</a>
+      </div>
+    </footer>
+  </body>
+</html>
