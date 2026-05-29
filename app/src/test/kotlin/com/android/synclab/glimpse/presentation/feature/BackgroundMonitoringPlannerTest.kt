@@ -35,19 +35,23 @@ class BackgroundMonitoringPlannerTest {
     }
 
     @Test
-    fun planUserToggle_onWithMissingController_rejectsAndRollsBackSelection() {
+    fun planUserToggle_onWithoutController_startsRuntimeWithoutPersisting() {
         val decision = planner.planUserToggle(
             enabled = true,
-            state = state(controllerIdentifier = null),
+            state = state(profileId = null, controllerIdentifier = null),
             reason = "fixed_settings"
         )
 
-        val reject = decision as BackgroundMonitoringDecision.Reject
-        assertEquals(
-            BackgroundMonitoringRejectReason.MISSING_CONTROLLER_IDENTIFIER,
-            reject.reason
-        )
-        assertEquals(false, reject.selectedEnabled)
+        val start = decision as BackgroundMonitoringDecision.Start
+        assertNull(start.pendingStart.profileId)
+        assertNull(start.pendingStart.controllerIdentifier)
+        assertTrue(start.pendingStart.persistOnSuccess)
+
+        val result = planner.planStartDispatchResult(start.pendingStart, dispatched = true)
+        assertTrue(result.clearPending)
+        assertEquals(true, result.selectedEnabled)
+        assertNull(result.persistProfileId)
+        assertNull(result.persistEnabled)
     }
 
     @Test
@@ -115,6 +119,21 @@ class BackgroundMonitoringPlannerTest {
         val decision = planner.planResumePending(
             pendingStart = pending,
             currentState = state()
+        )
+
+        val start = decision as BackgroundMonitoringDecision.Start
+        assertEquals(pending, start.pendingStart)
+    }
+
+    @Test
+    fun planResumePending_withoutControllerStartsPendingRequest() {
+        val pending = pendingStart(
+            profileId = null,
+            controllerIdentifier = null
+        )
+        val decision = planner.planResumePending(
+            pendingStart = pending,
+            currentState = state(profileId = null, controllerIdentifier = null)
         )
 
         val start = decision as BackgroundMonitoringDecision.Start
@@ -195,11 +214,13 @@ class BackgroundMonitoringPlannerTest {
     }
 
     private fun pendingStart(
-        persistOnSuccess: Boolean = true
+        persistOnSuccess: Boolean = true,
+        profileId: String? = "profile-1",
+        controllerIdentifier: String? = "controller-1"
     ): PendingBackgroundMonitoringStart {
         return PendingBackgroundMonitoringStart(
-            profileId = "profile-1",
-            controllerIdentifier = "controller-1",
+            profileId = profileId,
+            controllerIdentifier = controllerIdentifier,
             reason = "fixed_settings",
             persistOnSuccess = persistOnSuccess
         )
