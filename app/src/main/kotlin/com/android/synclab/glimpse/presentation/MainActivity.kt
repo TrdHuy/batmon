@@ -30,6 +30,9 @@ import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryNotifier
+import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryPreferences
+import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryReceiver
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
@@ -83,6 +86,7 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
+    private var pendingProtectBatteryAfterNotificationPermission = false
     private var pendingBackgroundMonitoringStart: PendingBackgroundMonitoringStart? = null
     private var protectBatteryEnabled = false
     private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
@@ -130,6 +134,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_main)
+        protectBatteryEnabled = ProtectBatteryPreferences.isEnabled(this)
 
         val appContainer = AppContainer.from(applicationContext)
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
@@ -219,7 +224,10 @@ class MainActivity : AppCompatActivity() {
                 grantResults[0] == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             pendingStartAfterNotificationPermission = false
+            pendingProtectBatteryAfterNotificationPermission = false
             pendingBackgroundMonitoringStart = null
+            protectBatteryEnabled = ProtectBatteryPreferences.isEnabled(this)
+            bindFixedSettingsPanel(viewModel.currentUiState())
             LogCompat.w("POST_NOTIFICATIONS denied")
             showToast(R.string.toast_notification_permission_required)
             return
@@ -241,6 +249,11 @@ class MainActivity : AppCompatActivity() {
             if (resumePendingBackgroundMonitoringStart("post_notifications_granted")) {
                 showToast(R.string.toast_monitoring_started)
             }
+        }
+        if (pendingProtectBatteryAfterNotificationPermission) {
+            pendingProtectBatteryAfterNotificationPermission = false
+            setProtectBatteryEnabled(true)
+            bindFixedSettingsPanel(viewModel.currentUiState())
         }
     }
 
@@ -429,7 +442,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
-                protectBatteryEnabled = checked
+                handleProtectBatteryToggle(checked)
             }
 
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
@@ -437,6 +450,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
         refreshSettingsStateLater()
+    }
+
+    private fun handleProtectBatteryToggle(enabled: Boolean) {
+        if (enabled && !ProtectBatteryNotifier.canPostNotifications(this)) {
+            pendingProtectBatteryAfterNotificationPermission = true
+            protectBatteryEnabled = false
+            ProtectBatteryPreferences.setEnabled(this, false)
+            bindFixedSettingsPanel(viewModel.currentUiState())
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_CODE_POST_NOTIFICATIONS
+            )
+            showToast(R.string.toast_protect_battery_notification_permission_required)
+            return
+        }
+
+        setProtectBatteryEnabled(enabled)
+    }
+
+    private fun setProtectBatteryEnabled(enabled: Boolean) {
+        protectBatteryEnabled = enabled
+        if (enabled) {
+            ProtectBatteryReceiver.enable(this)
+            showToast(R.string.toast_protect_battery_enabled)
+        } else {
+            ProtectBatteryReceiver.disable(this)
+            showToast(R.string.toast_protect_battery_disabled)
+        }
     }
 
     private fun handleBackgroundMonitoringToggle(
