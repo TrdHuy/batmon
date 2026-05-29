@@ -30,11 +30,9 @@ import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
-import com.android.synclab.glimpse.presentation.feature.ProtectBatteryUiPort
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
@@ -84,58 +82,7 @@ class MainActivity : AppCompatActivity() {
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
     private val protectBatteryPlanner = ProtectBatteryPlanner()
-    private val protectBatteryUiPort = object : ProtectBatteryUiPort {
-        override fun hasNotificationPermission(): Boolean {
-            return AppNotificationDispatcher.canPostNotifications(this@MainActivity)
-        }
-
-        override fun hasPendingNotificationPermission(): Boolean {
-            return pendingProtectBatteryAfterNotificationPermission
-        }
-
-        override fun setPendingNotificationPermission(pending: Boolean) {
-            pendingProtectBatteryAfterNotificationPermission = pending
-        }
-
-        override fun setSelectedEnabled(enabled: Boolean) {
-            protectBatteryEnabled = enabled
-        }
-
-        override fun isRuntimeEnabled(): Boolean {
-            return ProtectBatteryReceiver.isEnabled(this@MainActivity)
-        }
-
-        override fun enableRuntime() {
-            ProtectBatteryReceiver.enable(this@MainActivity)
-        }
-
-        override fun disableRuntime() {
-            ProtectBatteryReceiver.disable(this@MainActivity)
-        }
-
-        override fun requestNotificationPermission() {
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
-            )
-        }
-
-        override fun render() {
-            bindFixedSettingsPanel(viewModel.currentUiState())
-        }
-
-        override fun showNotificationPermissionRequired() {
-            showToast(R.string.toast_protect_battery_notification_permission_required)
-        }
-
-        override fun showEnabled() {
-            showToast(R.string.toast_protect_battery_enabled)
-        }
-
-        override fun showDisabled() {
-            showToast(R.string.toast_protect_battery_disabled)
-        }
-    }
+    private lateinit var protectBatteryUiGateway: ProtectBatteryUiGateway
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -205,6 +152,15 @@ class MainActivity : AppCompatActivity() {
                 developerOptionManager = appContainer.provideDeveloperOptionManager()
             )
         ).get(MainViewModel::class.java)
+        protectBatteryUiGateway = ProtectBatteryUiGateway(
+            activity = this,
+            notificationPermissionRequestCode = REQUEST_CODE_POST_NOTIFICATIONS,
+            hasPendingPermission = { pendingProtectBatteryAfterNotificationPermission },
+            setPendingPermission = { pendingProtectBatteryAfterNotificationPermission = it },
+            setSelectedEnabled = { protectBatteryEnabled = it },
+            renderSettings = { bindFixedSettingsPanel(viewModel.currentUiState()) },
+            showToast = { showToast(it) }
+        )
 
         toolbar = findViewById(R.id.topToolbar)
         controllerPager = findViewById(R.id.controllerPager)
@@ -505,14 +461,14 @@ class MainActivity : AppCompatActivity() {
     private fun handleProtectBatteryToggle(enabled: Boolean) {
         protectBatteryPlanner.onToggle(
             enabled = enabled,
-            port = protectBatteryUiPort
+            port = protectBatteryUiGateway
         )
     }
 
     private fun handleProtectBatteryPermissionResult(granted: Boolean) {
         protectBatteryPlanner.onNotificationPermissionResult(
             granted = granted,
-            port = protectBatteryUiPort
+            port = protectBatteryUiGateway
         )
     }
 
