@@ -489,7 +489,6 @@ class MainActivity : AppCompatActivity() {
                 if (decision.clearPending) {
                     pendingBackgroundMonitoringStart = null
                 }
-                bindFixedSettingsPanel(state)
 
                 val dispatched = if (decision.shouldDispatchStop) {
                     dispatchServiceAction(
@@ -501,6 +500,12 @@ class MainActivity : AppCompatActivity() {
                         "UI_VERIFY BM applySelected reason=$reason action=stop_skipped monitoring_idle"
                     }
                     true
+                }
+                if (!dispatched && decision.shouldDispatchStop) {
+                    selectedBackgroundMonitoringEnabled = true
+                    bindFixedSettingsPanel(state)
+                    refreshSettingsStateLater()
+                    return false
                 }
                 if (dispatched && decision.persistProfileId != null) {
                     persistControllerProfile(
@@ -638,7 +643,11 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     false
                 }
-                bindFixedSettingsPanel(state)
+                if (!dispatched && decision.rollbackSelectionOnDispatchFailure) {
+                    bindFixedSettingsPanel(state)
+                    refreshSettingsStateLater()
+                    return false
+                }
                 if (dispatched && decision.persistProfileId != null) {
                     persistControllerProfile(
                         lightbarColor = selectedVibeColor,
@@ -653,7 +662,6 @@ class MainActivity : AppCompatActivity() {
 
             is LiveBatteryOverlayDecision.Hide -> {
                 selectedLiveBatteryOverlayEnabled = decision.selectedEnabled
-                bindFixedSettingsPanel(state)
                 val dispatched = if (decision.shouldDispatchHide) {
                     dispatchServiceAction(
                         action = BatteryOverlayService.ACTION_HIDE_OVERLAY,
@@ -664,6 +672,12 @@ class MainActivity : AppCompatActivity() {
                         "UI_VERIFY LBO applySelected reason=$reason action=hide_skipped service_idle"
                     }
                     true
+                }
+                if (!dispatched && decision.shouldDispatchHide) {
+                    selectedLiveBatteryOverlayEnabled = true
+                    bindFixedSettingsPanel(state)
+                    refreshSettingsStateLater()
+                    return false
                 }
                 if (dispatched && decision.persistProfileId != null) {
                     persistControllerProfile(
@@ -865,7 +879,6 @@ class MainActivity : AppCompatActivity() {
         }
         result.selectedEnabled?.let {
             selectedBackgroundMonitoringEnabled = it
-            bindFixedSettingsPanel(state)
         }
         if (result.persistProfileId != null && result.persistEnabled != null) {
             persistControllerProfile(
