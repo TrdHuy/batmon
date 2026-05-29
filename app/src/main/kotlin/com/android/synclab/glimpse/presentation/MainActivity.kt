@@ -30,10 +30,12 @@ import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryNotifier
-import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryPreferences
+import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPermissionDecision
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryToggleDecision
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
@@ -82,6 +84,7 @@ class MainActivity : AppCompatActivity() {
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
+    private val protectBatteryPlanner = ProtectBatteryPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -133,7 +136,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_main)
-        protectBatteryEnabled = ProtectBatteryPreferences.isEnabled(this)
+        protectBatteryEnabled = ProtectBatteryReceiver.isEnabled(this)
 
         val appContainer = AppContainer.from(applicationContext)
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
@@ -223,13 +226,15 @@ class MainActivity : AppCompatActivity() {
                 grantResults[0] == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             pendingStartAfterNotificationPermission = false
-            pendingProtectBatteryAfterNotificationPermission = false
             pendingBackgroundMonitoringStart = null
-            protectBatteryEnabled = ProtectBatteryPreferences.isEnabled(this)
-            bindFixedSettingsPanel(viewModel.currentUiState())
+            handleProtectBatteryPermissionResult(granted = false)
             LogCompat.w("POST_NOTIFICATIONS denied")
             showToast(R.string.toast_notification_permission_required)
             return
+        }
+
+        if (pendingProtectBatteryAfterNotificationPermission) {
+            handleProtectBatteryPermissionResult(granted = true)
         }
 
         if (pendingStartAfterNotificationPermission) {
@@ -248,11 +253,6 @@ class MainActivity : AppCompatActivity() {
             if (resumePendingBackgroundMonitoringStart("post_notifications_granted")) {
                 showToast(R.string.toast_monitoring_started)
             }
-        }
-        if (pendingProtectBatteryAfterNotificationPermission) {
-            pendingProtectBatteryAfterNotificationPermission = false
-            setProtectBatteryEnabled(true)
-            bindFixedSettingsPanel(viewModel.currentUiState())
         }
     }
 
@@ -452,23 +452,58 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleProtectBatteryToggle(enabled: Boolean) {
-        if (enabled && !ProtectBatteryNotifier.canPostNotifications(this)) {
-            pendingProtectBatteryAfterNotificationPermission = true
-            protectBatteryEnabled = false
-            ProtectBatteryPreferences.setEnabled(this, false)
-            bindFixedSettingsPanel(viewModel.currentUiState())
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
+        executeProtectBatteryToggleDecision(
+            protectBatteryPlanner.planToggle(
+                enabled = enabled,
+                hasNotificationPermission = AppNotificationDispatcher.canPostNotifications(this)
             )
-            showToast(R.string.toast_protect_battery_notification_permission_required)
-            return
-        }
-
-        setProtectBatteryEnabled(enabled)
+        )
     }
 
-    private fun setProtectBatteryEnabled(enabled: Boolean) {
+    private fun handleProtectBatteryPermissionResult(granted: Boolean) {
+        val decision = protectBatteryPlanner.planNotificationPermissionResult(
+            granted = granted,
+            hasPendingEnable = pendingProtectBatteryAfterNotificationPermission
+        )
+        pendingProtectBatteryAfterNotificationPermission = false
+        executeProtectBatteryPermissionDecision(decision)
+    }
+
+    private fun executeProtectBatteryToggleDecision(decision: ProtectBatteryToggleDecision) {
+        when (decision) {
+            ProtectBatteryToggleDecision.Enable -> applyProtectBatteryEnabled(true)
+            ProtectBatteryToggleDecision.Disable -> applyProtectBatteryEnabled(false)
+            ProtectBatteryToggleDecision.RequestNotificationPermission -> {
+                pendingProtectBatteryAfterNotificationPermission = true
+                protectBatteryEnabled = false
+                ProtectBatteryReceiver.disable(this)
+                bindFixedSettingsPanel(viewModel.currentUiState())
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_CODE_POST_NOTIFICATIONS
+                )
+                showToast(R.string.toast_protect_battery_notification_permission_required)
+            }
+        }
+    }
+
+    private fun executeProtectBatteryPermissionDecision(
+        decision: ProtectBatteryPermissionDecision
+    ) {
+        when (decision) {
+            ProtectBatteryPermissionDecision.Enable -> {
+                applyProtectBatteryEnabled(true)
+                bindFixedSettingsPanel(viewModel.currentUiState())
+            }
+            ProtectBatteryPermissionDecision.Deny -> {
+                protectBatteryEnabled = ProtectBatteryReceiver.isEnabled(this)
+                bindFixedSettingsPanel(viewModel.currentUiState())
+            }
+            ProtectBatteryPermissionDecision.None -> Unit
+        }
+    }
+
+    private fun applyProtectBatteryEnabled(enabled: Boolean) {
         protectBatteryEnabled = enabled
         if (enabled) {
             ProtectBatteryReceiver.enable(this)

@@ -1,6 +1,8 @@
 package com.android.synclab.glimpse.presentation
 
 import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,8 +11,11 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.SystemClock
-import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryNotifier
-import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryPreferences
+import com.android.synclab.glimpse.R
+import com.android.synclab.glimpse.infra.notification.AppNotificationChannel
+import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
+import com.android.synclab.glimpse.infra.notification.AppNotificationRequest
+import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
 import com.android.synclab.glimpse.presentation.feature.PhoneBatterySnapshot
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
 import com.android.synclab.glimpse.utils.LogCompat
@@ -21,7 +26,7 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
         LogCompat.d("ProtectBatteryReceiver action=$action")
 
         if (action == Intent.ACTION_POWER_DISCONNECTED) {
-            ProtectBatteryPreferences.setAlertShownForChargeSession(context, false)
+            setAlertShownForChargeSession(context, false)
             cancelNextCheck(context)
             return
         }
@@ -32,42 +37,58 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_CHECK =
             "com.android.synclab.glimpse.action.PROTECT_BATTERY_CHECK"
+        private const val PREFS_NAME = "protect_battery"
+        private const val KEY_ENABLED = "enabled"
+        private const val KEY_ALERT_SHOWN_FOR_CHARGE_SESSION = "alert_shown_for_charge_session"
+        private const val CHANNEL_ID = "protect_battery_alerts_v1"
+        private const val NOTIFICATION_ID = 32001
+        private const val CONTENT_REQUEST_CODE = 32002
         private const val CHECK_REQUEST_CODE = 32011
         private const val CHECK_INTERVAL_MS = 60_000L
 
+        fun isEnabled(context: Context): Boolean {
+            return SharedPreferenceStore.getBoolean(
+                context = context,
+                prefsName = PREFS_NAME,
+                key = KEY_ENABLED,
+                defaultValue = false
+            )
+        }
+
         fun enable(context: Context) {
-            ProtectBatteryPreferences.setEnabled(context, true)
+            setEnabled(context, true)
             runCheck(context)
         }
 
         fun disable(context: Context) {
-            ProtectBatteryPreferences.setEnabled(context, false)
-            ProtectBatteryPreferences.setAlertShownForChargeSession(context, false)
+            setEnabled(context, false)
+            setAlertShownForChargeSession(context, false)
             cancelNextCheck(context)
         }
 
         fun runCheck(context: Context) {
             val appContext = context.applicationContext
-            val enabled = ProtectBatteryPreferences.isEnabled(appContext)
+            val enabled = isEnabled(appContext)
             if (!enabled) {
                 cancelNextCheck(appContext)
                 return
             }
 
             val snapshot = readPhoneBatterySnapshot(appContext)
-            val alertShown = ProtectBatteryPreferences.isAlertShownForChargeSession(appContext)
+            val alertShown = isAlertShownForChargeSession(appContext)
             val decision = ProtectBatteryPlanner().plan(
                 enabled = true,
                 battery = snapshot,
                 alertShownForChargeSession = alertShown
             )
 
-            ProtectBatteryPreferences.setAlertShownForChargeSession(
-                appContext,
-                decision.alertShownForChargeSession
-            )
+            setAlertShownForChargeSession(appContext, decision.alertShownForChargeSession)
             if (decision.shouldNotify && snapshot != null) {
-                ProtectBatteryNotifier.showThresholdAlert(appContext, snapshot.percent)
+                AppNotificationDispatcher.notify(
+                    context = appContext,
+                    request = buildThresholdAlertRequest(appContext, snapshot.percent)
+                )
+                LogCompat.i("ProtectBattery alert posted percent=${snapshot.percent}")
             }
             if (decision.shouldScheduleNextCheck) {
                 scheduleNextCheck(appContext)
@@ -79,6 +100,63 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
                 "ProtectBattery check enabled=$enabled " +
                         "percent=${snapshot?.percent} charging=${snapshot?.isCharging} " +
                         "notify=${decision.shouldNotify} schedule=${decision.shouldScheduleNextCheck}"
+            )
+        }
+
+        private fun setEnabled(context: Context, enabled: Boolean) {
+            SharedPreferenceStore.putBoolean(
+                context = context,
+                prefsName = PREFS_NAME,
+                key = KEY_ENABLED,
+                value = enabled
+            )
+        }
+
+        private fun isAlertShownForChargeSession(context: Context): Boolean {
+            return SharedPreferenceStore.getBoolean(
+                context = context,
+                prefsName = PREFS_NAME,
+                key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
+                defaultValue = false
+            )
+        }
+
+        private fun setAlertShownForChargeSession(context: Context, shown: Boolean) {
+            SharedPreferenceStore.putBoolean(
+                context = context,
+                prefsName = PREFS_NAME,
+                key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
+                value = shown
+            )
+        }
+
+        private fun buildThresholdAlertRequest(
+            context: Context,
+            percent: Int
+        ): AppNotificationRequest {
+            val text = context.getString(R.string.protect_battery_notification_text, percent)
+            return AppNotificationRequest(
+                notificationId = NOTIFICATION_ID,
+                channel = AppNotificationChannel(
+                    id = CHANNEL_ID,
+                    name = context.getString(R.string.protect_battery_channel_name),
+                    description = context.getString(R.string.protect_battery_channel_description),
+                    importance = NotificationManager.IMPORTANCE_HIGH,
+                    enableVibration = true
+                ),
+                smallIconRes = R.drawable.ic_ui_protect_battery,
+                title = context.getString(R.string.protect_battery_notification_title),
+                text = text,
+                bigText = text,
+                contentIntent = AppNotificationDispatcher.activityPendingIntent(
+                    context = context,
+                    requestCode = CONTENT_REQUEST_CODE,
+                    intent = Intent(context, MainActivity::class.java)
+                ),
+                autoCancel = true,
+                category = Notification.CATEGORY_ALARM,
+                defaults = Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE,
+                priority = Notification.PRIORITY_HIGH
             )
         }
 

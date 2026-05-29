@@ -3,6 +3,28 @@ package com.android.synclab.glimpse.presentation.feature
 class ProtectBatteryPlanner(
     private val thresholdPercent: Int = DEFAULT_THRESHOLD_PERCENT
 ) {
+    fun planToggle(
+        enabled: Boolean,
+        hasNotificationPermission: Boolean
+    ): ProtectBatteryToggleDecision {
+        return when {
+            enabled && !hasNotificationPermission -> ProtectBatteryToggleDecision.RequestNotificationPermission
+            enabled -> ProtectBatteryToggleDecision.Enable
+            else -> ProtectBatteryToggleDecision.Disable
+        }
+    }
+
+    fun planNotificationPermissionResult(
+        granted: Boolean,
+        hasPendingEnable: Boolean
+    ): ProtectBatteryPermissionDecision {
+        return when {
+            !hasPendingEnable -> ProtectBatteryPermissionDecision.None
+            granted -> ProtectBatteryPermissionDecision.Enable
+            else -> ProtectBatteryPermissionDecision.Deny
+        }
+    }
+
     fun plan(
         enabled: Boolean,
         battery: PhoneBatterySnapshot?,
@@ -47,3 +69,15 @@ data class ProtectBatteryDecision(
     val shouldScheduleNextCheck: Boolean,
     val alertShownForChargeSession: Boolean
 )
+
+sealed interface ProtectBatteryToggleDecision {
+    data object Enable : ProtectBatteryToggleDecision
+    data object Disable : ProtectBatteryToggleDecision
+    data object RequestNotificationPermission : ProtectBatteryToggleDecision
+}
+
+sealed interface ProtectBatteryPermissionDecision {
+    data object Enable : ProtectBatteryPermissionDecision
+    data object Deny : ProtectBatteryPermissionDecision
+    data object None : ProtectBatteryPermissionDecision
+}
