@@ -32,6 +32,7 @@ import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringPermission
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringState
@@ -80,9 +81,11 @@ class MainActivity : AppCompatActivity() {
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
+    private val protectBatteryPlanner = ProtectBatteryPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
+    private var pendingProtectBatteryAfterNotificationPermission = false
     private var pendingBackgroundMonitoringStart: PendingBackgroundMonitoringStart? = null
     private var protectBatteryEnabled = false
     private var selectedVibeColor: Int = DEFAULT_VIBE_COLOR
@@ -130,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_main)
+        protectBatteryEnabled = ProtectBatteryReceiver.isEnabled(this)
 
         val appContainer = AppContainer.from(applicationContext)
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
@@ -147,7 +151,6 @@ class MainActivity : AppCompatActivity() {
                 developerOptionManager = appContainer.provideDeveloperOptionManager()
             )
         ).get(MainViewModel::class.java)
-
         toolbar = findViewById(R.id.topToolbar)
         controllerPager = findViewById(R.id.controllerPager)
         utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
@@ -220,9 +223,14 @@ class MainActivity : AppCompatActivity() {
         if (!granted) {
             pendingStartAfterNotificationPermission = false
             pendingBackgroundMonitoringStart = null
+            handleProtectBatteryPermissionResult(granted = false)
             LogCompat.w("POST_NOTIFICATIONS denied")
             showToast(R.string.toast_notification_permission_required)
             return
+        }
+
+        if (pendingProtectBatteryAfterNotificationPermission) {
+            handleProtectBatteryPermissionResult(granted = true)
         }
 
         if (pendingStartAfterNotificationPermission) {
@@ -429,7 +437,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
-                protectBatteryEnabled = checked
+                handleProtectBatteryToggle(checked)
             }
 
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
@@ -437,6 +445,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
         refreshSettingsStateLater()
+    }
+
+    private fun handleProtectBatteryToggle(enabled: Boolean) {
+        protectBatteryPlanner.onToggle(
+            enabled = enabled,
+            port = createProtectBatteryUiGateway()
+        )
+    }
+
+    private fun handleProtectBatteryPermissionResult(granted: Boolean) {
+        protectBatteryPlanner.onNotificationPermissionResult(
+            granted = granted,
+            port = createProtectBatteryUiGateway()
+        )
+    }
+
+    private fun createProtectBatteryUiGateway(): ProtectBatteryUiGateway {
+        return ProtectBatteryUiGateway(
+            activity = this,
+            notificationPermissionRequestCode = REQUEST_CODE_POST_NOTIFICATIONS,
+            hasPendingPermission = { pendingProtectBatteryAfterNotificationPermission },
+            setPendingPermission = { pendingProtectBatteryAfterNotificationPermission = it },
+            setSelectedEnabled = { protectBatteryEnabled = it },
+            renderSettings = { bindFixedSettingsPanel(viewModel.currentUiState()) },
+            showToast = { showToast(it) }
+        )
     }
 
     private fun handleBackgroundMonitoringToggle(
