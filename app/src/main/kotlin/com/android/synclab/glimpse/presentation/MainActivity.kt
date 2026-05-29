@@ -82,7 +82,6 @@ class MainActivity : AppCompatActivity() {
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
     private val protectBatteryPlanner = ProtectBatteryPlanner()
-    private lateinit var protectBatteryUiGateway: ProtectBatteryUiGateway
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -152,16 +151,6 @@ class MainActivity : AppCompatActivity() {
                 developerOptionManager = appContainer.provideDeveloperOptionManager()
             )
         ).get(MainViewModel::class.java)
-        protectBatteryUiGateway = ProtectBatteryUiGateway(
-            activity = this,
-            notificationPermissionRequestCode = REQUEST_CODE_POST_NOTIFICATIONS,
-            hasPendingPermission = { pendingProtectBatteryAfterNotificationPermission },
-            setPendingPermission = { pendingProtectBatteryAfterNotificationPermission = it },
-            setSelectedEnabled = { protectBatteryEnabled = it },
-            renderSettings = { bindFixedSettingsPanel(viewModel.currentUiState()) },
-            showToast = { showToast(it) }
-        )
-
         toolbar = findViewById(R.id.topToolbar)
         controllerPager = findViewById(R.id.controllerPager)
         utilSettingsPanel = findViewById(R.id.utilSettingsPanel)
@@ -461,14 +450,26 @@ class MainActivity : AppCompatActivity() {
     private fun handleProtectBatteryToggle(enabled: Boolean) {
         protectBatteryPlanner.onToggle(
             enabled = enabled,
-            port = protectBatteryUiGateway
+            port = createProtectBatteryUiGateway()
         )
     }
 
     private fun handleProtectBatteryPermissionResult(granted: Boolean) {
         protectBatteryPlanner.onNotificationPermissionResult(
             granted = granted,
-            port = protectBatteryUiGateway
+            port = createProtectBatteryUiGateway()
+        )
+    }
+
+    private fun createProtectBatteryUiGateway(): ProtectBatteryUiGateway {
+        return ProtectBatteryUiGateway(
+            activity = this,
+            notificationPermissionRequestCode = REQUEST_CODE_POST_NOTIFICATIONS,
+            hasPendingPermission = { pendingProtectBatteryAfterNotificationPermission },
+            setPendingPermission = { pendingProtectBatteryAfterNotificationPermission = it },
+            setSelectedEnabled = { protectBatteryEnabled = it },
+            renderSettings = { bindFixedSettingsPanel(viewModel.currentUiState()) },
+            showToast = { showToast(it) }
         )
     }
 
