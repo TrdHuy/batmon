@@ -18,6 +18,9 @@ import com.android.synclab.glimpse.infra.notification.AppNotificationRequest
 import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
 import com.android.synclab.glimpse.presentation.feature.PhoneBatterySnapshot
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryDecision
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryReceiverEvent
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryRuntimePort
 import com.android.synclab.glimpse.utils.LogCompat
 
 class ProtectBatteryReceiver : BroadcastReceiver() {
@@ -26,12 +29,17 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
         LogCompat.d("ProtectBatteryReceiver action=$action")
 
         if (action == Intent.ACTION_POWER_DISCONNECTED) {
-            setAlertShownForChargeSession(context, false)
-            cancelNextCheck(context)
+            ProtectBatteryPlanner().onReceiverEvent(
+                event = ProtectBatteryReceiverEvent.PowerDisconnected,
+                port = runtimePort(context)
+            )
             return
         }
 
-        runCheck(context)
+        ProtectBatteryPlanner().onReceiverEvent(
+            event = ProtectBatteryReceiverEvent.Check,
+            port = runtimePort(context)
+        )
     }
 
     companion object {
@@ -56,78 +64,85 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
         }
 
         fun enable(context: Context) {
-            setEnabled(context, true)
-            runCheck(context)
+            ProtectBatteryPlanner().onManualEnable(runtimePort(context))
         }
 
         fun disable(context: Context) {
-            setEnabled(context, false)
-            setAlertShownForChargeSession(context, false)
-            cancelNextCheck(context)
+            ProtectBatteryPlanner().onManualDisable(runtimePort(context))
         }
 
-        fun runCheck(context: Context) {
+        private fun runtimePort(context: Context): ProtectBatteryRuntimePort {
             val appContext = context.applicationContext
-            val enabled = isEnabled(appContext)
-            if (!enabled) {
-                cancelNextCheck(appContext)
-                return
+            return object : ProtectBatteryRuntimePort {
+                override fun isEnabled(): Boolean {
+                    return SharedPreferenceStore.getBoolean(
+                        context = appContext,
+                        prefsName = PREFS_NAME,
+                        key = KEY_ENABLED,
+                        defaultValue = false
+                    )
+                }
+
+                override fun setEnabled(enabled: Boolean) {
+                    SharedPreferenceStore.putBoolean(
+                        context = appContext,
+                        prefsName = PREFS_NAME,
+                        key = KEY_ENABLED,
+                        value = enabled
+                    )
+                }
+
+                override fun isAlertShownForChargeSession(): Boolean {
+                    return SharedPreferenceStore.getBoolean(
+                        context = appContext,
+                        prefsName = PREFS_NAME,
+                        key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
+                        defaultValue = false
+                    )
+                }
+
+                override fun setAlertShownForChargeSession(shown: Boolean) {
+                    SharedPreferenceStore.putBoolean(
+                        context = appContext,
+                        prefsName = PREFS_NAME,
+                        key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
+                        value = shown
+                    )
+                }
+
+                override fun readPhoneBattery(): PhoneBatterySnapshot? {
+                    return readPhoneBatterySnapshot(appContext)
+                }
+
+                override fun scheduleNextCheck() {
+                    scheduleNextCheck(appContext)
+                }
+
+                override fun cancelNextCheck() {
+                    cancelNextCheck(appContext)
+                }
+
+                override fun postThresholdAlert(percent: Int) {
+                    AppNotificationDispatcher.notify(
+                        context = appContext,
+                        request = buildThresholdAlertRequest(appContext, percent)
+                    )
+                    LogCompat.i("ProtectBattery alert posted percent=$percent")
+                }
+
+                override fun logCheck(
+                    enabled: Boolean,
+                    battery: PhoneBatterySnapshot?,
+                    decision: ProtectBatteryDecision
+                ) {
+                    LogCompat.d(
+                        "ProtectBattery check enabled=$enabled " +
+                                "percent=${battery?.percent} charging=${battery?.isCharging} " +
+                                "notify=${decision.shouldNotify} " +
+                                "schedule=${decision.shouldScheduleNextCheck}"
+                    )
+                }
             }
-
-            val snapshot = readPhoneBatterySnapshot(appContext)
-            val alertShown = isAlertShownForChargeSession(appContext)
-            val decision = ProtectBatteryPlanner().plan(
-                enabled = true,
-                battery = snapshot,
-                alertShownForChargeSession = alertShown
-            )
-
-            setAlertShownForChargeSession(appContext, decision.alertShownForChargeSession)
-            if (decision.shouldNotify && snapshot != null) {
-                AppNotificationDispatcher.notify(
-                    context = appContext,
-                    request = buildThresholdAlertRequest(appContext, snapshot.percent)
-                )
-                LogCompat.i("ProtectBattery alert posted percent=${snapshot.percent}")
-            }
-            if (decision.shouldScheduleNextCheck) {
-                scheduleNextCheck(appContext)
-            } else {
-                cancelNextCheck(appContext)
-            }
-
-            LogCompat.d(
-                "ProtectBattery check enabled=$enabled " +
-                        "percent=${snapshot?.percent} charging=${snapshot?.isCharging} " +
-                        "notify=${decision.shouldNotify} schedule=${decision.shouldScheduleNextCheck}"
-            )
-        }
-
-        private fun setEnabled(context: Context, enabled: Boolean) {
-            SharedPreferenceStore.putBoolean(
-                context = context,
-                prefsName = PREFS_NAME,
-                key = KEY_ENABLED,
-                value = enabled
-            )
-        }
-
-        private fun isAlertShownForChargeSession(context: Context): Boolean {
-            return SharedPreferenceStore.getBoolean(
-                context = context,
-                prefsName = PREFS_NAME,
-                key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
-                defaultValue = false
-            )
-        }
-
-        private fun setAlertShownForChargeSession(context: Context, shown: Boolean) {
-            SharedPreferenceStore.putBoolean(
-                context = context,
-                prefsName = PREFS_NAME,
-                key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
-                value = shown
-            )
         }
 
         private fun buildThresholdAlertRequest(
