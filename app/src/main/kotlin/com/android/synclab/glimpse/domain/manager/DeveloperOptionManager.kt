@@ -15,6 +15,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  * adb shell setprop debug.glimpse.mock_controllers 1
  * ```
  *
+ * Bật Protect Battery dev tools bằng:
+ *
+ * ```
+ * adb shell setprop debug.glimpse.protect_battery_tools 1
+ * ```
+ *
  * Tắt mock controller pages bằng:
  *
  * ```
@@ -48,11 +54,17 @@ class DeveloperOptionManager(
     // Cache dùng giữa các thread cho debug.glimpse.mock_controllers == "1".
     private var mockControllerPagesEnabled: Boolean = false
 
+    @Volatile
+    // Cache dùng giữa các thread cho debug.glimpse.protect_battery_tools == "1".
+    private var protectBatteryToolsEnabled: Boolean = false
+
     // Chỉ cho phép một async getprop refresh chạy tại một thời điểm.
     private val mockControllerRefreshInFlight = AtomicBoolean(false)
+    private val protectBatteryToolsRefreshInFlight = AtomicBoolean(false)
 
     init {
         refreshMockControllerPagesEnabledAsync()
+        refreshProtectBatteryToolsEnabledAsync()
     }
 
     fun isMockControllerPagesEnabled(): Boolean {
@@ -67,12 +79,47 @@ class DeveloperOptionManager(
         return enabled
     }
 
+    fun isProtectBatteryToolsEnabled(): Boolean {
+        refreshProtectBatteryToolsEnabledAsync()
+        val enabled = developerModeEnabled && protectBatteryToolsEnabled
+        LogCompat.dDebug {
+            "UI_VERIFY DevOptions protectBatteryTools cache read " +
+                    "enabled=$enabled cached=$protectBatteryToolsEnabled " +
+                    "inFlight=${protectBatteryToolsRefreshInFlight.get()} " +
+                    "thread=${Thread.currentThread().name}"
+        }
+        return enabled
+    }
+
     private fun refreshMockControllerPagesEnabledAsync() {
+        refreshBooleanPropertyAsync(
+            propertyName = MOCK_CONTROLLER_PAGES_PROPERTY,
+            label = "mock_controllers",
+            inFlight = mockControllerRefreshInFlight,
+            setEnabled = { mockControllerPagesEnabled = it }
+        )
+    }
+
+    private fun refreshProtectBatteryToolsEnabledAsync() {
+        refreshBooleanPropertyAsync(
+            propertyName = PROTECT_BATTERY_TOOLS_PROPERTY,
+            label = "protect_battery_tools",
+            inFlight = protectBatteryToolsRefreshInFlight,
+            setEnabled = { protectBatteryToolsEnabled = it }
+        )
+    }
+
+    private fun refreshBooleanPropertyAsync(
+        propertyName: String,
+        label: String,
+        inFlight: AtomicBoolean,
+        setEnabled: (Boolean) -> Unit
+    ) {
         if (!developerModeEnabled) {
-            mockControllerPagesEnabled = false
+            setEnabled(false)
             return
         }
-        if (!mockControllerRefreshInFlight.compareAndSet(false, true)) {
+        if (!inFlight.compareAndSet(false, true)) {
             return
         }
 
@@ -81,36 +128,39 @@ class DeveloperOptionManager(
                 val startedAtNanos = System.nanoTime()
                 LogCompat.dDebug {
                     "UI_VERIFY DevOptions getprop start " +
-                            "property=$MOCK_CONTROLLER_PAGES_PROPERTY " +
+                            "label=$label property=$propertyName " +
                             "thread=${Thread.currentThread().name}"
                 }
                 try {
                     val propertyValue = runCatching {
-                        source.getSystemProperty(MOCK_CONTROLLER_PAGES_PROPERTY)
+                        source.getSystemProperty(propertyName)
                     }.getOrNull()
-                    mockControllerPagesEnabled = propertyValue == "1"
+                    val enabled = propertyValue == "1"
+                    setEnabled(enabled)
                     val elapsedMs = (System.nanoTime() - startedAtNanos) / NANOS_PER_MILLISECOND
                     LogCompat.dDebug {
                         "UI_VERIFY DevOptions getprop done " +
+                                "label=$label " +
                                 "value=${propertyValue ?: "null"} " +
-                                "enabled=$mockControllerPagesEnabled " +
+                                "enabled=$enabled " +
                                 "elapsedMs=$elapsedMs " +
                                 "thread=${Thread.currentThread().name}"
                     }
                 } finally {
-                    mockControllerRefreshInFlight.set(false)
+                    inFlight.set(false)
                 }
             }
         }.onFailure { throwable ->
-            mockControllerRefreshInFlight.set(false)
+            inFlight.set(false)
             LogCompat.wDebug(throwable) {
-                "UI_VERIFY DevOptions getprop schedule failed"
+                "UI_VERIFY DevOptions getprop schedule failed label=$label"
             }
         }
     }
 
     companion object {
         private const val MOCK_CONTROLLER_PAGES_PROPERTY = "debug.glimpse.mock_controllers"
+        private const val PROTECT_BATTERY_TOOLS_PROPERTY = "debug.glimpse.protect_battery_tools"
         private const val NANOS_PER_MILLISECOND = 1_000_000L
     }
 }

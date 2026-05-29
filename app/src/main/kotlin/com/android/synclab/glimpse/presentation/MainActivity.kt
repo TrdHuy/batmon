@@ -25,11 +25,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.ControllerProfile
 import com.android.synclab.glimpse.di.AppContainer
+import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
 import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
+import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
@@ -77,6 +79,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var closePs4ControllerLightSessionUseCase: ClosePs4ControllerLightSessionUseCase
     private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
     private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
+    private lateinit var developerOptionManager: DeveloperOptionManager
     private lateinit var viewModel: MainViewModel
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
@@ -142,13 +145,14 @@ class MainActivity : AppCompatActivity() {
             appContainer.provideClosePs4ControllerLightSessionUseCase()
         getControllerProfileUseCase = appContainer.provideGetControllerProfileUseCase()
         upsertControllerProfileUseCase = appContainer.provideUpsertControllerProfileUseCase()
+        developerOptionManager = appContainer.provideDeveloperOptionManager()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
                 inputDeviceGateway = inputDeviceGateway,
                 getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase(),
                 monitoringStateProvider = appContainer.provideMonitoringStateProvider(),
-                developerOptionManager = appContainer.provideDeveloperOptionManager()
+                developerOptionManager = developerOptionManager
             )
         ).get(MainViewModel::class.java)
         toolbar = findViewById(R.id.topToolbar)
@@ -164,6 +168,7 @@ class MainActivity : AppCompatActivity() {
 
         renderUiState(viewModel.currentUiState())
         requestControllerRefresh(EventChangeParam.Source.SYSTEM)
+        refreshSettingsStateLater(delayMs = 500L)
     }
 
     override fun onResume() {
@@ -442,6 +447,10 @@ class MainActivity : AppCompatActivity() {
 
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
                 // No toggle action for this item type.
+            }
+
+            SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT -> {
+                // Action rows are handled from onItemClicked.
             }
         }
         refreshSettingsStateLater()
@@ -770,12 +779,30 @@ class MainActivity : AppCompatActivity() {
                 showCustomizeVibeDialog()
             }
 
+            SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT -> {
+                handleProtectBatteryDevTestAlert()
+            }
+
             SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
             SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
             SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
                 // Toggle rows are handled from onToggleChanged.
             }
         }
+    }
+
+    private fun handleProtectBatteryDevTestAlert() {
+        if (!AppNotificationDispatcher.canPostNotifications(this)) {
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_CODE_POST_NOTIFICATIONS
+            )
+            showToast(R.string.toast_protect_battery_notification_permission_required)
+            return
+        }
+
+        ProtectBatteryReceiver.postDevControllerThresholdAlert(this)
+        showToast(R.string.toast_protect_battery_test_alert_sent)
     }
 
     private fun showCustomizeVibeDialog() {
@@ -1223,7 +1250,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildOtherSettingItems(): List<SettingItemUiModel> {
-        return listOf(
+        val items = mutableListOf(
             SettingItemUiModel(
                 id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
                 iconRes = R.drawable.ic_ui_protect_battery,
@@ -1236,6 +1263,22 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
+        if (::developerOptionManager.isInitialized &&
+            developerOptionManager.isProtectBatteryToolsEnabled()
+        ) {
+            items += SettingItemUiModel(
+                id = SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT,
+                iconRes = R.drawable.ic_ui_protect_battery,
+                iconWidthDp = 22f,
+                iconHeightDp = 26f,
+                title = getString(R.string.settings_test_protect_battery_alert),
+                subtitle = getString(R.string.settings_test_protect_battery_alert_subtitle),
+                control = SettingItemUiModel.Control.Action(
+                    iconRes = R.drawable.ic_ui_charging
+                )
+            )
+        }
+        return items
     }
 
     private fun resolveCurrentControllerPage(): ControllerPageUiModel? {

@@ -71,6 +71,18 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
             ProtectBatteryPlanner().onManualDisable(runtimePort(context))
         }
 
+        fun postDevControllerThresholdAlert(
+            context: Context,
+            percent: Int = ProtectBatteryPlanner.DEFAULT_THRESHOLD_PERCENT
+        ) {
+            val appContext = context.applicationContext
+            AppNotificationDispatcher.notify(
+                context = appContext,
+                request = buildControllerThresholdAlertRequest(appContext, percent)
+            )
+            LogCompat.i("ProtectBattery dev controller alert posted percent=$percent")
+        }
+
         private fun runtimePort(context: Context): ProtectBatteryRuntimePort {
             val appContext = context.applicationContext
             return object : ProtectBatteryRuntimePort {
@@ -161,6 +173,39 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
                 ),
                 smallIconRes = R.drawable.ic_ui_protect_battery,
                 title = context.getString(R.string.protect_battery_notification_title),
+                text = text,
+                bigText = text,
+                contentIntent = AppNotificationDispatcher.activityPendingIntent(
+                    context = context,
+                    requestCode = CONTENT_REQUEST_CODE,
+                    intent = Intent(context, MainActivity::class.java)
+                ),
+                autoCancel = true,
+                category = Notification.CATEGORY_ALARM,
+                defaults = Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE,
+                priority = Notification.PRIORITY_HIGH
+            )
+        }
+
+        private fun buildControllerThresholdAlertRequest(
+            context: Context,
+            percent: Int
+        ): AppNotificationRequest {
+            val text = context.getString(
+                R.string.protect_battery_controller_notification_text,
+                percent
+            )
+            return AppNotificationRequest(
+                notificationId = NOTIFICATION_ID,
+                channel = AppNotificationChannel(
+                    id = CHANNEL_ID,
+                    name = context.getString(R.string.protect_battery_channel_name),
+                    description = context.getString(R.string.protect_battery_channel_description),
+                    importance = NotificationManager.IMPORTANCE_HIGH,
+                    enableVibration = true
+                ),
+                smallIconRes = R.drawable.ic_ui_protect_battery,
+                title = context.getString(R.string.protect_battery_controller_notification_title),
                 text = text,
                 bigText = text,
                 contentIntent = AppNotificationDispatcher.activityPendingIntent(
