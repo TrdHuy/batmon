@@ -477,8 +477,8 @@ class MainActivity : AppCompatActivity() {
                 pendingBackgroundMonitoringStart = decision.pendingStart
                 return dispatchAndApplyBackgroundMonitoringStart(
                     state = state,
-                    profileId = decision.pendingStart.profileId.orEmpty(),
-                    controllerIdentifier = decision.pendingStart.controllerIdentifier.orEmpty(),
+                    profileId = decision.pendingStart.profileId,
+                    controllerIdentifier = decision.pendingStart.controllerIdentifier,
                     pendingStart = decision.pendingStart,
                     reason = reason
                 )
@@ -825,8 +825,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun dispatchAndApplyBackgroundMonitoringStart(
         state: MainUiState,
-        profileId: String,
-        controllerIdentifier: String,
+        profileId: String?,
+        controllerIdentifier: String?,
         pendingStart: PendingBackgroundMonitoringStart,
         reason: String
     ): Boolean {
@@ -839,8 +839,8 @@ class MainActivity : AppCompatActivity() {
             pendingBackgroundMonitoringStart = null
             LogCompat.dDebug {
                 "UI_VERIFY BM startRejected reason=$reason " +
-                        "profileId=${profileId.let(::maskIdentifier)} " +
-                        "runtimeId=${controllerIdentifier.let(::maskIdentifier)}"
+                        "profileId=${profileId?.let(::maskIdentifier) ?: "none"} " +
+                        "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
             }
             val result = backgroundMonitoringPlanner.planStartDispatchResult(
                 pendingStart = pendingStart,
@@ -877,8 +877,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             LogCompat.dDebug {
                 "UI_VERIFY BM applySelected reason=$reason action=runtime_started " +
-                        "profileId=${profileId.let(::maskIdentifier)} " +
-                        "runtimeId=${controllerIdentifier.let(::maskIdentifier)}"
+                        "profileId=${profileId?.let(::maskIdentifier) ?: "none"} " +
+                        "runtimeId=${controllerIdentifier?.let(::maskIdentifier) ?: "none"}"
             }
         }
         refreshSettingsStateLater()

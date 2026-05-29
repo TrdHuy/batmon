@@ -1,7 +1,6 @@
 package com.android.synclab.glimpse.presentation.feature
 
 import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
-import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayRejectReason
 import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 
 class LiveBatteryOverlayPlanner :
@@ -56,14 +55,12 @@ class LiveBatteryOverlayPlanner :
         }
 
         val controllerIdentifier = state.controllerIdentifier.normalizedIdentifier()
-            ?: return LiveBatteryOverlayDecision.Reject(
-                reason = LiveBatteryOverlayRejectReason.MISSING_CONTROLLER_IDENTIFIER,
-                selectedEnabled = false.takeIf { rollbackSelectionOnFailure }
-            )
 
         return LiveBatteryOverlayDecision.Show(
             controllerIdentifier = controllerIdentifier,
-            persistProfileId = state.profileId.normalizedIdentifier().takeIf { persistOnSuccess },
+            persistProfileId = state.profileId
+                .normalizedIdentifier()
+                .takeIf { persistOnSuccess && controllerIdentifier != null },
             rollbackSelectionOnDispatchFailure = rollbackSelectionOnFailure
         )
     }

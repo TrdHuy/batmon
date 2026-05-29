@@ -1,7 +1,6 @@
 package com.android.synclab.glimpse.presentation.feature
 
 import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayDecision
-import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayRejectReason
 import com.android.synclab.glimpse.presentation.model.LiveBatteryOverlayState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,19 +39,18 @@ class LiveBatteryOverlayPlannerTest {
     }
 
     @Test
-    fun planUserToggle_onWithoutController_rejectsAndRollsBackSelection() {
+    fun planUserToggle_onWithoutController_showsRuntimeWithoutPersisting() {
         val decision = planner.planUserToggle(
             enabled = true,
-            state = state(controllerIdentifier = null),
+            state = state(profileId = null, controllerIdentifier = null),
             reason = "fixed_settings"
         )
 
-        val reject = decision as LiveBatteryOverlayDecision.Reject
-        assertEquals(
-            LiveBatteryOverlayRejectReason.MISSING_CONTROLLER_IDENTIFIER,
-            reject.reason
-        )
-        assertEquals(false, reject.selectedEnabled)
+        val show = decision as LiveBatteryOverlayDecision.Show
+        assertNull(show.controllerIdentifier)
+        assertNull(show.persistProfileId)
+        assertTrue(show.selectedEnabled)
+        assertTrue(show.rollbackSelectionOnDispatchFailure)
     }
 
     @Test

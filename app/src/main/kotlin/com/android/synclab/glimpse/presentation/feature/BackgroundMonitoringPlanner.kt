@@ -58,14 +58,12 @@ class BackgroundMonitoringPlanner :
             )
         val pendingProfileId = pending.profileId.normalizedIdentifier()
         val pendingControllerIdentifier = pending.controllerIdentifier.normalizedIdentifier()
-        if (pendingProfileId == null || pendingControllerIdentifier == null) {
-            return BackgroundMonitoringDecision.Reject(
-                reason = BackgroundMonitoringRejectReason.MISSING_CONTROLLER_IDENTIFIER,
-                selectedEnabled = if (pending.persistOnSuccess) false else null
-            )
-        }
+        val hasPendingControllerTarget =
+            pendingProfileId != null && pendingControllerIdentifier != null
         if (
+            hasPendingControllerTarget &&
             currentState.profileId.normalizedIdentifier() != pendingProfileId ||
+            hasPendingControllerTarget &&
             currentState.controllerIdentifier.normalizedIdentifier() != pendingControllerIdentifier
         ) {
             return BackgroundMonitoringDecision.Reject(
@@ -103,13 +101,14 @@ class BackgroundMonitoringPlanner :
             )
         }
 
+        val persistProfileId = pendingStart.profileId
+            .normalizedIdentifier()
+            ?.takeIf { pendingStart.persistOnSuccess }
         return BackgroundMonitoringStartDispatchResult(
             clearPending = true,
             selectedEnabled = true,
-            persistProfileId = pendingStart.profileId
-                .normalizedIdentifier()
-                ?.takeIf { pendingStart.persistOnSuccess },
-            persistEnabled = true.takeIf { pendingStart.persistOnSuccess }
+            persistProfileId = persistProfileId,
+            persistEnabled = true.takeIf { persistProfileId != null }
         )
     }
 
@@ -120,12 +119,6 @@ class BackgroundMonitoringPlanner :
     ): BackgroundMonitoringDecision {
         val profileId = state.profileId.normalizedIdentifier()
         val controllerIdentifier = state.controllerIdentifier.normalizedIdentifier()
-        if (profileId == null || controllerIdentifier == null) {
-            return BackgroundMonitoringDecision.Reject(
-                reason = BackgroundMonitoringRejectReason.MISSING_CONTROLLER_IDENTIFIER,
-                selectedEnabled = if (persistOnSuccess) false else null
-            )
-        }
 
         val pendingStart = PendingBackgroundMonitoringStart(
             profileId = profileId,
