@@ -1,4 +1,4 @@
-package com.android.synclab.glimpse.infra.protectbattery
+package com.android.synclab.glimpse.presentation
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -9,6 +9,8 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.SystemClock
+import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryNotifier
+import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryPreferences
 import com.android.synclab.glimpse.presentation.feature.PhoneBatterySnapshot
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
 import com.android.synclab.glimpse.utils.LogCompat

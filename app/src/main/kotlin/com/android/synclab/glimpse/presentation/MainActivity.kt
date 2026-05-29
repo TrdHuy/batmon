@@ -32,7 +32,6 @@ import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryNotifier
 import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryPreferences
-import com.android.synclab.glimpse.infra.protectbattery.ProtectBatteryReceiver
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.model.BackgroundMonitoringDecision
