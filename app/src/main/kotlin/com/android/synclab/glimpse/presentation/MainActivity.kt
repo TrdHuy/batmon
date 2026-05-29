@@ -1,7 +1,10 @@
 package com.android.synclab.glimpse.presentation
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.input.InputManager
@@ -30,6 +33,7 @@ import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSession
 import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
+import com.android.synclab.glimpse.infra.developer.DeveloperOptionPrefs
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
@@ -127,6 +131,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val developerOptionsChangedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent?) {
+            if (intent?.action != DeveloperOptionPrefs.ACTION_DEVELOPER_OPTIONS_CHANGED) {
+                return
+            }
+            LogCompat.dDebug { "Developer options changed, rebind settings" }
+            bindFixedSettingsPanel(viewModel.currentUiState())
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogCompat.i("onCreate")
@@ -168,7 +182,6 @@ class MainActivity : AppCompatActivity() {
 
         renderUiState(viewModel.currentUiState())
         requestControllerRefresh(EventChangeParam.Source.SYSTEM)
-        refreshSettingsStateLater(delayMs = 500L)
     }
 
     override fun onResume() {
@@ -180,6 +193,7 @@ class MainActivity : AppCompatActivity() {
                     "serviceRunning=${state.isServiceRunning} " +
                     "overlayVisible=${state.isOverlayVisible}"
         )
+        registerDeveloperOptionsChangedReceiver()
         inputDeviceGateway.registerInputDeviceListener(inputDeviceListener, mainHandler)
         viewModel.syncServiceState(source = EventChangeParam.Source.SYSTEM)
         requestControllerRefresh(EventChangeParam.Source.SYSTEM)
@@ -190,8 +204,22 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         LogCompat.d("onPause")
+        unregisterReceiver(developerOptionsChangedReceiver)
         inputDeviceGateway.unregisterInputDeviceListener(inputDeviceListener)
         mainHandler.removeCallbacks(periodicRefresh)
+    }
+
+    private fun registerDeveloperOptionsChangedReceiver() {
+        val filter = IntentFilter(DeveloperOptionPrefs.ACTION_DEVELOPER_OPTIONS_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                developerOptionsChangedReceiver,
+                filter,
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            registerReceiver(developerOptionsChangedReceiver, filter)
+        }
     }
 
     override fun onDestroy() {

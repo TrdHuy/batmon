@@ -15,12 +15,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * adb shell setprop debug.glimpse.mock_controllers 1
  * ```
  *
- * Bật Protect Battery dev tools bằng:
- *
- * ```
- * adb shell setprop debug.glimpse.protect_battery_tools 1
- * ```
- *
  * Tắt mock controller pages bằng:
  *
  * ```
@@ -54,17 +48,11 @@ class DeveloperOptionManager(
     // Cache dùng giữa các thread cho debug.glimpse.mock_controllers == "1".
     private var mockControllerPagesEnabled: Boolean = false
 
-    @Volatile
-    // Cache dùng giữa các thread cho debug.glimpse.protect_battery_tools == "1".
-    private var protectBatteryToolsEnabled: Boolean = false
-
     // Chỉ cho phép một async getprop refresh chạy tại một thời điểm.
     private val mockControllerRefreshInFlight = AtomicBoolean(false)
-    private val protectBatteryToolsRefreshInFlight = AtomicBoolean(false)
 
     init {
         refreshMockControllerPagesEnabledAsync()
-        refreshProtectBatteryToolsEnabledAsync()
     }
 
     fun isMockControllerPagesEnabled(): Boolean {
@@ -80,12 +68,10 @@ class DeveloperOptionManager(
     }
 
     fun isProtectBatteryToolsEnabled(): Boolean {
-        refreshProtectBatteryToolsEnabledAsync()
-        val enabled = developerModeEnabled && protectBatteryToolsEnabled
+        val enabled = developerModeEnabled && source.isProtectBatteryToolsEnabled()
         LogCompat.dDebug {
             "UI_VERIFY DevOptions protectBatteryTools cache read " +
-                    "enabled=$enabled cached=$protectBatteryToolsEnabled " +
-                    "inFlight=${protectBatteryToolsRefreshInFlight.get()} " +
+                    "enabled=$enabled " +
                     "thread=${Thread.currentThread().name}"
         }
         return enabled
@@ -97,15 +83,6 @@ class DeveloperOptionManager(
             label = "mock_controllers",
             inFlight = mockControllerRefreshInFlight,
             setEnabled = { mockControllerPagesEnabled = it }
-        )
-    }
-
-    private fun refreshProtectBatteryToolsEnabledAsync() {
-        refreshBooleanPropertyAsync(
-            propertyName = PROTECT_BATTERY_TOOLS_PROPERTY,
-            label = "protect_battery_tools",
-            inFlight = protectBatteryToolsRefreshInFlight,
-            setEnabled = { protectBatteryToolsEnabled = it }
         )
     }
 
@@ -160,7 +137,6 @@ class DeveloperOptionManager(
 
     companion object {
         private const val MOCK_CONTROLLER_PAGES_PROPERTY = "debug.glimpse.mock_controllers"
-        private const val PROTECT_BATTERY_TOOLS_PROPERTY = "debug.glimpse.protect_battery_tools"
         private const val NANOS_PER_MILLISECOND = 1_000_000L
     }
 }

@@ -4,4 +4,6 @@ interface DeveloperOptionSource {
     val isDebuggableApp: Boolean
 
     fun getSystemProperty(name: String): String?
+
+    fun isProtectBatteryToolsEnabled(): Boolean
 }

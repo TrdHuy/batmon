@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".debug.DebugDeveloperOptionsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.synclab.glimpse.debug.SET_PROTECT_BATTERY_TOOLS" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

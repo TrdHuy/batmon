@@ -31,6 +31,7 @@ class AppContainer private constructor(
     private val glimpseDatabase: GlimpseDatabase = GlimpseDatabase.create(appContext)
     private val developerOptionSource: DeveloperOptionSource =
         AndroidDeveloperOptionSource(
+            context = appContext,
             isDebuggableApp = (appContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         )
     private val developerOptionManager: DeveloperOptionManager =
