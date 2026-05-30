@@ -15,8 +15,7 @@ data class SettingItemUiModel(
         BACKGROUND_MONITORING,
         LIVE_BATTERY_OVERLAY,
         CUSTOMIZE_VIBE,
-        PROTECT_BATTERY,
-        TEST_PROTECT_BATTERY_ALERT
+        PROTECT_BATTERY
     }
 
     sealed interface Control {

@@ -1,10 +1,7 @@
 package com.android.synclab.glimpse.presentation
 
 import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.input.InputManager
@@ -28,14 +25,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.ControllerProfile
 import com.android.synclab.glimpse.di.AppContainer
-import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.domain.usecase.ClosePs4ControllerLightSessionUseCase
 import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
-import com.android.synclab.glimpse.infra.developer.DeveloperOptionPrefs
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
-import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.presentation.feature.BackgroundMonitoringPlanner
 import com.android.synclab.glimpse.presentation.feature.LiveBatteryOverlayPlanner
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
@@ -83,7 +77,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var closePs4ControllerLightSessionUseCase: ClosePs4ControllerLightSessionUseCase
     private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
     private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
-    private lateinit var developerOptionManager: DeveloperOptionManager
     private lateinit var viewModel: MainViewModel
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
@@ -131,16 +124,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val developerOptionsChangedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent?) {
-            if (intent?.action != DeveloperOptionPrefs.ACTION_DEVELOPER_OPTIONS_CHANGED) {
-                return
-            }
-            LogCompat.dDebug { "Developer options changed, rebind settings" }
-            bindFixedSettingsPanel(viewModel.currentUiState())
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogCompat.i("onCreate")
@@ -159,7 +142,7 @@ class MainActivity : AppCompatActivity() {
             appContainer.provideClosePs4ControllerLightSessionUseCase()
         getControllerProfileUseCase = appContainer.provideGetControllerProfileUseCase()
         upsertControllerProfileUseCase = appContainer.provideUpsertControllerProfileUseCase()
-        developerOptionManager = appContainer.provideDeveloperOptionManager()
+        val developerOptionManager = appContainer.provideDeveloperOptionManager()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
@@ -193,7 +176,6 @@ class MainActivity : AppCompatActivity() {
                     "serviceRunning=${state.isServiceRunning} " +
                     "overlayVisible=${state.isOverlayVisible}"
         )
-        registerDeveloperOptionsChangedReceiver()
         inputDeviceGateway.registerInputDeviceListener(inputDeviceListener, mainHandler)
         viewModel.syncServiceState(source = EventChangeParam.Source.SYSTEM)
         requestControllerRefresh(EventChangeParam.Source.SYSTEM)
@@ -204,22 +186,8 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         LogCompat.d("onPause")
-        unregisterReceiver(developerOptionsChangedReceiver)
         inputDeviceGateway.unregisterInputDeviceListener(inputDeviceListener)
         mainHandler.removeCallbacks(periodicRefresh)
-    }
-
-    private fun registerDeveloperOptionsChangedReceiver() {
-        val filter = IntentFilter(DeveloperOptionPrefs.ACTION_DEVELOPER_OPTIONS_CHANGED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(
-                developerOptionsChangedReceiver,
-                filter,
-                Context.RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            registerReceiver(developerOptionsChangedReceiver, filter)
-        }
     }
 
     override fun onDestroy() {
@@ -302,8 +270,36 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
 
+                resolveDebugProtectBatteryMenuItemId() -> {
+                    openDebugProtectBatteryActivity()
+                    true
+                }
+
                 else -> false
             }
+        }
+    }
+
+    private fun resolveDebugProtectBatteryMenuItemId(): Int {
+        return resources.getIdentifier(
+            "action_debug_protect_battery",
+            "id",
+            packageName
+        )
+    }
+
+    private fun openDebugProtectBatteryActivity() {
+        LogCompat.d("Main menu item clicked: debug_protect_battery")
+        runCatching {
+            startActivity(
+                Intent().setClassName(
+                    packageName,
+                    "$packageName.debug.DebugProtectBatteryActivity"
+                )
+            )
+        }.onFailure { throwable ->
+            LogCompat.e("Failed to open debug protect battery activity", throwable)
+            showToast(R.string.toast_action_failed)
         }
     }
 
@@ -475,10 +471,6 @@ class MainActivity : AppCompatActivity() {
 
             SettingItemUiModel.ItemId.CUSTOMIZE_VIBE -> {
                 // No toggle action for this item type.
-            }
-
-            SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT -> {
-                // Action rows are handled from onItemClicked.
             }
         }
         refreshSettingsStateLater()
@@ -807,30 +799,12 @@ class MainActivity : AppCompatActivity() {
                 showCustomizeVibeDialog()
             }
 
-            SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT -> {
-                handleProtectBatteryDevTestAlert()
-            }
-
             SettingItemUiModel.ItemId.BACKGROUND_MONITORING,
             SettingItemUiModel.ItemId.LIVE_BATTERY_OVERLAY,
             SettingItemUiModel.ItemId.PROTECT_BATTERY -> {
                 // Toggle rows are handled from onToggleChanged.
             }
         }
-    }
-
-    private fun handleProtectBatteryDevTestAlert() {
-        if (!AppNotificationDispatcher.canPostNotifications(this)) {
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
-            )
-            showToast(R.string.toast_protect_battery_notification_permission_required)
-            return
-        }
-
-        ProtectBatteryReceiver.postDevControllerThresholdAlert(this)
-        showToast(R.string.toast_protect_battery_test_alert_sent)
     }
 
     private fun showCustomizeVibeDialog() {
@@ -1278,7 +1252,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildOtherSettingItems(): List<SettingItemUiModel> {
-        val items = mutableListOf(
+        return listOf(
             SettingItemUiModel(
                 id = SettingItemUiModel.ItemId.PROTECT_BATTERY,
                 iconRes = R.drawable.ic_ui_protect_battery,
@@ -1291,22 +1265,6 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
-        if (::developerOptionManager.isInitialized &&
-            developerOptionManager.isProtectBatteryToolsEnabled()
-        ) {
-            items += SettingItemUiModel(
-                id = SettingItemUiModel.ItemId.TEST_PROTECT_BATTERY_ALERT,
-                iconRes = R.drawable.ic_ui_protect_battery,
-                iconWidthDp = 22f,
-                iconHeightDp = 26f,
-                title = getString(R.string.settings_test_protect_battery_alert),
-                subtitle = getString(R.string.settings_test_protect_battery_alert_subtitle),
-                control = SettingItemUiModel.Control.Action(
-                    iconRes = R.drawable.ic_ui_charging
-                )
-            )
-        }
-        return items
     }
 
     private fun resolveCurrentControllerPage(): ControllerPageUiModel? {

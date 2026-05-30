@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_protect_battery_title">Protect Battery Dev</string>
+    <string name="debug_protect_battery_status_enabled">Test tools: ON</string>
+    <string name="debug_protect_battery_status_disabled">Test tools: OFF</string>
+    <string name="debug_protect_battery_enable">Enable test tools</string>
+    <string name="debug_protect_battery_disable">Disable test tools</string>
+    <string name="debug_protect_battery_send_alert">Send controller 80% alert</string>
+    <string name="menu_debug_protect_battery">Protect Battery Dev</string>
+</resources>

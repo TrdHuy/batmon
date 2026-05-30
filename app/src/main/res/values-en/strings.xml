@@ -130,8 +130,6 @@
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
     <string name="settings_protect_battery">Protect Battery</string>
     <string name="settings_limit_charging_subtitle">Alert when phone battery reaches 80%</string>
-    <string name="settings_test_protect_battery_alert">Test Protect Battery Alert</string>
-    <string name="settings_test_protect_battery_alert_subtitle">Send a fake controller battery 80% alert</string>
     <string name="cd_background_monitoring_icon">Background monitoring icon</string>
     <string name="cd_live_overlay_icon">Live battery overlay icon</string>
     <string name="cd_customize_vibe_icon">Customize vibe icon</string>
