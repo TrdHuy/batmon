@@ -1,5 +1,6 @@
 package com.android.synclab.glimpse.presentation.feature
 
+import com.android.synclab.glimpse.data.model.BatteryChargeStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -106,65 +107,61 @@ class ProtectBatteryPlannerTest {
     }
 
     @Test
-    fun onManualEnable_setsEnabledAndRunsBatteryCheck() {
+    fun onManualEnable_setsEnabledAndRunsControllerCheck() {
         val port = FakeRuntimePort(
-            battery = PhoneBatterySnapshot(percent = 79, isCharging = true)
+            batteries = listOf(controllerBattery(percent = 79, status = BatteryChargeStatus.CHARGING))
         )
 
         planner.onManualEnable(port)
 
         assertTrue(port.enabled)
-        assertFalse(port.alertShownForChargeSession)
+        assertTrue(port.observedAlertedControllerIds.isEmpty())
         assertEquals(1, port.scheduleCount)
         assertEquals(0, port.cancelCount)
         assertEquals(1, port.logCount)
     }
 
     @Test
-    fun onManualDisable_disablesRuntimeAndCancelsCheck() {
+    fun onManualDisable_disablesRuntimeClearsAlertsAndCancelsCheck() {
         val port = FakeRuntimePort(
             enabled = true,
-            alertShownForChargeSession = true
+            alertedControllerIds = setOf("controller-1")
         )
 
         planner.onManualDisable(port)
 
         assertFalse(port.enabled)
-        assertFalse(port.alertShownForChargeSession)
+        assertTrue(port.observedAlertedControllerIds.isEmpty())
         assertEquals(1, port.cancelCount)
     }
 
     @Test
-    fun onReceiverEvent_powerDisconnectedResetsAlertAndCancelsCheck() {
+    fun onReceiverEvent_disabledClearsAlertsAndCancelsCheck() {
         val port = FakeRuntimePort(
-            enabled = true,
-            alertShownForChargeSession = true
+            enabled = false,
+            alertedControllerIds = setOf("controller-1")
         )
 
-        planner.onReceiverEvent(
-            event = ProtectBatteryReceiverEvent.PowerDisconnected,
-            port = port
-        )
+        planner.onReceiverEvent(port)
 
-        assertFalse(port.alertShownForChargeSession)
+        assertTrue(port.observedAlertedControllerIds.isEmpty())
         assertEquals(1, port.cancelCount)
         assertEquals(0, port.scheduleCount)
     }
 
     @Test
-    fun onReceiverEvent_checkAtThresholdPostsAlertOnceAndSchedulesNextCheck() {
+    fun onReceiverEvent_checkAtThresholdPostsControllerAlertOnceAndSchedulesNextCheck() {
         val port = FakeRuntimePort(
             enabled = true,
-            battery = PhoneBatterySnapshot(percent = 80, isCharging = true)
+            batteries = listOf(controllerBattery(percent = 80, status = BatteryChargeStatus.CHARGING))
         )
 
-        planner.onReceiverEvent(
-            event = ProtectBatteryReceiverEvent.Check,
-            port = port
-        )
+        planner.onReceiverEvent(port)
 
-        assertTrue(port.alertShownForChargeSession)
-        assertEquals(80, port.lastAlertPercent)
+        assertEquals(setOf("controller-1"), port.observedAlertedControllerIds)
+        assertEquals(1, port.alerts.size)
+        assertEquals(80, port.alerts.first().percent)
+        assertEquals("Controller One", port.alerts.first().controllerName)
         assertEquals(1, port.scheduleCount)
         assertEquals(0, port.cancelCount)
         assertEquals(1, port.logCount)
@@ -174,65 +171,129 @@ class ProtectBatteryPlannerTest {
     fun planBatteryCheck_disabledDoesNotNotifyOrSchedule() {
         val decision = planner.planBatteryCheck(
             enabled = false,
-            battery = PhoneBatterySnapshot(percent = 90, isCharging = true),
-            alertShownForChargeSession = true
+            batteries = listOf(controllerBattery(percent = 90, status = BatteryChargeStatus.CHARGING)),
+            alertedControllerIds = setOf("controller-1")
         )
 
-        assertFalse(decision.shouldNotify)
+        assertTrue(decision.alerts.isEmpty())
         assertFalse(decision.shouldScheduleNextCheck)
-        assertFalse(decision.alertShownForChargeSession)
+        assertTrue(decision.alertedControllerIds.isEmpty())
+    }
+
+    @Test
+    fun planBatteryCheck_noControllerSchedulesWithoutAlert() {
+        val decision = planner.planBatteryCheck(
+            enabled = true,
+            batteries = emptyList(),
+            alertedControllerIds = setOf("controller-1")
+        )
+
+        assertTrue(decision.alerts.isEmpty())
+        assertTrue(decision.shouldScheduleNextCheck)
+        assertTrue(decision.alertedControllerIds.isEmpty())
     }
 
     @Test
     fun planBatteryCheck_notChargingResetsAlertSession() {
         val decision = planner.planBatteryCheck(
             enabled = true,
-            battery = PhoneBatterySnapshot(percent = 80, isCharging = false),
-            alertShownForChargeSession = true
+            batteries = listOf(controllerBattery(percent = 80, status = BatteryChargeStatus.NOT_CHARGING)),
+            alertedControllerIds = setOf("controller-1")
         )
 
-        assertFalse(decision.shouldNotify)
-        assertFalse(decision.shouldScheduleNextCheck)
-        assertFalse(decision.alertShownForChargeSession)
+        assertTrue(decision.alerts.isEmpty())
+        assertTrue(decision.shouldScheduleNextCheck)
+        assertTrue(decision.alertedControllerIds.isEmpty())
+    }
+
+    @Test
+    fun planBatteryCheck_unknownStatusDoesNotNotify() {
+        val decision = planner.planBatteryCheck(
+            enabled = true,
+            batteries = listOf(controllerBattery(percent = 80, status = BatteryChargeStatus.UNKNOWN)),
+            alertedControllerIds = emptySet()
+        )
+
+        assertTrue(decision.alerts.isEmpty())
+        assertTrue(decision.alertedControllerIds.isEmpty())
     }
 
     @Test
     fun planBatteryCheck_chargingBelowThresholdSchedulesWithoutAlert() {
         val decision = planner.planBatteryCheck(
             enabled = true,
-            battery = PhoneBatterySnapshot(percent = 79, isCharging = true),
-            alertShownForChargeSession = false
+            batteries = listOf(controllerBattery(percent = 79, status = BatteryChargeStatus.CHARGING)),
+            alertedControllerIds = emptySet()
         )
 
-        assertFalse(decision.shouldNotify)
+        assertTrue(decision.alerts.isEmpty())
         assertTrue(decision.shouldScheduleNextCheck)
-        assertFalse(decision.alertShownForChargeSession)
+        assertTrue(decision.alertedControllerIds.isEmpty())
     }
 
     @Test
     fun planBatteryCheck_chargingAtThresholdNotifiesOnceAndKeepsScheduling() {
         val decision = planner.planBatteryCheck(
             enabled = true,
-            battery = PhoneBatterySnapshot(percent = 80, isCharging = true),
-            alertShownForChargeSession = false
+            batteries = listOf(controllerBattery(percent = 80, status = BatteryChargeStatus.CHARGING)),
+            alertedControllerIds = emptySet()
         )
 
-        assertTrue(decision.shouldNotify)
+        assertEquals(1, decision.alerts.size)
         assertTrue(decision.shouldScheduleNextCheck)
-        assertTrue(decision.alertShownForChargeSession)
+        assertEquals(setOf("controller-1"), decision.alertedControllerIds)
+    }
+
+    @Test
+    fun planBatteryCheck_fullAtThresholdNotifiesOnceAndKeepsScheduling() {
+        val decision = planner.planBatteryCheck(
+            enabled = true,
+            batteries = listOf(controllerBattery(percent = 100, status = BatteryChargeStatus.FULL)),
+            alertedControllerIds = emptySet()
+        )
+
+        assertEquals(1, decision.alerts.size)
+        assertTrue(decision.shouldScheduleNextCheck)
+        assertEquals(setOf("controller-1"), decision.alertedControllerIds)
     }
 
     @Test
     fun planBatteryCheck_chargingAtThresholdAfterAlertDoesNotNotifyAgain() {
         val decision = planner.planBatteryCheck(
             enabled = true,
-            battery = PhoneBatterySnapshot(percent = 95, isCharging = true),
-            alertShownForChargeSession = true
+            batteries = listOf(controllerBattery(percent = 95, status = BatteryChargeStatus.CHARGING)),
+            alertedControllerIds = setOf("controller-1")
         )
 
-        assertFalse(decision.shouldNotify)
+        assertTrue(decision.alerts.isEmpty())
         assertTrue(decision.shouldScheduleNextCheck)
-        assertTrue(decision.alertShownForChargeSession)
+        assertEquals(setOf("controller-1"), decision.alertedControllerIds)
+    }
+
+    @Test
+    fun planBatteryCheck_belowThresholdAfterAlertResetsSession() {
+        val decision = planner.planBatteryCheck(
+            enabled = true,
+            batteries = listOf(controllerBattery(percent = 79, status = BatteryChargeStatus.CHARGING)),
+            alertedControllerIds = setOf("controller-1")
+        )
+
+        assertTrue(decision.alerts.isEmpty())
+        assertTrue(decision.alertedControllerIds.isEmpty())
+    }
+
+    private fun controllerBattery(
+        id: String = "controller-1",
+        name: String = "Controller One",
+        percent: Int?,
+        status: BatteryChargeStatus
+    ): ControllerBatterySnapshot {
+        return ControllerBatterySnapshot(
+            controllerId = id,
+            controllerName = name,
+            percent = percent,
+            status = status
+        )
     }
 
     private class FakeUiPort(
@@ -301,19 +362,19 @@ class ProtectBatteryPlannerTest {
 
     private class FakeRuntimePort(
         enabled: Boolean = false,
-        alertShownForChargeSession: Boolean = false,
-        var battery: PhoneBatterySnapshot? = null
+        alertedControllerIds: Set<String> = emptySet(),
+        var batteries: List<ControllerBatterySnapshot> = emptyList()
     ) : ProtectBatteryRuntimePort {
         private var enabledState: Boolean = enabled
-        private var alertShownForChargeSessionState: Boolean = alertShownForChargeSession
+        private var alertedControllerIdsState: Set<String> = alertedControllerIds
         val enabled: Boolean
             get() = enabledState
-        val alertShownForChargeSession: Boolean
-            get() = alertShownForChargeSessionState
+        val observedAlertedControllerIds: Set<String>
+            get() = alertedControllerIdsState
         var scheduleCount = 0
         var cancelCount = 0
         var logCount = 0
-        var lastAlertPercent: Int? = null
+        val alerts = mutableListOf<ProtectBatteryAlert>()
 
         override fun isEnabled(): Boolean = enabledState
 
@@ -321,13 +382,13 @@ class ProtectBatteryPlannerTest {
             enabledState = enabled
         }
 
-        override fun isAlertShownForChargeSession(): Boolean = alertShownForChargeSessionState
+        override fun getAlertedControllerIds(): Set<String> = alertedControllerIdsState
 
-        override fun setAlertShownForChargeSession(shown: Boolean) {
-            alertShownForChargeSessionState = shown
+        override fun setAlertedControllerIds(controllerIds: Set<String>) {
+            alertedControllerIdsState = controllerIds
         }
 
-        override fun readPhoneBattery(): PhoneBatterySnapshot? = battery
+        override fun readControllerBatteries(): List<ControllerBatterySnapshot> = batteries
 
         override fun scheduleNextCheck() {
             scheduleCount += 1
@@ -337,13 +398,13 @@ class ProtectBatteryPlannerTest {
             cancelCount += 1
         }
 
-        override fun postThresholdAlert(percent: Int) {
-            lastAlertPercent = percent
+        override fun postThresholdAlert(alert: ProtectBatteryAlert) {
+            alerts += alert
         }
 
         override fun logCheck(
             enabled: Boolean,
-            battery: PhoneBatterySnapshot?,
+            batteries: List<ControllerBatterySnapshot>,
             decision: ProtectBatteryDecision
         ) {
             logCount += 1

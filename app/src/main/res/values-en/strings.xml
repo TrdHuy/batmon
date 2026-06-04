@@ -87,7 +87,7 @@
     <string name="toast_overlay_hidden">Floating overlay is now hidden.</string>
     <string name="toast_protect_battery_enabled">Protect Battery alert enabled.</string>
     <string name="toast_protect_battery_disabled">Protect Battery alert disabled.</string>
-    <string name="toast_protect_battery_notification_permission_required">Notification permission is required to alert you at 80%.</string>
+    <string name="toast_protect_battery_notification_permission_required">Notification permission is required to alert you when controller battery reaches 80%.</string>
     <string name="toast_protect_battery_test_alert_sent">Protect Battery test alert sent.</string>
     <string name="toast_action_failed">Action failed, check logs for details.</string>
     <string name="toast_contact_us_selected">Contact us selected.</string>
@@ -112,11 +112,9 @@
     <string name="notification_battery_percent">%1$s: %2$d%%</string>
     <string name="notification_action_stop">Stop</string>
     <string name="protect_battery_channel_name">Protect Battery</string>
-    <string name="protect_battery_channel_description">Alerts when the phone battery reaches 80% while charging.</string>
-    <string name="protect_battery_notification_title">Phone battery reached 80%</string>
-    <string name="protect_battery_notification_text">Battery is at %1$d%%. Unplug your charger to protect battery health.</string>
-    <string name="protect_battery_controller_notification_title">Controller battery reached 80%</string>
-    <string name="protect_battery_controller_notification_text">Controller battery is at %1$d%%. Unplug the charger to protect battery health.</string>
+    <string name="protect_battery_channel_description">Alerts when controller battery reaches 80% while charging.</string>
+    <string name="protect_battery_notification_title">Controller battery reached 80%</string>
+    <string name="protect_battery_notification_text">%1$s is at %2$d%%. Unplug the controller charger to protect battery health.</string>
 
     <string name="overlay_default_text">🎮 --</string>
     <string name="overlay_battery_percent">🎮 %1$d%%</string>
@@ -129,7 +127,7 @@
     <string name="settings_customize_vibe">Customize Vibe</string>
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
     <string name="settings_protect_battery">Protect Battery</string>
-    <string name="settings_limit_charging_subtitle">Alert when phone battery reaches 80%</string>
+    <string name="settings_limit_charging_subtitle">Alert when controller battery reaches 80%</string>
     <string name="cd_background_monitoring_icon">Background monitoring icon</string>
     <string name="cd_live_overlay_icon">Live battery overlay icon</string>
     <string name="cd_customize_vibe_icon">Customize vibe icon</string>

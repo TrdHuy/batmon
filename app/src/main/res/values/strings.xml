@@ -88,7 +88,7 @@
     <string name="toast_overlay_hidden">Đã ẩn floating overlay.</string>
     <string name="toast_protect_battery_enabled">Đã bật cảnh báo Protect Battery.</string>
     <string name="toast_protect_battery_disabled">Đã tắt cảnh báo Protect Battery.</string>
-    <string name="toast_protect_battery_notification_permission_required">Cần cấp quyền thông báo để cảnh báo khi pin đạt 80%.</string>
+    <string name="toast_protect_battery_notification_permission_required">Cần cấp quyền thông báo để cảnh báo khi pin tay cầm đạt 80%.</string>
     <string name="toast_protect_battery_test_alert_sent">Đã gửi cảnh báo test Protect Battery.</string>
     <string name="toast_action_failed">Thao tác thất bại, vui lòng kiểm tra log.</string>
     <string name="toast_contact_us_selected">Contact us selected.</string>
@@ -113,11 +113,9 @@
     <string name="notification_battery_percent">%1$s: %2$d%%</string>
     <string name="notification_action_stop">Dừng</string>
     <string name="protect_battery_channel_name">Protect Battery</string>
-    <string name="protect_battery_channel_description">Cảnh báo khi pin điện thoại đạt 80% trong lúc sạc.</string>
-    <string name="protect_battery_notification_title">Pin điện thoại đã đạt 80%</string>
-    <string name="protect_battery_notification_text">Pin đang ở %1$d%%. Hãy rút sạc để bảo vệ pin.</string>
-    <string name="protect_battery_controller_notification_title">Pin tay cầm đã đạt 80%</string>
-    <string name="protect_battery_controller_notification_text">Pin tay cầm đang ở %1$d%%. Hãy rút sạc để bảo vệ pin.</string>
+    <string name="protect_battery_channel_description">Cảnh báo khi pin tay cầm đạt 80% trong lúc sạc.</string>
+    <string name="protect_battery_notification_title">Pin tay cầm đã đạt 80%</string>
+    <string name="protect_battery_notification_text">%1$s đang ở %2$d%%. Hãy rút sạc tay cầm để bảo vệ pin.</string>
 
     <string name="overlay_default_text">🎮 --</string>
     <string name="overlay_battery_percent">🎮 %1$d%%</string>
@@ -130,7 +128,7 @@
     <string name="settings_customize_vibe">Customize Vibe</string>
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
     <string name="settings_protect_battery">Protect Battery</string>
-    <string name="settings_limit_charging_subtitle">Cảnh báo khi pin điện thoại đạt 80%</string>
+    <string name="settings_limit_charging_subtitle">Cảnh báo khi pin tay cầm đạt 80%</string>
     <string name="cd_background_monitoring_icon">Biểu tượng background monitoring</string>
     <string name="cd_live_overlay_icon">Biểu tượng live battery overlay</string>
     <string name="cd_customize_vibe_icon">Biểu tượng tùy chỉnh lightbar</string>

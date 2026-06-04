@@ -7,39 +7,27 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.os.BatteryManager
 import android.os.Build
 import android.os.SystemClock
 import com.android.synclab.glimpse.R
+import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.di.AppContainer
 import com.android.synclab.glimpse.infra.notification.AppNotificationChannel
 import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.infra.notification.AppNotificationRequest
 import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
-import com.android.synclab.glimpse.presentation.feature.PhoneBatterySnapshot
-import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
+import com.android.synclab.glimpse.presentation.feature.ControllerBatterySnapshot
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryAlert
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryDecision
-import com.android.synclab.glimpse.presentation.feature.ProtectBatteryReceiverEvent
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
 import com.android.synclab.glimpse.presentation.feature.ProtectBatteryRuntimePort
 import com.android.synclab.glimpse.utils.LogCompat
 
 class ProtectBatteryReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val action = intent?.action
-        LogCompat.d("ProtectBatteryReceiver action=$action")
-
-        if (action == Intent.ACTION_POWER_DISCONNECTED) {
-            ProtectBatteryPlanner().onReceiverEvent(
-                event = ProtectBatteryReceiverEvent.PowerDisconnected,
-                port = runtimePort(context)
-            )
-            return
-        }
-
-        ProtectBatteryPlanner().onReceiverEvent(
-            event = ProtectBatteryReceiverEvent.Check,
-            port = runtimePort(context)
-        )
+        LogCompat.d("ProtectBatteryReceiver action=${intent?.action}")
+        ProtectBatteryPlanner().onReceiverEvent(runtimePort(context))
     }
 
     companion object {
@@ -47,7 +35,7 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
             "com.android.synclab.glimpse.action.PROTECT_BATTERY_CHECK"
         private const val PREFS_NAME = "protect_battery"
         private const val KEY_ENABLED = "enabled"
-        private const val KEY_ALERT_SHOWN_FOR_CHARGE_SESSION = "alert_shown_for_charge_session"
+        private const val KEY_ALERTED_CONTROLLER_IDS = "alerted_controller_ids"
         private const val CHANNEL_ID = "protect_battery_alerts_v1"
         private const val NOTIFICATION_ID = 32001
         private const val CONTENT_REQUEST_CODE = 32002
@@ -76,9 +64,10 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
             percent: Int = ProtectBatteryPlanner.DEFAULT_THRESHOLD_PERCENT
         ) {
             val appContext = context.applicationContext
+            val controllerName = appContext.getString(R.string.unknown_controller_name)
             AppNotificationDispatcher.notify(
                 context = appContext,
-                request = buildControllerThresholdAlertRequest(appContext, percent)
+                request = buildThresholdAlertRequest(appContext, controllerName, percent)
             )
             LogCompat.i("ProtectBattery dev controller alert posted percent=$percent")
         }
@@ -104,26 +93,26 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
                     )
                 }
 
-                override fun isAlertShownForChargeSession(): Boolean {
-                    return SharedPreferenceStore.getBoolean(
+                override fun getAlertedControllerIds(): Set<String> {
+                    return SharedPreferenceStore.getStringSet(
                         context = appContext,
                         prefsName = PREFS_NAME,
-                        key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
-                        defaultValue = false
+                        key = KEY_ALERTED_CONTROLLER_IDS,
+                        defaultValue = emptySet()
                     )
                 }
 
-                override fun setAlertShownForChargeSession(shown: Boolean) {
-                    SharedPreferenceStore.putBoolean(
+                override fun setAlertedControllerIds(controllerIds: Set<String>) {
+                    SharedPreferenceStore.putStringSet(
                         context = appContext,
                         prefsName = PREFS_NAME,
-                        key = KEY_ALERT_SHOWN_FOR_CHARGE_SESSION,
-                        value = shown
+                        key = KEY_ALERTED_CONTROLLER_IDS,
+                        value = controllerIds
                     )
                 }
 
-                override fun readPhoneBattery(): PhoneBatterySnapshot? {
-                    return readPhoneBatterySnapshot(appContext)
+                override fun readControllerBatteries(): List<ControllerBatterySnapshot> {
+                    return readControllerBatterySnapshots(appContext)
                 }
 
                 override fun scheduleNextCheck() {
@@ -134,23 +123,31 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
                     cancelNextCheck(appContext)
                 }
 
-                override fun postThresholdAlert(percent: Int) {
+                override fun postThresholdAlert(alert: ProtectBatteryAlert) {
                     AppNotificationDispatcher.notify(
                         context = appContext,
-                        request = buildThresholdAlertRequest(appContext, percent)
+                        request = buildThresholdAlertRequest(
+                            context = appContext,
+                            controllerName = alert.controllerName,
+                            percent = alert.percent
+                        )
                     )
-                    LogCompat.i("ProtectBattery alert posted percent=$percent")
+                    LogCompat.i(
+                        "ProtectBattery alert posted " +
+                                "controller=${maskIdentifier(alert.controllerId)} percent=${alert.percent}"
+                    )
                 }
 
                 override fun logCheck(
                     enabled: Boolean,
-                    battery: PhoneBatterySnapshot?,
+                    batteries: List<ControllerBatterySnapshot>,
                     decision: ProtectBatteryDecision
                 ) {
                     LogCompat.d(
                         "ProtectBattery check enabled=$enabled " +
-                                "percent=${battery?.percent} charging=${battery?.isCharging} " +
-                                "notify=${decision.shouldNotify} " +
+                                "controllers=${batteries.size} " +
+                                "alerts=${decision.alerts.size} " +
+                                "tracked=${decision.alertedControllerIds.size} " +
                                 "schedule=${decision.shouldScheduleNextCheck}"
                     )
                 }
@@ -159,9 +156,14 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
 
         private fun buildThresholdAlertRequest(
             context: Context,
+            controllerName: String,
             percent: Int
         ): AppNotificationRequest {
-            val text = context.getString(R.string.protect_battery_notification_text, percent)
+            val text = context.getString(
+                R.string.protect_battery_notification_text,
+                controllerName,
+                percent
+            )
             return AppNotificationRequest(
                 notificationId = NOTIFICATION_ID,
                 channel = AppNotificationChannel(
@@ -187,59 +189,26 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
             )
         }
 
-        private fun buildControllerThresholdAlertRequest(
-            context: Context,
-            percent: Int
-        ): AppNotificationRequest {
-            val text = context.getString(
-                R.string.protect_battery_controller_notification_text,
-                percent
-            )
-            return AppNotificationRequest(
-                notificationId = NOTIFICATION_ID,
-                channel = AppNotificationChannel(
-                    id = CHANNEL_ID,
-                    name = context.getString(R.string.protect_battery_channel_name),
-                    description = context.getString(R.string.protect_battery_channel_description),
-                    importance = NotificationManager.IMPORTANCE_HIGH,
-                    enableVibration = true
-                ),
-                smallIconRes = R.drawable.ic_ui_protect_battery,
-                title = context.getString(R.string.protect_battery_controller_notification_title),
-                text = text,
-                bigText = text,
-                contentIntent = AppNotificationDispatcher.activityPendingIntent(
-                    context = context,
-                    requestCode = CONTENT_REQUEST_CODE,
-                    intent = Intent(context, MainActivity::class.java)
-                ),
-                autoCancel = true,
-                category = Notification.CATEGORY_ALARM,
-                defaults = Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE,
-                priority = Notification.PRIORITY_HIGH
-            )
+        private fun readControllerBatterySnapshots(context: Context): List<ControllerBatterySnapshot> {
+            val controllers = AppContainer.from(context)
+                .provideConnectedPs4ControllersUseCase()
+                .invoke(context.getString(R.string.unknown_controller_name))
+            return controllers.map { controller ->
+                ControllerBatterySnapshot(
+                    controllerId = buildControllerId(controller),
+                    controllerName = controller.name,
+                    percent = controller.batteryPercent,
+                    status = controller.batteryStatus ?: BatteryChargeStatus.UNKNOWN
+                )
+            }
         }
 
-        private fun readPhoneBatterySnapshot(context: Context): PhoneBatterySnapshot? {
-            val batteryIntent = context.registerReceiver(
-                null,
-                IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-            ) ?: return null
-            val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-            val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-            if (level < 0 || scale <= 0) {
-                return null
+        private fun buildControllerId(controller: ControllerInfo): String {
+            val descriptor = controller.descriptor?.trim().orEmpty()
+            if (descriptor.isNotEmpty()) {
+                return descriptor
             }
-            val percent = ((level * 100f) / scale).toInt().coerceIn(0, 100)
-            val status = batteryIntent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-            val plugged = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
-            val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                    status == BatteryManager.BATTERY_STATUS_FULL ||
-                    plugged != 0
-            return PhoneBatterySnapshot(
-                percent = percent,
-                isCharging = isCharging
-            )
+            return "VID:${controller.vendorId}_PID:${controller.productId}_DID:${controller.deviceId}"
         }
 
         private fun scheduleNextCheck(context: Context) {
@@ -275,6 +244,13 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
             } else {
                 baseFlags
             }
+        }
+
+        private fun maskIdentifier(identifier: String): String {
+            if (identifier.length <= 8) {
+                return "***"
+            }
+            return "${identifier.take(4)}***${identifier.takeLast(4)}"
         }
     }
 }

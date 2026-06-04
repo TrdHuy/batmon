@@ -24,6 +24,28 @@ object SharedPreferenceStore {
             .apply()
     }
 
+    fun getStringSet(
+        context: Context,
+        prefsName: String,
+        key: String,
+        defaultValue: Set<String>
+    ): Set<String> {
+        return prefs(context, prefsName).getStringSet(key, defaultValue)?.toSet()
+            ?: defaultValue
+    }
+
+    fun putStringSet(
+        context: Context,
+        prefsName: String,
+        key: String,
+        value: Set<String>
+    ) {
+        prefs(context, prefsName)
+            .edit()
+            .putStringSet(key, value)
+            .apply()
+    }
+
     private fun prefs(context: Context, prefsName: String) =
         context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 }
