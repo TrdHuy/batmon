@@ -97,6 +97,13 @@ class MainActivity : AppCompatActivity() {
     private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
     private var hasLoggedFixedSettingsLayout = false
+    private val debugProtectBatteryMenuItemId: Int by lazy {
+        resources.getIdentifier(
+            "action_debug_protect_battery",
+            "id",
+            packageName
+        )
+    }
     @Volatile
     private var controllerProfileGeneration: Long = 0L
 
@@ -257,6 +264,12 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("setupToolbarMenu")
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.setOnMenuItemClickListener { item ->
+            val debugMenuItemId = debugProtectBatteryMenuItemId
+            if (debugMenuItemId != 0 && item.itemId == debugMenuItemId) {
+                openDebugProtectBatteryActivity()
+                return@setOnMenuItemClickListener true
+            }
+
             when (item.itemId) {
                 R.id.action_about_glimpse -> {
                     LogCompat.d("Main menu item clicked: about_glimpse")
@@ -270,22 +283,9 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
 
-                resolveDebugProtectBatteryMenuItemId() -> {
-                    openDebugProtectBatteryActivity()
-                    true
-                }
-
                 else -> false
             }
         }
-    }
-
-    private fun resolveDebugProtectBatteryMenuItemId(): Int {
-        return resources.getIdentifier(
-            "action_debug_protect_battery",
-            "id",
-            packageName
-        )
     }
 
     private fun openDebugProtectBatteryActivity() {

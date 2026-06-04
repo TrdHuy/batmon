@@ -1,11 +1,11 @@
 package com.android.synclab.glimpse.debug
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.infra.developer.DeveloperOptionPrefs
@@ -15,6 +15,13 @@ import com.android.synclab.glimpse.presentation.ProtectBatteryReceiver
 class DebugProtectBatteryActivity : AppCompatActivity() {
     private lateinit var statusView: TextView
     private var sendAlertAfterNotificationPermission = false
+    private val requestNotificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted && sendAlertAfterNotificationPermission) {
+                postControllerThresholdAlert()
+            }
+            sendAlertAfterNotificationPermission = false
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,23 +41,9 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         renderStatus()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != REQUEST_CODE_POST_NOTIFICATIONS) {
-            return
-        }
-        val granted = grantResults.isNotEmpty() &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
-        if (granted && sendAlertAfterNotificationPermission) {
-            sendAlertAfterNotificationPermission = false
-            postControllerThresholdAlert()
-        } else {
-            sendAlertAfterNotificationPermission = false
-        }
+    override fun onResume() {
+        super.onResume()
+        renderStatus()
     }
 
     private fun setProtectBatteryToolsEnabled(enabled: Boolean) {
@@ -58,7 +51,6 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
             context = this,
             enabled = enabled
         )
-        sendBroadcast(DeveloperOptionPrefs.developerOptionsChangedIntent(this))
         renderStatus()
     }
 
@@ -74,10 +66,7 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
     private fun sendControllerThresholdAlert() {
         if (!AppNotificationDispatcher.canPostNotifications(this)) {
             sendAlertAfterNotificationPermission = true
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_CODE_POST_NOTIFICATIONS
-            )
+            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             Toast.makeText(
                 this,
                 R.string.toast_protect_battery_notification_permission_required,
@@ -95,9 +84,5 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
             R.string.toast_protect_battery_test_alert_sent,
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    companion object {
-        private const val REQUEST_CODE_POST_NOTIFICATIONS = 41001
     }
 }

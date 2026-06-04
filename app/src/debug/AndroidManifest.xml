@@ -3,7 +3,8 @@
     <application>
         <activity
             android:name=".debug.DebugProtectBatteryActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:label="@string/debug_protect_battery_title" />
 
         <receiver
             android:name=".debug.DebugDeveloperOptionsReceiver"
