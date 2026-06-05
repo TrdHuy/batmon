@@ -5,13 +5,5 @@
             android:name=".debug.DebugProtectBatteryActivity"
             android:exported="false"
             android:label="@string/debug_protect_battery_title" />
-
-        <receiver
-            android:name=".debug.DebugDeveloperOptionsReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.android.synclab.glimpse.debug.SET_PROTECT_BATTERY_TOOLS" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>

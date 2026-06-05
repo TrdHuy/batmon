@@ -3,8 +3,14 @@
     <string name="debug_protect_battery_title">Protect Battery Dev</string>
     <string name="debug_protect_battery_status_enabled">Test tools: ON</string>
     <string name="debug_protect_battery_status_disabled">Test tools: OFF</string>
+    <string name="debug_developer_options_status">Protect Battery: %1$s\nMock controllers: %2$s</string>
     <string name="debug_protect_battery_enable">Enable test tools</string>
     <string name="debug_protect_battery_disable">Disable test tools</string>
+    <string name="debug_protect_battery_tools_required">Enable Protect Battery test tools first.</string>
+    <string name="debug_mock_controllers_status_enabled">ON</string>
+    <string name="debug_mock_controllers_status_disabled">OFF</string>
+    <string name="debug_mock_controllers_enable">Enable mock controllers</string>
+    <string name="debug_mock_controllers_disable">Disable mock controllers</string>
     <string name="debug_protect_battery_send_alert">Send controller 80% alert</string>
     <string name="menu_debug_protect_battery">Protect Battery Dev</string>
 </resources>
