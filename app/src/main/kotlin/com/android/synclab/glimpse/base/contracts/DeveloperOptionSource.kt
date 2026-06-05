@@ -6,8 +6,4 @@ interface DeveloperOptionSource {
     fun isMockControllerPagesEnabled(): Boolean
 
     fun setMockControllerPagesEnabled(enabled: Boolean)
-
-    fun isProtectBatteryToolsEnabled(): Boolean
-
-    fun setProtectBatteryToolsEnabled(enabled: Boolean)
 }

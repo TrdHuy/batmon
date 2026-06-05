@@ -18,14 +18,6 @@ class AndroidDeveloperOptionSource(
         putBoolean(KEY_MOCK_CONTROLLER_PAGES_ENABLED, enabled)
     }
 
-    override fun isProtectBatteryToolsEnabled(): Boolean {
-        return getBoolean(KEY_PROTECT_BATTERY_TOOLS_ENABLED)
-    }
-
-    override fun setProtectBatteryToolsEnabled(enabled: Boolean) {
-        putBoolean(KEY_PROTECT_BATTERY_TOOLS_ENABLED, enabled)
-    }
-
     private fun getBoolean(key: String): Boolean {
         if (!isDebuggableApp) {
             return false
@@ -49,7 +41,5 @@ class AndroidDeveloperOptionSource(
         private const val PREFS_NAME = "developer_options"
         private const val KEY_MOCK_CONTROLLER_PAGES_ENABLED =
             "mock_controller_pages_enabled"
-        private const val KEY_PROTECT_BATTERY_TOOLS_ENABLED =
-            "protect_battery_tools_enabled"
     }
 }

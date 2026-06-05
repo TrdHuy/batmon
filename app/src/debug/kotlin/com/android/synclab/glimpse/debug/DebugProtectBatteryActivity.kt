@@ -32,12 +32,6 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         developerOptionManager = AppContainer.from(applicationContext)
             .provideDeveloperOptionManager()
         statusView = findViewById(R.id.debugProtectBatteryStatus)
-        findViewById<Button>(R.id.debugProtectBatteryEnableButton).setOnClickListener {
-            setProtectBatteryToolsEnabled(true)
-        }
-        findViewById<Button>(R.id.debugProtectBatteryDisableButton).setOnClickListener {
-            setProtectBatteryToolsEnabled(false)
-        }
         findViewById<Button>(R.id.debugMockControllersEnableButton).setOnClickListener {
             setMockControllerPagesEnabled(true)
         }
@@ -56,24 +50,12 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         renderStatus()
     }
 
-    private fun setProtectBatteryToolsEnabled(enabled: Boolean) {
-        developerOptionManager.setProtectBatteryToolsEnabled(enabled)
-        renderStatus()
-    }
-
     private fun setMockControllerPagesEnabled(enabled: Boolean) {
         developerOptionManager.setMockControllerPagesEnabled(enabled)
         renderStatus()
     }
 
     private fun renderStatus() {
-        val protectBatteryStatus = getString(
-            if (developerOptionManager.isProtectBatteryToolsEnabled()) {
-                R.string.debug_protect_battery_status_enabled
-            } else {
-                R.string.debug_protect_battery_status_disabled
-            }
-        )
         val mockControllersStatus = getString(
             if (developerOptionManager.isMockControllerPagesEnabled()) {
                 R.string.debug_mock_controllers_status_enabled
@@ -83,20 +65,11 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         )
         statusView.text = getString(
             R.string.debug_developer_options_status,
-            protectBatteryStatus,
             mockControllersStatus
         )
     }
 
     private fun sendControllerThresholdAlert() {
-        if (!developerOptionManager.isProtectBatteryToolsEnabled()) {
-            Toast.makeText(
-                this,
-                R.string.debug_protect_battery_tools_required,
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
         if (!AppNotificationDispatcher.canPostNotifications(this)) {
             sendAlertAfterNotificationPermission = true
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)

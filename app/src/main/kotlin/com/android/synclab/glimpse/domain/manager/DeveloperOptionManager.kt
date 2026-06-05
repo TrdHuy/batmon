@@ -30,23 +30,4 @@ class DeveloperOptionManager(
         }
     }
 
-    fun isProtectBatteryToolsEnabled(): Boolean {
-        val enabled = developerModeEnabled && source.isProtectBatteryToolsEnabled()
-        LogCompat.dDebug {
-            "UI_VERIFY DevOptions protectBatteryTools read " +
-                    "enabled=$enabled thread=${Thread.currentThread().name}"
-        }
-        return enabled
-    }
-
-    fun setProtectBatteryToolsEnabled(enabled: Boolean) {
-        if (!developerModeEnabled) {
-            return
-        }
-        source.setProtectBatteryToolsEnabled(enabled)
-        LogCompat.dDebug {
-            "UI_VERIFY DevOptions protectBatteryTools write " +
-                    "enabled=$enabled thread=${Thread.currentThread().name}"
-        }
-    }
 }
