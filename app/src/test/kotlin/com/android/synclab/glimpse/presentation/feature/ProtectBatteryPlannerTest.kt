@@ -1,6 +1,8 @@
 package com.android.synclab.glimpse.presentation.feature
 
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.domain.usecase.ProtectBatteryUseCases
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,13 +13,15 @@ class ProtectBatteryPlannerTest {
 
     @Test
     fun onToggle_enableWithNotificationPermissionEnablesRuntime() {
+        val useCases = FakeProtectBatteryUseCases()
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(hasNotificationPermission = true)
 
         planner.onToggle(enabled = true, port = port)
 
         assertFalse(port.pendingNotificationPermission)
         assertTrue(port.selectedEnabled)
-        assertTrue(port.runtimeEnabled)
+        assertTrue(useCases.enabled)
         assertEquals(1, port.enabledMessages)
         assertEquals(0, port.renderCount)
         assertFalse(port.notificationPermissionRequested)
@@ -25,16 +29,18 @@ class ProtectBatteryPlannerTest {
 
     @Test
     fun onToggle_enableWithoutNotificationPermissionRequestsPermission() {
+        val useCases = FakeProtectBatteryUseCases(enabled = true)
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(
             hasNotificationPermission = false,
-            runtimeEnabled = true
+            selectedEnabled = true
         )
 
         planner.onToggle(enabled = true, port = port)
 
         assertTrue(port.pendingNotificationPermission)
         assertFalse(port.selectedEnabled)
-        assertFalse(port.runtimeEnabled)
+        assertFalse(useCases.enabled)
         assertTrue(port.notificationPermissionRequested)
         assertEquals(1, port.permissionRequiredMessages)
         assertEquals(1, port.renderCount)
@@ -42,9 +48,13 @@ class ProtectBatteryPlannerTest {
 
     @Test
     fun onToggle_disableDisablesRuntime() {
+        val useCases = FakeProtectBatteryUseCases(
+            enabled = true,
+            alertedControllerIds = setOf("controller-1")
+        )
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(
             hasNotificationPermission = false,
-            runtimeEnabled = true,
             selectedEnabled = true,
             pendingNotificationPermission = true
         )
@@ -53,12 +63,16 @@ class ProtectBatteryPlannerTest {
 
         assertFalse(port.pendingNotificationPermission)
         assertFalse(port.selectedEnabled)
-        assertFalse(port.runtimeEnabled)
+        assertFalse(useCases.enabled)
+        assertTrue(useCases.observedAlertedControllerIds.isEmpty())
+        assertEquals(1, useCases.cancelCount)
         assertEquals(1, port.disabledMessages)
     }
 
     @Test
     fun onNotificationPermissionResult_grantedWithPendingEnablesRuntime() {
+        val useCases = FakeProtectBatteryUseCases()
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(
             hasNotificationPermission = true,
             pendingNotificationPermission = true
@@ -68,16 +82,17 @@ class ProtectBatteryPlannerTest {
 
         assertFalse(port.pendingNotificationPermission)
         assertTrue(port.selectedEnabled)
-        assertTrue(port.runtimeEnabled)
+        assertTrue(useCases.enabled)
         assertEquals(1, port.enabledMessages)
         assertEquals(1, port.renderCount)
     }
 
     @Test
     fun onNotificationPermissionResult_deniedWithPendingRestoresRuntimeState() {
+        val useCases = FakeProtectBatteryUseCases(enabled = true)
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(
             hasNotificationPermission = false,
-            runtimeEnabled = true,
             selectedEnabled = false,
             pendingNotificationPermission = true
         )
@@ -86,13 +101,14 @@ class ProtectBatteryPlannerTest {
 
         assertFalse(port.pendingNotificationPermission)
         assertTrue(port.selectedEnabled)
-        assertTrue(port.runtimeEnabled)
         assertEquals(1, port.renderCount)
         assertEquals(0, port.enabledMessages)
     }
 
     @Test
     fun onNotificationPermissionResult_withoutPendingDoesNothing() {
+        val useCases = FakeProtectBatteryUseCases()
+        val planner = ProtectBatteryPlanner(useCases)
         val port = FakeUiPort(
             hasNotificationPermission = true,
             pendingNotificationPermission = false
@@ -102,69 +118,71 @@ class ProtectBatteryPlannerTest {
 
         assertFalse(port.pendingNotificationPermission)
         assertFalse(port.selectedEnabled)
-        assertFalse(port.runtimeEnabled)
+        assertFalse(useCases.enabled)
         assertEquals(0, port.renderCount)
     }
 
     @Test
     fun onManualEnable_setsEnabledAndRunsControllerCheck() {
-        val port = FakeRuntimePort(
-            batteries = listOf(controllerBattery(percent = 79, status = BatteryChargeStatus.CHARGING))
+        val useCases = FakeProtectBatteryUseCases(
+            controllers = listOf(controller(percent = 79, status = BatteryChargeStatus.CHARGING))
         )
+        val planner = ProtectBatteryPlanner(useCases)
 
-        planner.onManualEnable(port)
+        planner.onManualEnable(DEFAULT_CONTROLLER_NAME)
 
-        assertTrue(port.enabled)
-        assertTrue(port.observedAlertedControllerIds.isEmpty())
-        assertEquals(1, port.scheduleCount)
-        assertEquals(0, port.cancelCount)
-        assertEquals(1, port.logCount)
+        assertTrue(useCases.enabled)
+        assertTrue(useCases.observedAlertedControllerIds.isEmpty())
+        assertEquals(1, useCases.scheduleCount)
+        assertEquals(0, useCases.cancelCount)
     }
 
     @Test
     fun onManualDisable_disablesRuntimeClearsAlertsAndCancelsCheck() {
-        val port = FakeRuntimePort(
+        val useCases = FakeProtectBatteryUseCases(
             enabled = true,
             alertedControllerIds = setOf("controller-1")
         )
+        val planner = ProtectBatteryPlanner(useCases)
 
-        planner.onManualDisable(port)
+        planner.onManualDisable()
 
-        assertFalse(port.enabled)
-        assertTrue(port.observedAlertedControllerIds.isEmpty())
-        assertEquals(1, port.cancelCount)
+        assertFalse(useCases.enabled)
+        assertTrue(useCases.observedAlertedControllerIds.isEmpty())
+        assertEquals(1, useCases.cancelCount)
     }
 
     @Test
-    fun onReceiverEvent_disabledClearsAlertsAndCancelsCheck() {
-        val port = FakeRuntimePort(
+    fun onCheckRequested_disabledClearsAlertsAndCancelsCheck() {
+        val useCases = FakeProtectBatteryUseCases(
             enabled = false,
             alertedControllerIds = setOf("controller-1")
         )
+        val planner = ProtectBatteryPlanner(useCases)
 
-        planner.onReceiverEvent(port)
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
 
-        assertTrue(port.observedAlertedControllerIds.isEmpty())
-        assertEquals(1, port.cancelCount)
-        assertEquals(0, port.scheduleCount)
+        assertTrue(useCases.observedAlertedControllerIds.isEmpty())
+        assertEquals(1, useCases.cancelCount)
+        assertEquals(0, useCases.scheduleCount)
     }
 
     @Test
-    fun onReceiverEvent_checkAtThresholdPostsControllerAlertOnceAndSchedulesNextCheck() {
-        val port = FakeRuntimePort(
+    fun onCheckRequested_checkAtThresholdPostsControllerAlertOnceAndSchedulesNextCheck() {
+        val useCases = FakeProtectBatteryUseCases(
             enabled = true,
-            batteries = listOf(controllerBattery(percent = 80, status = BatteryChargeStatus.CHARGING))
+            controllers = listOf(controller(percent = 80, status = BatteryChargeStatus.CHARGING))
         )
+        val planner = ProtectBatteryPlanner(useCases)
 
-        planner.onReceiverEvent(port)
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
 
-        assertEquals(setOf("controller-1"), port.observedAlertedControllerIds)
-        assertEquals(1, port.alerts.size)
-        assertEquals(80, port.alerts.first().percent)
-        assertEquals("Controller One", port.alerts.first().controllerName)
-        assertEquals(1, port.scheduleCount)
-        assertEquals(0, port.cancelCount)
-        assertEquals(1, port.logCount)
+        assertEquals(setOf("controller-1"), useCases.observedAlertedControllerIds)
+        assertEquals(1, useCases.alerts.size)
+        assertEquals(80, useCases.alerts.first().percent)
+        assertEquals("Controller One", useCases.alerts.first().controllerName)
+        assertEquals(1, useCases.scheduleCount)
+        assertEquals(0, useCases.cancelCount)
     }
 
     @Test
@@ -296,17 +314,31 @@ class ProtectBatteryPlannerTest {
         )
     }
 
+    private fun controller(
+        id: String = "controller-1",
+        name: String = "Controller One",
+        percent: Int?,
+        status: BatteryChargeStatus,
+        descriptor: String? = id
+    ): ControllerInfo {
+        return ControllerInfo(
+            deviceId = 1,
+            name = name,
+            vendorId = 1356,
+            productId = 2508,
+            descriptor = descriptor,
+            batteryPercent = percent,
+            batteryStatus = status
+        )
+    }
+
     private class FakeUiPort(
         private val hasNotificationPermission: Boolean,
-        runtimeEnabled: Boolean = false,
         selectedEnabled: Boolean = false,
         pendingNotificationPermission: Boolean = false
     ) : ProtectBatteryUiPort {
-        private var runtimeEnabledState: Boolean = runtimeEnabled
         private var selectedEnabledState: Boolean = selectedEnabled
         private var pendingNotificationPermissionState: Boolean = pendingNotificationPermission
-        val runtimeEnabled: Boolean
-            get() = runtimeEnabledState
         val selectedEnabled: Boolean
             get() = selectedEnabledState
         val pendingNotificationPermission: Boolean
@@ -329,15 +361,7 @@ class ProtectBatteryPlannerTest {
             selectedEnabledState = enabled
         }
 
-        override fun isRuntimeEnabled(): Boolean = runtimeEnabledState
-
-        override fun enableRuntime() {
-            runtimeEnabledState = true
-        }
-
-        override fun disableRuntime() {
-            runtimeEnabledState = false
-        }
+        override fun defaultControllerName(): String = DEFAULT_CONTROLLER_NAME
 
         override fun requestNotificationPermission() {
             notificationPermissionRequested = true
@@ -360,11 +384,11 @@ class ProtectBatteryPlannerTest {
         }
     }
 
-    private class FakeRuntimePort(
+    private class FakeProtectBatteryUseCases(
         enabled: Boolean = false,
         alertedControllerIds: Set<String> = emptySet(),
-        var batteries: List<ControllerBatterySnapshot> = emptyList()
-    ) : ProtectBatteryRuntimePort {
+        var controllers: List<ControllerInfo> = emptyList()
+    ) : ProtectBatteryUseCases() {
         private var enabledState: Boolean = enabled
         private var alertedControllerIdsState: Set<String> = alertedControllerIds
         val enabled: Boolean
@@ -373,7 +397,6 @@ class ProtectBatteryPlannerTest {
             get() = alertedControllerIdsState
         var scheduleCount = 0
         var cancelCount = 0
-        var logCount = 0
         val alerts = mutableListOf<ProtectBatteryAlert>()
 
         override fun isEnabled(): Boolean = enabledState
@@ -388,7 +411,9 @@ class ProtectBatteryPlannerTest {
             alertedControllerIdsState = controllerIds
         }
 
-        override fun readControllerBatteries(): List<ControllerBatterySnapshot> = batteries
+        override fun getConnectedPs4Controllers(defaultDeviceName: String): List<ControllerInfo> {
+            return controllers
+        }
 
         override fun scheduleNextCheck() {
             scheduleCount += 1
@@ -398,16 +423,20 @@ class ProtectBatteryPlannerTest {
             cancelCount += 1
         }
 
-        override fun postThresholdAlert(alert: ProtectBatteryAlert) {
-            alerts += alert
-        }
-
-        override fun logCheck(
-            enabled: Boolean,
-            batteries: List<ControllerBatterySnapshot>,
-            decision: ProtectBatteryDecision
+        override fun postThresholdAlert(
+            controllerId: String,
+            controllerName: String,
+            percent: Int
         ) {
-            logCount += 1
+            alerts += ProtectBatteryAlert(
+                controllerId = controllerId,
+                controllerName = controllerName,
+                percent = percent
+            )
         }
+    }
+
+    companion object {
+        private const val DEFAULT_CONTROLLER_NAME = "Unknown Controller"
     }
 }

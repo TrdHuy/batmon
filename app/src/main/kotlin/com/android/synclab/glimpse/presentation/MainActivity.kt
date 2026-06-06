@@ -78,10 +78,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
     private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
     private lateinit var viewModel: MainViewModel
+    private lateinit var protectBatteryPlanner: ProtectBatteryPlanner
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
-    private val protectBatteryPlanner = ProtectBatteryPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -140,9 +140,10 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_main)
-        protectBatteryEnabled = ProtectBatteryReceiver.isEnabled(this)
 
         val appContainer = AppContainer.from(applicationContext)
+        protectBatteryPlanner = appContainer.provideProtectBatteryPlanner()
+        protectBatteryEnabled = protectBatteryPlanner.isEnabled()
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
         setPs4ControllerLightColorUseCase = appContainer.provideSetPs4ControllerLightColorUseCase()
         closePs4ControllerLightSessionUseCase =

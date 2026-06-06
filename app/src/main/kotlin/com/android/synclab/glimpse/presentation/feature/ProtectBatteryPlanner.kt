@@ -1,8 +1,11 @@
 package com.android.synclab.glimpse.presentation.feature
 
 import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.domain.usecase.ProtectBatteryUseCases
 
 class ProtectBatteryPlanner(
+    private val useCases: ProtectBatteryUseCases = ProtectBatteryUseCases(),
     private val thresholdPercent: Int = DEFAULT_THRESHOLD_PERCENT
 ) {
     fun onToggle(
@@ -13,7 +16,7 @@ class ProtectBatteryPlanner(
             enabled && !port.hasNotificationPermission() -> {
                 port.setPendingNotificationPermission(true)
                 port.setSelectedEnabled(false)
-                port.disableRuntime()
+                onManualDisable()
                 port.render()
                 port.requestNotificationPermission()
                 port.showNotificationPermissionRequired()
@@ -22,14 +25,14 @@ class ProtectBatteryPlanner(
             enabled -> {
                 port.setPendingNotificationPermission(false)
                 port.setSelectedEnabled(true)
-                port.enableRuntime()
+                onManualEnable(port.defaultControllerName())
                 port.showEnabled()
             }
 
             else -> {
                 port.setPendingNotificationPermission(false)
                 port.setSelectedEnabled(false)
-                port.disableRuntime()
+                onManualDisable()
                 port.showDisabled()
             }
         }
@@ -46,50 +49,62 @@ class ProtectBatteryPlanner(
         port.setPendingNotificationPermission(false)
         if (granted) {
             port.setSelectedEnabled(true)
-            port.enableRuntime()
+            onManualEnable(port.defaultControllerName())
             port.showEnabled()
             port.render()
         } else {
-            port.setSelectedEnabled(port.isRuntimeEnabled())
+            port.setSelectedEnabled(useCases.isEnabled())
             port.render()
         }
     }
 
-    fun onManualEnable(port: ProtectBatteryRuntimePort) {
-        port.setEnabled(true)
-        onReceiverEvent(port)
+    fun isEnabled(): Boolean {
+        return useCases.isEnabled()
     }
 
-    fun onManualDisable(port: ProtectBatteryRuntimePort) {
-        port.setEnabled(false)
-        port.setAlertedControllerIds(emptySet())
-        port.cancelNextCheck()
+    fun onManualEnable(defaultControllerName: String) {
+        useCases.setEnabled(true)
+        onCheckRequested(defaultControllerName)
     }
 
-    fun onReceiverEvent(port: ProtectBatteryRuntimePort) {
-        val enabled = port.isEnabled()
+    fun onManualDisable() {
+        useCases.setEnabled(false)
+        useCases.setAlertedControllerIds(emptySet())
+        useCases.cancelNextCheck()
+    }
+
+    fun onCheckRequested(defaultControllerName: String) {
+        val enabled = useCases.isEnabled()
         if (!enabled) {
-            port.setAlertedControllerIds(emptySet())
-            port.cancelNextCheck()
+            useCases.setAlertedControllerIds(emptySet())
+            useCases.cancelNextCheck()
             return
         }
 
-        val batteries = port.readControllerBatteries()
+        val batteries = useCases.getConnectedPs4Controllers(defaultControllerName)
+            .map(::toControllerBatterySnapshot)
         val decision = planBatteryCheck(
             enabled = true,
             batteries = batteries,
-            alertedControllerIds = port.getAlertedControllerIds()
+            alertedControllerIds = useCases.getAlertedControllerIds()
         )
-        port.setAlertedControllerIds(decision.alertedControllerIds)
+        useCases.setAlertedControllerIds(decision.alertedControllerIds)
         decision.alerts.forEach { alert ->
-            port.postThresholdAlert(alert)
+            useCases.postThresholdAlert(
+                controllerId = alert.controllerId,
+                controllerName = alert.controllerName,
+                percent = alert.percent
+            )
         }
         if (decision.shouldScheduleNextCheck) {
-            port.scheduleNextCheck()
+            useCases.scheduleNextCheck()
         } else {
-            port.cancelNextCheck()
+            useCases.cancelNextCheck()
         }
-        port.logCheck(enabled, batteries, decision)
+    }
+
+    fun postDevControllerThresholdAlert(percent: Int = DEFAULT_THRESHOLD_PERCENT) {
+        useCases.postDevControllerThresholdAlert(percent)
     }
 
     fun planBatteryCheck(
@@ -142,6 +157,23 @@ class ProtectBatteryPlanner(
                 status == BatteryChargeStatus.FULL
     }
 
+    private fun toControllerBatterySnapshot(controller: ControllerInfo): ControllerBatterySnapshot {
+        return ControllerBatterySnapshot(
+            controllerId = buildControllerId(controller),
+            controllerName = controller.name,
+            percent = controller.batteryPercent,
+            status = controller.batteryStatus ?: BatteryChargeStatus.UNKNOWN
+        )
+    }
+
+    private fun buildControllerId(controller: ControllerInfo): String {
+        val descriptor = controller.descriptor?.trim().orEmpty()
+        if (descriptor.isNotEmpty()) {
+            return descriptor
+        }
+        return "VID:${controller.vendorId}_PID:${controller.productId}_DID:${controller.deviceId}"
+    }
+
     companion object {
         const val DEFAULT_THRESHOLD_PERCENT = 80
     }
@@ -171,28 +203,10 @@ interface ProtectBatteryUiPort {
     fun hasPendingNotificationPermission(): Boolean
     fun setPendingNotificationPermission(pending: Boolean)
     fun setSelectedEnabled(enabled: Boolean)
-    fun isRuntimeEnabled(): Boolean
-    fun enableRuntime()
-    fun disableRuntime()
+    fun defaultControllerName(): String
     fun requestNotificationPermission()
     fun render()
     fun showNotificationPermissionRequired()
     fun showEnabled()
     fun showDisabled()
-}
-
-interface ProtectBatteryRuntimePort {
-    fun isEnabled(): Boolean
-    fun setEnabled(enabled: Boolean)
-    fun getAlertedControllerIds(): Set<String>
-    fun setAlertedControllerIds(controllerIds: Set<String>)
-    fun readControllerBatteries(): List<ControllerBatterySnapshot>
-    fun scheduleNextCheck()
-    fun cancelNextCheck()
-    fun postThresholdAlert(alert: ProtectBatteryAlert)
-    fun logCheck(
-        enabled: Boolean,
-        batteries: List<ControllerBatterySnapshot>,
-        decision: ProtectBatteryDecision
-    )
 }

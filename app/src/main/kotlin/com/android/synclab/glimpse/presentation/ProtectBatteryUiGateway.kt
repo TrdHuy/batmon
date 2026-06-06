@@ -31,16 +31,8 @@ class ProtectBatteryUiGateway(
         setSelectedEnabled.invoke(enabled)
     }
 
-    override fun isRuntimeEnabled(): Boolean {
-        return ProtectBatteryReceiver.isEnabled(activity)
-    }
-
-    override fun enableRuntime() {
-        ProtectBatteryReceiver.enable(activity)
-    }
-
-    override fun disableRuntime() {
-        ProtectBatteryReceiver.disable(activity)
+    override fun defaultControllerName(): String {
+        return activity.getString(R.string.unknown_controller_name)
     }
 
     override fun requestNotificationPermission() {
