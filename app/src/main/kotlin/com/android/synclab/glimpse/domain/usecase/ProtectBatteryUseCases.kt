@@ -1,19 +1,32 @@
 package com.android.synclab.glimpse.domain.usecase
 
+import android.app.Activity
+import android.app.Notification
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
-import com.android.synclab.glimpse.base.contracts.ProtectBatteryAlertNotifier
-import com.android.synclab.glimpse.base.contracts.ProtectBatteryCheckScheduler
-import com.android.synclab.glimpse.base.contracts.ProtectBatteryPreferenceStore
+import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.infra.alarm.AndroidAlarmScheduler
+import com.android.synclab.glimpse.infra.notification.AppNotificationChannel
+import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
+import com.android.synclab.glimpse.infra.notification.AppNotificationRequest
+import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
+import com.android.synclab.glimpse.utils.LogCompat
 
 open class ProtectBatteryUseCases(
-    private val preferenceStore: ProtectBatteryPreferenceStore? = null,
+    private val context: Context? = null,
     private val gamepadRepository: GamepadRepository? = null,
-    private val checkScheduler: ProtectBatteryCheckScheduler? = null,
-    private val alertNotifier: ProtectBatteryAlertNotifier? = null
+    private val alarmScheduler: AndroidAlarmScheduler? = null,
+    private val checkReceiverClass: Class<out BroadcastReceiver>? = null,
+    private val checkAction: String? = null,
+    private val contentActivityClass: Class<out Activity>? = null
 ) {
     open fun isEnabled(): Boolean {
-        return requirePreferenceStore().getBoolean(
+        return SharedPreferenceStore.getBoolean(
+            context = requireContext(),
             prefsName = PREFS_NAME,
             key = KEY_ENABLED,
             defaultValue = false
@@ -21,7 +34,8 @@ open class ProtectBatteryUseCases(
     }
 
     open fun setEnabled(enabled: Boolean) {
-        requirePreferenceStore().putBoolean(
+        SharedPreferenceStore.putBoolean(
+            context = requireContext(),
             prefsName = PREFS_NAME,
             key = KEY_ENABLED,
             value = enabled
@@ -29,7 +43,8 @@ open class ProtectBatteryUseCases(
     }
 
     open fun getAlertedControllerIds(): Set<String> {
-        return requirePreferenceStore().getStringSet(
+        return SharedPreferenceStore.getStringSet(
+            context = requireContext(),
             prefsName = PREFS_NAME,
             key = KEY_ALERTED_CONTROLLER_IDS,
             defaultValue = emptySet()
@@ -37,7 +52,8 @@ open class ProtectBatteryUseCases(
     }
 
     open fun setAlertedControllerIds(controllerIds: Set<String>) {
-        requirePreferenceStore().putStringSet(
+        SharedPreferenceStore.putStringSet(
+            context = requireContext(),
             prefsName = PREFS_NAME,
             key = KEY_ALERTED_CONTROLLER_IDS,
             value = controllerIds
@@ -49,11 +65,20 @@ open class ProtectBatteryUseCases(
     }
 
     open fun scheduleNextCheck() {
-        requireCheckScheduler().scheduleNextCheck(CHECK_INTERVAL_MS)
+        requireAlarmScheduler().scheduleElapsedRealtimeWakeupBroadcast(
+            receiverClass = requireCheckReceiverClass(),
+            action = requireCheckAction(),
+            requestCode = CHECK_REQUEST_CODE,
+            delayMs = CHECK_INTERVAL_MS
+        )
     }
 
     open fun cancelNextCheck() {
-        requireCheckScheduler().cancelNextCheck()
+        requireAlarmScheduler().cancelBroadcast(
+            receiverClass = requireCheckReceiverClass(),
+            action = requireCheckAction(),
+            requestCode = CHECK_REQUEST_CODE
+        )
     }
 
     open fun postThresholdAlert(
@@ -61,21 +86,33 @@ open class ProtectBatteryUseCases(
         controllerName: String,
         percent: Int
     ) {
-        requireAlertNotifier().postThresholdAlert(
-            controllerId = controllerId,
-            controllerName = controllerName,
-            percent = percent
+        val appContext = requireContext()
+        AppNotificationDispatcher.notify(
+            context = appContext,
+            request = buildThresholdAlertRequest(
+                context = appContext,
+                controllerName = controllerName,
+                percent = percent
+            )
+        )
+        LogCompat.i(
+            "ProtectBattery alert posted " +
+                    "controller=${maskIdentifier(controllerId)} percent=$percent"
         )
     }
 
     open fun postDevControllerThresholdAlert(percent: Int) {
-        requireAlertNotifier().postDevControllerThresholdAlert(percent)
-    }
-
-    private fun requirePreferenceStore(): ProtectBatteryPreferenceStore {
-        return requireNotNull(preferenceStore) {
-            "ProtectBatteryPreferenceStore is required for production ProtectBatteryUseCases"
-        }
+        val appContext = requireContext()
+        val controllerName = appContext.getString(R.string.unknown_controller_name)
+        AppNotificationDispatcher.notify(
+            context = appContext,
+            request = buildThresholdAlertRequest(
+                context = appContext,
+                controllerName = controllerName,
+                percent = percent
+            )
+        )
+        LogCompat.i("ProtectBattery dev controller alert posted percent=$percent")
     }
 
     private fun requireGamepadRepository(): GamepadRepository {
@@ -84,22 +121,86 @@ open class ProtectBatteryUseCases(
         }
     }
 
-    private fun requireCheckScheduler(): ProtectBatteryCheckScheduler {
-        return requireNotNull(checkScheduler) {
-            "ProtectBatteryCheckScheduler is required for production ProtectBatteryUseCases"
+    private fun requireContext(): Context {
+        return requireNotNull(context) {
+            "Context is required for production ProtectBatteryUseCases"
+        }.applicationContext
+    }
+
+    private fun requireAlarmScheduler(): AndroidAlarmScheduler {
+        return requireNotNull(alarmScheduler) {
+            "AndroidAlarmScheduler is required for production ProtectBatteryUseCases"
         }
     }
 
-    private fun requireAlertNotifier(): ProtectBatteryAlertNotifier {
-        return requireNotNull(alertNotifier) {
-            "ProtectBatteryAlertNotifier is required for production ProtectBatteryUseCases"
+    private fun requireCheckReceiverClass(): Class<out BroadcastReceiver> {
+        return requireNotNull(checkReceiverClass) {
+            "Check receiver class is required for production ProtectBatteryUseCases"
         }
+    }
+
+    private fun requireCheckAction(): String {
+        return requireNotNull(checkAction) {
+            "Check action is required for production ProtectBatteryUseCases"
+        }
+    }
+
+    private fun requireContentActivityClass(): Class<out Activity> {
+        return requireNotNull(contentActivityClass) {
+            "Content activity class is required for production ProtectBatteryUseCases"
+        }
+    }
+
+    private fun buildThresholdAlertRequest(
+        context: Context,
+        controllerName: String,
+        percent: Int
+    ): AppNotificationRequest {
+        val text = context.getString(
+            R.string.protect_battery_notification_text,
+            controllerName,
+            percent
+        )
+        return AppNotificationRequest(
+            notificationId = NOTIFICATION_ID,
+            channel = AppNotificationChannel(
+                id = CHANNEL_ID,
+                name = context.getString(R.string.protect_battery_channel_name),
+                description = context.getString(R.string.protect_battery_channel_description),
+                importance = NotificationManager.IMPORTANCE_HIGH,
+                enableVibration = true
+            ),
+            smallIconRes = R.drawable.ic_ui_protect_battery,
+            title = context.getString(R.string.protect_battery_notification_title),
+            text = text,
+            bigText = text,
+            contentIntent = AppNotificationDispatcher.activityPendingIntent(
+                context = context,
+                requestCode = CONTENT_REQUEST_CODE,
+                intent = Intent(context, requireContentActivityClass())
+            ),
+            autoCancel = true,
+            category = Notification.CATEGORY_ALARM,
+            defaults = Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE,
+            priority = Notification.PRIORITY_HIGH
+        )
+    }
+
+    private fun maskIdentifier(identifier: String): String {
+        if (identifier.length <= 8) {
+            return "***"
+        }
+        return "${identifier.take(4)}***${identifier.takeLast(4)}"
     }
 
     companion object {
         private const val PREFS_NAME = "protect_battery"
         private const val KEY_ENABLED = "enabled"
         private const val KEY_ALERTED_CONTROLLER_IDS = "alerted_controller_ids"
+        private const val CHANNEL_ID = "protect_battery_alerts_v1"
+        private const val NOTIFICATION_ID = 32001
+        private const val CONTENT_REQUEST_CODE = 32002
+        private const val CHECK_REQUEST_CODE = 32011
         private const val CHECK_INTERVAL_MS = 60_000L
     }
 }
