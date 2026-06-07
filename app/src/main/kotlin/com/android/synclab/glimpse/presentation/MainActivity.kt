@@ -272,6 +272,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             when (item.itemId) {
+                R.id.action_feature_guide -> {
+                    LogCompat.d("Main menu item clicked: feature_guide")
+                    startActivity(Intent(this, FeatureGuideActivity::class.java))
+                    true
+                }
+
                 R.id.action_about_glimpse -> {
                     LogCompat.d("Main menu item clicked: about_glimpse")
                     startActivity(Intent(this, AboutGlimpseActivity::class.java))
