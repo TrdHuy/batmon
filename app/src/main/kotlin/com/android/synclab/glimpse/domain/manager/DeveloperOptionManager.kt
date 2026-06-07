@@ -30,4 +30,24 @@ class DeveloperOptionManager(
         }
     }
 
+    fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean {
+        val enabled = developerModeEnabled &&
+                source.isProtectBatteryFakeThresholdDetectionEnabled()
+        LogCompat.dDebug {
+            "UI_VERIFY DevOptions protectBatteryFakeDetection read " +
+                    "enabled=$enabled thread=${Thread.currentThread().name}"
+        }
+        return enabled
+    }
+
+    fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+        if (!developerModeEnabled) {
+            return
+        }
+        source.setProtectBatteryFakeThresholdDetectionEnabled(enabled)
+        LogCompat.dDebug {
+            "UI_VERIFY DevOptions protectBatteryFakeDetection write " +
+                    "enabled=$enabled thread=${Thread.currentThread().name}"
+        }
+    }
 }

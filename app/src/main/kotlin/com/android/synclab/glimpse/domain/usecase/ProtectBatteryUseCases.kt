@@ -9,6 +9,8 @@ import android.content.Intent
 import com.android.synclab.glimpse.base.contracts.GamepadRepository
 import com.android.synclab.glimpse.R
 import com.android.synclab.glimpse.data.model.ControllerInfo
+import com.android.synclab.glimpse.data.model.BatteryChargeStatus
+import com.android.synclab.glimpse.domain.manager.DeveloperOptionManager
 import com.android.synclab.glimpse.infra.alarm.AndroidAlarmScheduler
 import com.android.synclab.glimpse.infra.notification.AppNotificationChannel
 import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
@@ -19,6 +21,7 @@ import com.android.synclab.glimpse.utils.LogCompat
 open class ProtectBatteryUseCases(
     private val context: Context? = null,
     private val gamepadRepository: GamepadRepository? = null,
+    private val developerOptionManager: DeveloperOptionManager? = null,
     private val alarmScheduler: AndroidAlarmScheduler? = null,
     private val checkReceiverClass: Class<out BroadcastReceiver>? = null,
     private val checkAction: String? = null,
@@ -62,6 +65,26 @@ open class ProtectBatteryUseCases(
 
     open fun getConnectedPs4Controllers(defaultDeviceName: String): List<ControllerInfo> {
         return requireGamepadRepository().getConnectedPs4Controllers(defaultDeviceName)
+    }
+
+    open fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean {
+        return developerOptionManager?.isProtectBatteryFakeThresholdDetectionEnabled() ?: false
+    }
+
+    open fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+        developerOptionManager?.setProtectBatteryFakeThresholdDetectionEnabled(enabled)
+    }
+
+    open fun getFakeThresholdController(): ControllerInfo {
+        return ControllerInfo(
+            deviceId = FAKE_CONTROLLER_DEVICE_ID,
+            name = FAKE_CONTROLLER_NAME,
+            vendorId = 0,
+            productId = 0,
+            descriptor = FAKE_CONTROLLER_DESCRIPTOR,
+            batteryPercent = 80,
+            batteryStatus = BatteryChargeStatus.CHARGING
+        )
     }
 
     open fun scheduleNextCheck() {
@@ -202,5 +225,9 @@ open class ProtectBatteryUseCases(
         private const val CONTENT_REQUEST_CODE = 32002
         private const val CHECK_REQUEST_CODE = 32011
         private const val CHECK_INTERVAL_MS = 60_000L
+        private const val FAKE_CONTROLLER_DEVICE_ID = -32001
+        private const val FAKE_CONTROLLER_NAME = "Protect Battery Dev Controller"
+        private const val FAKE_CONTROLLER_DESCRIPTOR =
+            "protect_battery_dev_fake_controller"
     }
 }

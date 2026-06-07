@@ -6,4 +6,8 @@ interface DeveloperOptionSource {
     fun isMockControllerPagesEnabled(): Boolean
 
     fun setMockControllerPagesEnabled(enabled: Boolean)
+
+    fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean
+
+    fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean)
 }

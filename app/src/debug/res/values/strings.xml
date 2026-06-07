@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="debug_protect_battery_title">Protect Battery Dev</string>
-    <string name="debug_developer_options_status">Mock controllers: %1$s</string>
+    <string name="debug_developer_options_status">Mock controllers: %1$s\nFake Protect Battery detection: %2$s</string>
     <string name="debug_mock_controllers_status_enabled">ON</string>
     <string name="debug_mock_controllers_status_disabled">OFF</string>
     <string name="debug_mock_controllers_enable">Enable mock controllers</string>
     <string name="debug_mock_controllers_disable">Disable mock controllers</string>
+    <string name="debug_protect_battery_fake_detection_enable">Enable fake detection</string>
+    <string name="debug_protect_battery_fake_detection_disable">Disable fake detection</string>
     <string name="debug_protect_battery_send_alert">Send controller 80% alert</string>
     <string name="menu_debug_protect_battery">Protect Battery Dev</string>
 </resources>

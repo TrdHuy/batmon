@@ -40,6 +40,12 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         findViewById<Button>(R.id.debugMockControllersDisableButton).setOnClickListener {
             setMockControllerPagesEnabled(false)
         }
+        findViewById<Button>(R.id.debugProtectBatteryFakeDetectionEnableButton).setOnClickListener {
+            setProtectBatteryFakeThresholdDetectionEnabled(true)
+        }
+        findViewById<Button>(R.id.debugProtectBatteryFakeDetectionDisableButton).setOnClickListener {
+            setProtectBatteryFakeThresholdDetectionEnabled(false)
+        }
         findViewById<Button>(R.id.debugProtectBatterySendAlertButton).setOnClickListener {
             sendControllerThresholdAlert()
         }
@@ -57,6 +63,11 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
         renderStatus()
     }
 
+    private fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+        developerOptionManager.setProtectBatteryFakeThresholdDetectionEnabled(enabled)
+        renderStatus()
+    }
+
     private fun renderStatus() {
         val mockControllersStatus = getString(
             if (developerOptionManager.isMockControllerPagesEnabled()) {
@@ -65,9 +76,17 @@ class DebugProtectBatteryActivity : AppCompatActivity() {
                 R.string.debug_mock_controllers_status_disabled
             }
         )
+        val fakeProtectBatteryDetectionStatus = getString(
+            if (developerOptionManager.isProtectBatteryFakeThresholdDetectionEnabled()) {
+                R.string.debug_mock_controllers_status_enabled
+            } else {
+                R.string.debug_mock_controllers_status_disabled
+            }
+        )
         statusView.text = getString(
             R.string.debug_developer_options_status,
-            mockControllersStatus
+            mockControllersStatus,
+            fakeProtectBatteryDetectionStatus
         )
     }
 

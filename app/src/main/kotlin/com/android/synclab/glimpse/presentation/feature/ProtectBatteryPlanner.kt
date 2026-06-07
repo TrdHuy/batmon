@@ -81,8 +81,12 @@ class ProtectBatteryPlanner(
             return
         }
 
-        val batteries = useCases.getConnectedPs4Controllers(defaultControllerName)
-            .map(::toControllerBatterySnapshot)
+        val controllers = if (useCases.isProtectBatteryFakeThresholdDetectionEnabled()) {
+            listOf(useCases.getFakeThresholdController())
+        } else {
+            useCases.getConnectedPs4Controllers(defaultControllerName)
+        }
+        val batteries = controllers.map(::toControllerBatterySnapshot)
         val decision = planBatteryCheck(
             enabled = true,
             batteries = batteries,

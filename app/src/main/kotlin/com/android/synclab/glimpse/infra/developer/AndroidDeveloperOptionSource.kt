@@ -18,6 +18,14 @@ class AndroidDeveloperOptionSource(
         putBoolean(KEY_MOCK_CONTROLLER_PAGES_ENABLED, enabled)
     }
 
+    override fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean {
+        return getBoolean(KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED)
+    }
+
+    override fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+        putBoolean(KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED, enabled)
+    }
+
     private fun getBoolean(key: String): Boolean {
         if (!isDebuggableApp) {
             return false
@@ -41,5 +49,7 @@ class AndroidDeveloperOptionSource(
         private const val PREFS_NAME = "developer_options"
         private const val KEY_MOCK_CONTROLLER_PAGES_ENABLED =
             "mock_controller_pages_enabled"
+        private const val KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED =
+            "protect_battery_fake_threshold_detection_enabled"
     }
 }

@@ -51,6 +51,7 @@ class AppContainer private constructor(
         ProtectBatteryUseCases(
             context = appContext,
             gamepadRepository = gamepadRepository,
+            developerOptionManager = developerOptionManager,
             alarmScheduler = AndroidAlarmScheduler(appContext),
             checkReceiverClass = ProtectBatteryReceiver::class.java,
             checkAction = ProtectBatteryReceiver.ACTION_CHECK,

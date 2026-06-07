@@ -186,6 +186,75 @@ class ProtectBatteryPlannerTest {
     }
 
     @Test
+    fun onCheckRequested_fakeDetectionOffUsesRealControllerList() {
+        val useCases = FakeProtectBatteryUseCases(
+            enabled = true,
+            fakeThresholdDetectionEnabled = false,
+            controllers = listOf(controller(percent = 80, status = BatteryChargeStatus.CHARGING))
+        )
+        val planner = ProtectBatteryPlanner(useCases)
+
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
+
+        assertEquals(1, useCases.realControllerReadCount)
+        assertEquals(0, useCases.fakeControllerReadCount)
+        assertEquals(setOf("controller-1"), useCases.observedAlertedControllerIds)
+        assertEquals(1, useCases.alerts.size)
+    }
+
+    @Test
+    fun onCheckRequested_fakeDetectionOnPostsAlertWithoutConnectedController() {
+        val useCases = FakeProtectBatteryUseCases(
+            enabled = true,
+            fakeThresholdDetectionEnabled = true,
+            controllers = emptyList()
+        )
+        val planner = ProtectBatteryPlanner(useCases)
+
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
+
+        assertEquals(0, useCases.realControllerReadCount)
+        assertEquals(1, useCases.fakeControllerReadCount)
+        assertEquals(setOf(FAKE_CONTROLLER_ID), useCases.observedAlertedControllerIds)
+        assertEquals(1, useCases.alerts.size)
+        assertEquals("Protect Battery Fake Controller", useCases.alerts.first().controllerName)
+        assertEquals(80, useCases.alerts.first().percent)
+        assertEquals(1, useCases.scheduleCount)
+    }
+
+    @Test
+    fun onCheckRequested_fakeDetectionOnWhileDisabledDoesNotPostAlert() {
+        val useCases = FakeProtectBatteryUseCases(
+            enabled = false,
+            fakeThresholdDetectionEnabled = true
+        )
+        val planner = ProtectBatteryPlanner(useCases)
+
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
+
+        assertEquals(0, useCases.realControllerReadCount)
+        assertEquals(0, useCases.fakeControllerReadCount)
+        assertTrue(useCases.alerts.isEmpty())
+        assertEquals(1, useCases.cancelCount)
+    }
+
+    @Test
+    fun onCheckRequested_fakeDetectionOnAfterAlertDoesNotNotifyAgain() {
+        val useCases = FakeProtectBatteryUseCases(
+            enabled = true,
+            fakeThresholdDetectionEnabled = true,
+            alertedControllerIds = setOf(FAKE_CONTROLLER_ID)
+        )
+        val planner = ProtectBatteryPlanner(useCases)
+
+        planner.onCheckRequested(DEFAULT_CONTROLLER_NAME)
+
+        assertEquals(setOf(FAKE_CONTROLLER_ID), useCases.observedAlertedControllerIds)
+        assertTrue(useCases.alerts.isEmpty())
+        assertEquals(1, useCases.scheduleCount)
+    }
+
+    @Test
     fun planBatteryCheck_disabledDoesNotNotifyOrSchedule() {
         val decision = planner.planBatteryCheck(
             enabled = false,
@@ -387,7 +456,8 @@ class ProtectBatteryPlannerTest {
     private class FakeProtectBatteryUseCases(
         enabled: Boolean = false,
         alertedControllerIds: Set<String> = emptySet(),
-        var controllers: List<ControllerInfo> = emptyList()
+        var controllers: List<ControllerInfo> = emptyList(),
+        var fakeThresholdDetectionEnabled: Boolean = false
     ) : ProtectBatteryUseCases() {
         private var enabledState: Boolean = enabled
         private var alertedControllerIdsState: Set<String> = alertedControllerIds
@@ -397,6 +467,8 @@ class ProtectBatteryPlannerTest {
             get() = alertedControllerIdsState
         var scheduleCount = 0
         var cancelCount = 0
+        var realControllerReadCount = 0
+        var fakeControllerReadCount = 0
         val alerts = mutableListOf<ProtectBatteryAlert>()
 
         override fun isEnabled(): Boolean = enabledState
@@ -412,7 +484,29 @@ class ProtectBatteryPlannerTest {
         }
 
         override fun getConnectedPs4Controllers(defaultDeviceName: String): List<ControllerInfo> {
+            realControllerReadCount += 1
             return controllers
+        }
+
+        override fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean {
+            return fakeThresholdDetectionEnabled
+        }
+
+        override fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+            fakeThresholdDetectionEnabled = enabled
+        }
+
+        override fun getFakeThresholdController(): ControllerInfo {
+            fakeControllerReadCount += 1
+            return ControllerInfo(
+                deviceId = -32001,
+                name = "Protect Battery Fake Controller",
+                vendorId = 0,
+                productId = 0,
+                descriptor = FAKE_CONTROLLER_ID,
+                batteryPercent = 80,
+                batteryStatus = BatteryChargeStatus.CHARGING
+            )
         }
 
         override fun scheduleNextCheck() {
@@ -438,5 +532,6 @@ class ProtectBatteryPlannerTest {
 
     companion object {
         private const val DEFAULT_CONTROLLER_NAME = "Unknown Controller"
+        private const val FAKE_CONTROLLER_ID = "protect_battery_dev_fake_controller"
     }
 }

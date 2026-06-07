@@ -43,10 +43,24 @@
             android:text="@string/debug_mock_controllers_disable" />
 
         <Button
+            android:id="@+id/debugProtectBatteryFakeDetectionEnableButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/debug_protect_battery_fake_detection_enable" />
+
+        <Button
+            android:id="@+id/debugProtectBatteryFakeDetectionDisableButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/debug_protect_battery_fake_detection_disable" />
+
+        <Button
             android:id="@+id/debugProtectBatterySendAlertButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="24dp"
             android:text="@string/debug_protect_battery_send_alert" />
     </LinearLayout>
 </ScrollView>
