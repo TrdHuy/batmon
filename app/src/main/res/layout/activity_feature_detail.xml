@@ -9,11 +9,10 @@
         android:id="@+id/featureDetailBackButton"
         android:layout_width="56dp"
         android:layout_height="56dp"
-        android:layout_marginStart="24dp"
+        android:layout_marginStart="6dp"
         android:layout_marginTop="44dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/about_glimpse_back"
-        android:padding="14dp"
         android:src="@drawable/ic_about_back"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
