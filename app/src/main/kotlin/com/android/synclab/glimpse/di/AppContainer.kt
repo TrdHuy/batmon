@@ -13,8 +13,10 @@ import com.android.synclab.glimpse.domain.usecase.DeleteControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetConnectedPs4ControllersUseCase
 import com.android.synclab.glimpse.domain.usecase.GetControllerProfileUseCase
 import com.android.synclab.glimpse.domain.usecase.GetPrimaryGamepadBatteryUseCase
+import com.android.synclab.glimpse.domain.usecase.ProtectBatteryUseCases
 import com.android.synclab.glimpse.domain.usecase.SetPs4ControllerLightColorUseCase
 import com.android.synclab.glimpse.domain.usecase.UpsertControllerProfileUseCase
+import com.android.synclab.glimpse.infra.alarm.AndroidAlarmScheduler
 import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.developer.AndroidDeveloperOptionSource
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
@@ -22,6 +24,9 @@ import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
 import com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl
 import com.android.synclab.glimpse.infra.repository.roomdb.RoomControllerProfileRepository
 import com.android.synclab.glimpse.infra.repository.roomdb.core.GlimpseDatabase
+import com.android.synclab.glimpse.presentation.MainActivity
+import com.android.synclab.glimpse.presentation.ProtectBatteryReceiver
+import com.android.synclab.glimpse.presentation.feature.ProtectBatteryPlanner
 import com.android.synclab.glimpse.utils.LogCompat
 
 class AppContainer private constructor(
@@ -31,6 +36,7 @@ class AppContainer private constructor(
     private val glimpseDatabase: GlimpseDatabase = GlimpseDatabase.create(appContext)
     private val developerOptionSource: DeveloperOptionSource =
         AndroidDeveloperOptionSource(
+            context = appContext,
             isDebuggableApp = (appContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         )
     private val developerOptionManager: DeveloperOptionManager =
@@ -41,6 +47,18 @@ class AppContainer private constructor(
     private val controllerProfileRepository: ControllerProfileRepository =
         RoomControllerProfileRepository(glimpseDatabase.controllerProfileDao())
     private val monitoringStateProvider: MonitoringStateProvider = MonitoringStateStore
+    private val protectBatteryUseCases: ProtectBatteryUseCases =
+        ProtectBatteryUseCases(
+            context = appContext,
+            gamepadRepository = gamepadRepository,
+            developerOptionManager = developerOptionManager,
+            alarmScheduler = AndroidAlarmScheduler(appContext),
+            checkReceiverClass = ProtectBatteryReceiver::class.java,
+            checkAction = ProtectBatteryReceiver.ACTION_CHECK,
+            contentActivityClass = MainActivity::class.java
+        )
+    private val protectBatteryPlanner: ProtectBatteryPlanner =
+        ProtectBatteryPlanner(protectBatteryUseCases)
 
     fun provideInputDeviceGateway(): InputDeviceGateway {
         return inputDeviceGateway
@@ -60,6 +78,10 @@ class AppContainer private constructor(
 
     fun providePrimaryGamepadBatteryUseCase(): GetPrimaryGamepadBatteryUseCase {
         return GetPrimaryGamepadBatteryUseCase(gamepadRepository)
+    }
+
+    fun provideProtectBatteryPlanner(): ProtectBatteryPlanner {
+        return protectBatteryPlanner
     }
 
     fun provideSetPs4ControllerLightColorUseCase(): SetPs4ControllerLightColorUseCase {

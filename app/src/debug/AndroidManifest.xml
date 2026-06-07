@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".debug.DebugProtectBatteryActivity"
+            android:exported="false"
+            android:label="@string/debug_protect_battery_title" />
+    </application>
+</manifest>

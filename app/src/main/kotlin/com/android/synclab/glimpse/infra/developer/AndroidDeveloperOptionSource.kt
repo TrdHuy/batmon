@@ -1,20 +1,55 @@
 package com.android.synclab.glimpse.infra.developer
 
+import android.content.Context
 import com.android.synclab.glimpse.base.contracts.DeveloperOptionSource
 
 class AndroidDeveloperOptionSource(
+    context: Context,
     override val isDebuggableApp: Boolean
 ) : DeveloperOptionSource {
-    override fun getSystemProperty(name: String): String? {
-        return runCatching {
-            val process = ProcessBuilder("/system/bin/getprop", name)
-                .redirectErrorStream(true)
-                .start()
-            process.inputStream.bufferedReader().use { reader ->
-                reader.readText().trim().takeIf { it.isNotEmpty() }
-            }.also {
-                process.waitFor()
-            }
-        }.getOrNull()
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    override fun isMockControllerPagesEnabled(): Boolean {
+        return getBoolean(KEY_MOCK_CONTROLLER_PAGES_ENABLED)
+    }
+
+    override fun setMockControllerPagesEnabled(enabled: Boolean) {
+        putBoolean(KEY_MOCK_CONTROLLER_PAGES_ENABLED, enabled)
+    }
+
+    override fun isProtectBatteryFakeThresholdDetectionEnabled(): Boolean {
+        return getBoolean(KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED)
+    }
+
+    override fun setProtectBatteryFakeThresholdDetectionEnabled(enabled: Boolean) {
+        putBoolean(KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED, enabled)
+    }
+
+    private fun getBoolean(key: String): Boolean {
+        if (!isDebuggableApp) {
+            return false
+        }
+        return prefs.getBoolean(key, false)
+    }
+
+    private fun putBoolean(
+        key: String,
+        enabled: Boolean
+    ) {
+        if (!isDebuggableApp) {
+            return
+        }
+        prefs.edit()
+            .putBoolean(key, enabled)
+            .apply()
+    }
+
+    companion object {
+        private const val PREFS_NAME = "developer_options"
+        private const val KEY_MOCK_CONTROLLER_PAGES_ENABLED =
+            "mock_controller_pages_enabled"
+        private const val KEY_PROTECT_BATTERY_FAKE_THRESHOLD_DETECTION_ENABLED =
+            "protect_battery_fake_threshold_detection_enabled"
     }
 }

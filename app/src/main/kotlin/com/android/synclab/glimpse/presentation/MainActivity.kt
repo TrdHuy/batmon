@@ -78,10 +78,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var getControllerProfileUseCase: GetControllerProfileUseCase
     private lateinit var upsertControllerProfileUseCase: UpsertControllerProfileUseCase
     private lateinit var viewModel: MainViewModel
+    private lateinit var protectBatteryPlanner: ProtectBatteryPlanner
 
     private val backgroundMonitoringPlanner = BackgroundMonitoringPlanner()
     private val liveBatteryOverlayPlanner = LiveBatteryOverlayPlanner()
-    private val protectBatteryPlanner = ProtectBatteryPlanner()
 
     private var pendingStartAfterNotificationPermission = false
     private var pendingStartAfterBluetoothPermission = false
@@ -97,6 +97,13 @@ class MainActivity : AppCompatActivity() {
     private var lastLoadedProfileDescriptor: String? = null
     private var customizeVibeDialog: CustomizeVibeDialog? = null
     private var hasLoggedFixedSettingsLayout = false
+    private val debugProtectBatteryMenuItemId: Int by lazy {
+        resources.getIdentifier(
+            "action_debug_protect_battery",
+            "id",
+            packageName
+        )
+    }
     @Volatile
     private var controllerProfileGeneration: Long = 0L
 
@@ -133,22 +140,24 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_main)
-        protectBatteryEnabled = ProtectBatteryReceiver.isEnabled(this)
 
         val appContainer = AppContainer.from(applicationContext)
+        protectBatteryPlanner = appContainer.provideProtectBatteryPlanner()
+        protectBatteryEnabled = protectBatteryPlanner.isEnabled()
         inputDeviceGateway = appContainer.provideInputDeviceGateway()
         setPs4ControllerLightColorUseCase = appContainer.provideSetPs4ControllerLightColorUseCase()
         closePs4ControllerLightSessionUseCase =
             appContainer.provideClosePs4ControllerLightSessionUseCase()
         getControllerProfileUseCase = appContainer.provideGetControllerProfileUseCase()
         upsertControllerProfileUseCase = appContainer.provideUpsertControllerProfileUseCase()
+        val developerOptionManager = appContainer.provideDeveloperOptionManager()
         viewModel = ViewModelProvider(
             this,
             MainViewModelFactory(
                 inputDeviceGateway = inputDeviceGateway,
                 getConnectedPs4ControllersUseCase = appContainer.provideConnectedPs4ControllersUseCase(),
                 monitoringStateProvider = appContainer.provideMonitoringStateProvider(),
-                developerOptionManager = appContainer.provideDeveloperOptionManager()
+                developerOptionManager = developerOptionManager
             )
         ).get(MainViewModel::class.java)
         toolbar = findViewById(R.id.topToolbar)
@@ -256,6 +265,12 @@ class MainActivity : AppCompatActivity() {
         LogCompat.d("setupToolbarMenu")
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.setOnMenuItemClickListener { item ->
+            val debugMenuItemId = debugProtectBatteryMenuItemId
+            if (debugMenuItemId != 0 && item.itemId == debugMenuItemId) {
+                openDebugProtectBatteryActivity()
+                return@setOnMenuItemClickListener true
+            }
+
             when (item.itemId) {
                 R.id.action_about_glimpse -> {
                     LogCompat.d("Main menu item clicked: about_glimpse")
@@ -271,6 +286,21 @@ class MainActivity : AppCompatActivity() {
 
                 else -> false
             }
+        }
+    }
+
+    private fun openDebugProtectBatteryActivity() {
+        LogCompat.d("Main menu item clicked: debug_protect_battery")
+        runCatching {
+            startActivity(
+                Intent().setClassName(
+                    packageName,
+                    "$packageName.debug.DebugProtectBatteryActivity"
+                )
+            )
+        }.onFailure { throwable ->
+            LogCompat.e("Failed to open debug protect battery activity", throwable)
+            showToast(R.string.toast_action_failed)
         }
     }
 
