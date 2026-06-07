@@ -8,6 +8,9 @@
         android:title="@string/menu_main">
         <menu>
             <item
+                android:id="@+id/action_feature_guide"
+                android:title="@string/menu_feature_guide" />
+            <item
                 android:id="@+id/action_about_glimpse"
                 android:title="@string/menu_about_glimpse" />
             <item

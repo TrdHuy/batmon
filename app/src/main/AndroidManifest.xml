@@ -37,6 +37,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".presentation.FeatureDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentation.FeatureGuideActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".presentation.ReportProblemActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
