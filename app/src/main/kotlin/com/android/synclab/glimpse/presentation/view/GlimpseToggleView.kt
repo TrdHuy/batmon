@@ -37,11 +37,11 @@ class GlimpseToggleView @JvmOverloads constructor(
     private val defaultWidthPx = dpToPx(36f)
     private val defaultHeightPx = dpToPx(18f)
     private val thumbSizePx = dpToPx(14f)
-    private val thumbInsetPx = dpToPx(2f)
+    private val thumbInsetPx = dpToPx(3f)
     private val trackStrokeWidthPx = dpToPxF(1.5f)
 
-    private val checkedTrackColor = 0xFF2C64FF.toInt()
-    private val uncheckedTrackStrokeColor = 0xFF2C64FF.toInt()
+    private val checkedTrackColor = 0xFF5D87FF.toInt()
+    private val uncheckedTrackStrokeColor = 0xFF5D87FF.toInt()
     private val thumbColor = 0xFFF2F2F2.toInt()
 
     private var thumbProgress = if (isChecked) 1f else 0f
