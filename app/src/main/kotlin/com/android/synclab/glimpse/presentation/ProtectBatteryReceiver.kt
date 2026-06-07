@@ -12,6 +12,7 @@ class ProtectBatteryReceiver : BroadcastReceiver() {
         LogCompat.d("ProtectBatteryReceiver action=${intent?.action}")
         AppContainer.from(context)
             .provideProtectBatteryPlanner()
+            // Fallback notification name only when a controller does not report its own name.
             .onCheckRequested(context.getString(R.string.unknown_controller_name))
     }
 

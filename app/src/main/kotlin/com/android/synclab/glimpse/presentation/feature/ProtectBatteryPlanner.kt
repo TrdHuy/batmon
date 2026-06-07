@@ -5,7 +5,7 @@ import com.android.synclab.glimpse.data.model.ControllerInfo
 import com.android.synclab.glimpse.domain.usecase.ProtectBatteryUseCases
 
 class ProtectBatteryPlanner(
-    private val useCases: ProtectBatteryUseCases = ProtectBatteryUseCases(),
+    private val useCases: ProtectBatteryUseCases,
     private val thresholdPercent: Int = DEFAULT_THRESHOLD_PERCENT
 ) {
     fun onToggle(

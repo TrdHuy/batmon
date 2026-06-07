@@ -9,7 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProtectBatteryPlannerTest {
-    private val planner = ProtectBatteryPlanner()
+    private val planner = ProtectBatteryPlanner(FakeProtectBatteryUseCases())
 
     @Test
     fun onToggle_enableWithNotificationPermissionEnablesRuntime() {
@@ -458,7 +458,15 @@ class ProtectBatteryPlannerTest {
         alertedControllerIds: Set<String> = emptySet(),
         var controllers: List<ControllerInfo> = emptyList(),
         var fakeThresholdDetectionEnabled: Boolean = false
-    ) : ProtectBatteryUseCases() {
+    ) : ProtectBatteryUseCases(
+        context = null,
+        gamepadRepository = null,
+        developerOptionManager = null,
+        alarmScheduler = null,
+        checkReceiverClass = null,
+        checkAction = null,
+        contentActivityClass = null
+    ) {
         private var enabledState: Boolean = enabled
         private var alertedControllerIdsState: Set<String> = alertedControllerIds
         val enabled: Boolean

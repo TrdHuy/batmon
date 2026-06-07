@@ -19,13 +19,13 @@ import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
 import com.android.synclab.glimpse.utils.LogCompat
 
 open class ProtectBatteryUseCases(
-    private val context: Context? = null,
-    private val gamepadRepository: GamepadRepository? = null,
-    private val developerOptionManager: DeveloperOptionManager? = null,
-    private val alarmScheduler: AndroidAlarmScheduler? = null,
-    private val checkReceiverClass: Class<out BroadcastReceiver>? = null,
-    private val checkAction: String? = null,
-    private val contentActivityClass: Class<out Activity>? = null
+    private val context: Context?,
+    private val gamepadRepository: GamepadRepository?,
+    private val developerOptionManager: DeveloperOptionManager?,
+    private val alarmScheduler: AndroidAlarmScheduler?,
+    private val checkReceiverClass: Class<out BroadcastReceiver>?,
+    private val checkAction: String?,
+    private val contentActivityClass: Class<out Activity>?
 ) {
     open fun isEnabled(): Boolean {
         return SharedPreferenceStore.getBoolean(
