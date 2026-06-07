@@ -20,7 +20,9 @@ import com.android.synclab.glimpse.infra.input.InputDeviceGateway
 import com.android.synclab.glimpse.infra.developer.AndroidDeveloperOptionSource
 import com.android.synclab.glimpse.infra.notification.MonitoringNotificationController
 import com.android.synclab.glimpse.infra.overlay.OverlayWindowController
-import com.android.synclab.glimpse.infra.protectbattery.AndroidProtectBatteryGateway
+import com.android.synclab.glimpse.infra.protectbattery.AndroidProtectBatteryAlertNotifier
+import com.android.synclab.glimpse.infra.protectbattery.AndroidProtectBatteryCheckScheduler
+import com.android.synclab.glimpse.infra.protectbattery.AndroidProtectBatteryPreferenceStore
 import com.android.synclab.glimpse.infra.repository.GamepadRepositoryImpl
 import com.android.synclab.glimpse.infra.repository.roomdb.RoomControllerProfileRepository
 import com.android.synclab.glimpse.infra.repository.roomdb.core.GlimpseDatabase
@@ -47,17 +49,19 @@ class AppContainer private constructor(
     private val controllerProfileRepository: ControllerProfileRepository =
         RoomControllerProfileRepository(glimpseDatabase.controllerProfileDao())
     private val monitoringStateProvider: MonitoringStateProvider = MonitoringStateStore
-    private val protectBatteryGateway: AndroidProtectBatteryGateway =
-        AndroidProtectBatteryGateway(
-            context = appContext,
-            checkReceiverClass = ProtectBatteryReceiver::class.java,
-            contentActivityClass = MainActivity::class.java,
-            checkAction = ProtectBatteryReceiver.ACTION_CHECK
-        )
     private val protectBatteryUseCases: ProtectBatteryUseCases =
         ProtectBatteryUseCases(
-            gateway = protectBatteryGateway,
-            getConnectedPs4ControllersUseCase = provideConnectedPs4ControllersUseCase()
+            preferenceStore = AndroidProtectBatteryPreferenceStore(appContext),
+            gamepadRepository = gamepadRepository,
+            checkScheduler = AndroidProtectBatteryCheckScheduler(
+                context = appContext,
+                checkReceiverClass = ProtectBatteryReceiver::class.java,
+                checkAction = ProtectBatteryReceiver.ACTION_CHECK
+            ),
+            alertNotifier = AndroidProtectBatteryAlertNotifier(
+                context = appContext,
+                contentActivityClass = MainActivity::class.java
+            )
         )
     private val protectBatteryPlanner: ProtectBatteryPlanner =
         ProtectBatteryPlanner(protectBatteryUseCases)

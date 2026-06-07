@@ -1,82 +1,24 @@
 package com.android.synclab.glimpse.infra.protectbattery
 
 import android.app.Activity
-import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.SystemClock
 import com.android.synclab.glimpse.R
+import com.android.synclab.glimpse.base.contracts.ProtectBatteryAlertNotifier
 import com.android.synclab.glimpse.infra.notification.AppNotificationChannel
 import com.android.synclab.glimpse.infra.notification.AppNotificationDispatcher
 import com.android.synclab.glimpse.infra.notification.AppNotificationRequest
-import com.android.synclab.glimpse.infra.preferences.SharedPreferenceStore
 import com.android.synclab.glimpse.utils.LogCompat
 
-class AndroidProtectBatteryGateway(
+class AndroidProtectBatteryAlertNotifier(
     context: Context,
-    private val checkReceiverClass: Class<out BroadcastReceiver>,
-    private val contentActivityClass: Class<out Activity>,
-    private val checkAction: String
-) {
+    private val contentActivityClass: Class<out Activity>
+) : ProtectBatteryAlertNotifier {
     private val appContext = context.applicationContext
 
-    fun isEnabled(): Boolean {
-        return SharedPreferenceStore.getBoolean(
-            context = appContext,
-            prefsName = PREFS_NAME,
-            key = KEY_ENABLED,
-            defaultValue = false
-        )
-    }
-
-    fun setEnabled(enabled: Boolean) {
-        SharedPreferenceStore.putBoolean(
-            context = appContext,
-            prefsName = PREFS_NAME,
-            key = KEY_ENABLED,
-            value = enabled
-        )
-    }
-
-    fun getAlertedControllerIds(): Set<String> {
-        return SharedPreferenceStore.getStringSet(
-            context = appContext,
-            prefsName = PREFS_NAME,
-            key = KEY_ALERTED_CONTROLLER_IDS,
-            defaultValue = emptySet()
-        )
-    }
-
-    fun setAlertedControllerIds(controllerIds: Set<String>) {
-        SharedPreferenceStore.putStringSet(
-            context = appContext,
-            prefsName = PREFS_NAME,
-            key = KEY_ALERTED_CONTROLLER_IDS,
-            value = controllerIds
-        )
-    }
-
-    fun scheduleNextCheck() {
-        val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
-        val triggerAtMs = SystemClock.elapsedRealtime() + CHECK_INTERVAL_MS
-        alarmManager.set(
-            AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            triggerAtMs,
-            pendingIntent()
-        )
-    }
-
-    fun cancelNextCheck() {
-        val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
-        alarmManager.cancel(pendingIntent())
-    }
-
-    fun postThresholdAlert(
+    override fun postThresholdAlert(
         controllerId: String,
         controllerName: String,
         percent: Int
@@ -91,7 +33,7 @@ class AndroidProtectBatteryGateway(
         )
     }
 
-    fun postDevControllerThresholdAlert(percent: Int) {
+    override fun postDevControllerThresholdAlert(percent: Int) {
         val controllerName = appContext.getString(R.string.unknown_controller_name)
         AppNotificationDispatcher.notify(
             context = appContext,
@@ -134,26 +76,6 @@ class AndroidProtectBatteryGateway(
         )
     }
 
-    private fun pendingIntent(): PendingIntent {
-        return PendingIntent.getBroadcast(
-            appContext,
-            CHECK_REQUEST_CODE,
-            Intent(appContext, checkReceiverClass).apply {
-                action = checkAction
-            },
-            pendingIntentFlags()
-        )
-    }
-
-    private fun pendingIntentFlags(): Int {
-        val baseFlags = PendingIntent.FLAG_UPDATE_CURRENT
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            baseFlags or PendingIntent.FLAG_IMMUTABLE
-        } else {
-            baseFlags
-        }
-    }
-
     private fun maskIdentifier(identifier: String): String {
         if (identifier.length <= 8) {
             return "***"
@@ -162,13 +84,8 @@ class AndroidProtectBatteryGateway(
     }
 
     companion object {
-        private const val PREFS_NAME = "protect_battery"
-        private const val KEY_ENABLED = "enabled"
-        private const val KEY_ALERTED_CONTROLLER_IDS = "alerted_controller_ids"
         private const val CHANNEL_ID = "protect_battery_alerts_v1"
         private const val NOTIFICATION_ID = 32001
         private const val CONTENT_REQUEST_CODE = 32002
-        private const val CHECK_REQUEST_CODE = 32011
-        private const val CHECK_INTERVAL_MS = 60_000L
     }
 }
