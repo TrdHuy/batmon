@@ -34,7 +34,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
+        <com.android.synclab.glimpse.presentation.view.AutoScrollEllipsizeTextView
             android:id="@+id/deviceInfoView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -44,7 +44,7 @@
             android:ellipsize="end"
             android:fontFamily="@font/montserrat"
             android:gravity="center"
-            android:maxLines="2"
+            android:maxLines="1"
             android:textColor="#D8DCE2"
             android:textSize="16sp"
             app:layout_constraintBottom_toTopOf="@id/batteryUniqueIdText"
@@ -52,14 +52,14 @@
             app:layout_constraintStart_toStartOf="parent"
             tools:text="PlayStation 4 Controller Connected" />
 
-        <TextView
+        <com.android.synclab.glimpse.presentation.view.AutoScrollEllipsizeTextView
             android:id="@+id/batteryUniqueIdText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
             android:layout_marginEnd="14dp"
             android:layout_marginBottom="10dp"
-            android:ellipsize="middle"
+            android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
             android:text="@string/status_card_controller_unique_id_placeholder"

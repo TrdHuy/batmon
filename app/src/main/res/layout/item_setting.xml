@@ -36,6 +36,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:fontFamily="@font/google_sans"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="#D2D8DE"
             android:textSize="16sp" />
@@ -45,8 +46,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:includeFontPadding="true"
             android:fontFamily="@font/google_sans"
+            android:includeFontPadding="false"
             android:textColor="#7F7F7F"
             android:textSize="11sp"
             android:textStyle="bold"

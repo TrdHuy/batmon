@@ -24,5 +24,5 @@
     <dimen name="ui_panel_card_height_default">157dp</dimen>
     <dimen name="ui_panel_card_height_util">157dp</dimen>
     <dimen name="ui_panel_card_height_other">53dp</dimen>
-    <dimen name="ui_panel_title_to_card_spacing">3dp</dimen>
+    <dimen name="ui_panel_title_to_card_spacing">2dp</dimen>
 </resources>
