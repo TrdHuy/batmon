@@ -35,10 +35,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/samsung_sharp_sans_medium"
+            android:fontFamily="@font/google_sans"
             android:maxLines="1"
             android:textColor="#D2D8DE"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/settingItemSubtitle"
@@ -46,9 +46,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
             android:includeFontPadding="true"
-            android:fontFamily="@font/samsung_sharp_sans_bold"
+            android:fontFamily="@font/google_sans"
             android:textColor="#7F7F7F"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
