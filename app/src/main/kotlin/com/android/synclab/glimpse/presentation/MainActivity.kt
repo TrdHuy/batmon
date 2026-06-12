@@ -1233,6 +1233,7 @@ class MainActivity : AppCompatActivity() {
                 iconWidthDp = 26f,
                 iconHeightDp = 14f,
                 title = getString(R.string.settings_background_monitoring),
+                subtitle = getString(R.string.settings_background_monitoring_subtitle),
                 control = SettingItemUiModel.Control.Toggle(
                     checked = selectedBackgroundMonitoringEnabled
                 )
@@ -1243,6 +1244,7 @@ class MainActivity : AppCompatActivity() {
                 iconWidthDp = 25f,
                 iconHeightDp = 25f,
                 title = getString(R.string.settings_live_overlay),
+                subtitle = getString(R.string.settings_live_overlay_subtitle),
                 control = SettingItemUiModel.Control.Toggle(
                     checked = selectedLiveBatteryOverlayEnabled
                 )
@@ -1253,6 +1255,7 @@ class MainActivity : AppCompatActivity() {
                 iconWidthDp = 26f,
                 iconHeightDp = 26f,
                 title = getString(R.string.settings_customize_vibe),
+                subtitle = getString(R.string.settings_customize_vibe_subtitle),
                 control = SettingItemUiModel.Control.None
             )
         )

@@ -155,11 +155,14 @@
 
     <string name="unknown_controller_name">Tay cầm</string>
     <string name="settings_background_monitoring">Background Monitoring</string>
+    <string name="settings_background_monitoring_subtitle">Monitor controller in background</string>
     <string name="settings_live_overlay">Live Battery Overlay</string>
+    <string name="settings_live_overlay_subtitle">View battery level anywhere</string>
     <string name="settings_customize_vibe">Customize Vibe</string>
+    <string name="settings_customize_vibe_subtitle">Personalize LED light effects</string>
     <string name="settings_limit_charging" formatted="false">Limit Charging to 80% (Protect Battery)</string>
     <string name="settings_protect_battery">Protect Battery</string>
-    <string name="settings_limit_charging_subtitle">Cảnh báo khi pin tay cầm đạt 80%</string>
+    <string name="settings_limit_charging_subtitle">Limit charging to 80%</string>
     <string name="cd_background_monitoring_icon">Biểu tượng background monitoring</string>
     <string name="cd_live_overlay_icon">Biểu tượng live battery overlay</string>
     <string name="cd_customize_vibe_icon">Biểu tượng tùy chỉnh lightbar</string>
@@ -174,8 +177,8 @@
     <string name="status_card_controller_unique_id_placeholder">ID: --</string>
     <string name="status_card_battery_unknown" formatted="false">--%</string>
     <string name="status_card_battery_percent">%1$d%%</string>
-    <string name="panel_util_category">Util category</string>
-    <string name="panel_other_category">Others</string>
+    <string name="panel_util_category">Controller experience</string>
+    <string name="panel_other_category">Battery care</string>
     <string name="nav_home">Home</string>
     <string name="nav_activity">Activity</string>
     <string name="nav_profile">Profile</string>
