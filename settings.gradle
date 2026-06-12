@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "BatMonDemo"
 include(":app")
+include(":github-preview-sdk")

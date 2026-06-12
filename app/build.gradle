@@ -17,7 +17,28 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "boolean", "PREVIEW_ENABLED", "false"
+            buildConfigField "String", "GIT_SHA", "\"${resolveGitSha()}\""
+        }
+
+        prerelease {
+            initWith debug
+            applicationIdSuffix ".preview"
+            versionNameSuffix "-preview"
+            matchingFallbacks = ['debug']
+            buildConfigField "boolean", "PREVIEW_ENABLED", "true"
+            buildConfigField "String", "GIT_SHA", "\"${resolveGitSha()}\""
+            buildConfigField "String", "GITHUB_PREVIEW_OWNER", "\"${previewProperty('GITHUB_PREVIEW_OWNER')}\""
+            buildConfigField "String", "GITHUB_PREVIEW_REPO", "\"${previewProperty('GITHUB_PREVIEW_REPO')}\""
+            buildConfigField "String", "GITHUB_PREVIEW_OAUTH_CLIENT_ID", "\"${previewProperty('GITHUB_PREVIEW_OAUTH_CLIENT_ID')}\""
+            buildConfigField "String", "GITHUB_PREVIEW_RELEASE_TAG_PREFIX", "\"${previewProperty('GITHUB_PREVIEW_RELEASE_TAG_PREFIX', 'preview')}\""
+            buildConfigField "String", "GITHUB_PREVIEW_APK_ASSET_PATTERN", "\"${previewProperty('GITHUB_PREVIEW_APK_ASSET_PATTERN', '.*\\\\.apk')}\""
+        }
+
         release {
+            buildConfigField "boolean", "PREVIEW_ENABLED", "false"
+            buildConfigField "String", "GIT_SHA", "\"${resolveGitSha()}\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -46,4 +67,26 @@ dependencies {
     kapt 'androidx.room:room-compiler:2.6.1'
 
     testImplementation 'junit:junit:4.13.2'
+
+    prereleaseImplementation project(":github-preview-sdk")
+}
+
+def previewProperty(String name, String defaultValue = "") {
+    if (project.hasProperty(name)) {
+        return project.property(name).toString()
+    }
+    return System.getenv(name) ?: defaultValue
+}
+
+def resolveGitSha() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--short=12', 'HEAD'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (Exception ignored) {
+        return ""
+    }
 }
