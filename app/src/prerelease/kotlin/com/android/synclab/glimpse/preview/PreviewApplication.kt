@@ -7,7 +7,6 @@ import com.android.synclab.githubpreview.GitHubPreviewHost
 import com.android.synclab.glimpse.BatmonApplication
 import com.android.synclab.glimpse.BuildConfig
 import com.android.synclab.glimpse.presentation.model.ReportProblemDiagnosticsCollector
-import com.android.synclab.glimpse.utils.BatmonFileLogger
 import com.android.synclab.glimpse.utils.LogCompat
 import java.io.File
 
@@ -41,6 +40,6 @@ private class BatmonPreviewHost(
     }
 
     override fun collectLogFile(): File? {
-        return BatmonFileLogger.logFile
+        return LogCompat.logFile
     }
 }
